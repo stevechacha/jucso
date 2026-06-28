@@ -5,6 +5,7 @@ import type { Suggestion, SuggestionStatus } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Select, Textarea } from "@/components/ui/FormFields";
 import { StatusPill } from "@/components/ui/StatusPill";
+import { useLanguage } from "@/context/LanguageContext";
 
 const STATUSES: SuggestionStatus[] = ["Received", "Under Review", "Implemented"];
 
@@ -19,6 +20,7 @@ interface SuggestionReviewPanelProps {
 }
 
 export function SuggestionReviewPanel({ suggestions, onUpdated, apiEnabled }: SuggestionReviewPanelProps) {
+  const { t } = useLanguage();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [status, setStatus] = useState<SuggestionStatus>("Under Review");
   const [responseText, setResponseText] = useState("");
@@ -57,7 +59,7 @@ export function SuggestionReviewPanel({ suggestions, onUpdated, apiEnabled }: Su
     <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
       <div className="md:col-span-3 bg-white rounded-xl shadow-card overflow-hidden">
         <h2 className="px-5 py-4 border-b border-gray-100 font-display font-bold text-jucso-navy">
-          Student Suggestions ({pending.length} pending)
+          {t("suggestionsPending", { count: String(pending.length) })}
         </h2>
         {suggestions.length === 0 ? (
           <p className="p-6 text-center text-gray-400 text-sm">No suggestions yet.</p>
@@ -86,7 +88,12 @@ export function SuggestionReviewPanel({ suggestions, onUpdated, apiEnabled }: Su
                       selectedId === s.id ? "bg-indigo-50" : i % 2 === 1 ? "bg-gray-50/50" : ""
                     }`}
                   >
-                    <td className="px-4 py-3 font-semibold text-jucso-navy max-w-[140px] truncate">{s.title}</td>
+                    <td className="px-4 py-3 font-semibold text-jucso-navy max-w-[140px] truncate">
+                      {s.title}
+                      {s.isOverdue ? (
+                        <span className="ml-1 text-[10px] font-bold text-red-600">{t("suggestionOverdue")}</span>
+                      ) : null}
+                    </td>
                     <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{s.studentName}</td>
                     <td className="px-4 py-3">
                       <StatusPill status={s.status} />
@@ -105,6 +112,11 @@ export function SuggestionReviewPanel({ suggestions, onUpdated, apiEnabled }: Su
           <div className="bg-white rounded-xl p-5 shadow-card">
             <h3 className="font-display font-bold text-jucso-navy text-sm mb-2">{selected.title}</h3>
             <p className="text-xs text-gray-500 mb-1">From {selected.studentName}</p>
+            {selected.isOverdue ? (
+              <p className="text-xs font-semibold text-red-600 mb-2">{t("overdue")} — {t("slaDue", { date: selected.dueAt ?? "" })}</p>
+            ) : selected.dueAt ? (
+              <p className="text-xs text-gray-500 mb-2">{t("slaDue", { date: selected.dueAt })}</p>
+            ) : null}
             <p className="text-xs text-gray-600 leading-relaxed mb-4">{selected.description}</p>
             <Select label="Status" value={status} onChange={(e) => setStatus(e.target.value as SuggestionStatus)}>
               {STATUSES.map((s) => (

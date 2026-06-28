@@ -79,6 +79,8 @@ export interface Suggestion {
   date: string;
   status: SuggestionStatus;
   response?: string;
+  dueAt?: string;
+  isOverdue?: boolean;
 }
 
 export interface Club {

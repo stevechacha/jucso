@@ -11,15 +11,17 @@ import { StatusPill } from "@/components/ui/StatusPill";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { ProfilePanel } from "@/components/profile/ProfilePanel";
 import { SuggestionReviewPanel } from "@/components/suggestions/SuggestionReviewPanel";
+import { useLanguage } from "@/context/LanguageContext";
+import { EXECUTIVE_TABS, type TranslationKey } from "@/i18n/translations";
 
-const TABS = ["overview", "all complaints", "suggestions", "ministry stats", "profile"] as const;
-type ExecutiveTab = (typeof TABS)[number];
+const DEFAULT_TAB: TranslationKey = "tabExecutiveOverview";
 
 export function ExecutiveDashboard() {
   const { user, complaints, suggestions, apiEnabled, refreshPortalData } = useApp();
   if (!user) return null;
 
-  const [tab, setTab] = useDashboardTab(TABS, "overview");
+  const { t } = useLanguage();
+  const [tab, setTab] = useDashboardTab(EXECUTIVE_TABS, DEFAULT_TAB);
   const [filterMin, setFilterMin] = useState("All");
   const [filterStatus, setFilterStatus] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -92,13 +94,14 @@ export function ExecutiveDashboard() {
 
   return (
     <DashboardShell
-      label="Executive Dashboard"
-      title={`Welcome back, ${user.name.split(" ")[0]}`}
-      tabs={[...TABS]}
-      activeTab={tab}
-      onTabChange={(t) => setTab(t as ExecutiveTab)}
+      label={t("executiveDashboardLabel")}
+      title={t("welcomeBack", { name: user.name.split(" ")[0] })}
+      tabKeys={EXECUTIVE_TABS}
+      activeTabKey={tab}
+      getTabLabel={(key) => t(key)}
+      onTabChange={setTab}
     >
-      {tab === "overview" && (
+      {tab === "tabExecutiveOverview" && (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             {totalStats.map((s) => (
@@ -147,7 +150,7 @@ export function ExecutiveDashboard() {
         </>
       )}
 
-      {tab === "all complaints" && (
+      {tab === "tabExecutiveAllComplaints" && (
         <div className="bg-white rounded-xl shadow-card overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
             <h2 className="font-display font-bold text-jucso-navy">All Complaints ({filtered.length})</h2>
@@ -229,7 +232,7 @@ export function ExecutiveDashboard() {
         </div>
       )}
 
-      {tab === "suggestions" && (
+      {tab === "tabExecutiveSuggestions" && (
         <div className="space-y-4">
           <div className="flex justify-end">
             <Button size="sm" variant="outline" onClick={() => exportSuggestionsCsv(suggestions)}>
@@ -244,7 +247,7 @@ export function ExecutiveDashboard() {
         </div>
       )}
 
-      {tab === "ministry stats" && (
+      {tab === "tabExecutiveMinistryStats" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {miniStats.map((m) => (
             <article key={m.name} className="bg-white rounded-xl p-5 shadow-card">
@@ -280,7 +283,7 @@ export function ExecutiveDashboard() {
         </div>
       )}
 
-      {tab === "profile" && <ProfilePanel />}
+      {tab === "tabExecutiveProfile" && <ProfilePanel />}
     </DashboardShell>
   );
 }

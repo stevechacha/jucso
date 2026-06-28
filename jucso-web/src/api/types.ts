@@ -45,6 +45,8 @@ export interface ApiSuggestion {
   date: string;
   status: Suggestion["status"];
   response?: string;
+  due_at?: string;
+  is_overdue?: boolean;
 }
 
 export interface ApiEvent {
@@ -114,6 +116,17 @@ export interface AdminSystemStatusResponse {
   storage_configured: boolean;
   debug: boolean;
   ssl_enabled: boolean;
+  registry_configured?: boolean;
+  overdue_complaints?: number;
+  overdue_suggestions?: number;
+  open_complaints?: number;
+  pending_suggestions?: number;
+  cron_runs?: Array<{
+    job_name: string;
+    ran_at: string;
+    detail: string;
+    success: boolean;
+  }>;
 }
 
 export interface TransparencyStatsResponse {

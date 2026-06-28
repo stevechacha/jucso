@@ -17,7 +17,11 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { SuggestionReviewPanel } from "@/components/suggestions/SuggestionReviewPanel";
 import { ProfilePanel } from "@/components/profile/ProfilePanel";
 import { ComplaintTable } from "@/components/complaints/ComplaintTable";
+import { useLanguage } from "@/context/LanguageContext";
+import { ADMIN_TABS, type TranslationKey } from "@/i18n/translations";
 import type { Club, Document, Event, NewsItem } from "@/types";
+
+const DEFAULT_TAB: TranslationKey = "tabAdminOverview";
 
 function eventDateToInput(dateLabel: string): string {
   const parsed = new Date(dateLabel);
@@ -25,8 +29,6 @@ function eventDateToInput(dateLabel: string): string {
   return parsed.toISOString().slice(0, 10);
 }
 
-const TABS = ["overview", "users", "content", "system", "profile"] as const;
-type AdminTab = (typeof TABS)[number];
 const USERS_PER_PAGE = 7;
 
 const SYSTEM_STATUS_FALLBACK = [
@@ -39,10 +41,10 @@ const SYSTEM_STATUS_FALLBACK = [
 ] as const;
 
 const SYSTEM_TOOLS = [
-  { id: "backup", title: "Database Backup", action: "Run Backup Now", icon: "💾" },
-  { id: "security", title: "Security Updates", action: "Check for Updates", icon: "🔒" },
-  { id: "logs", title: "Error Logs", action: "View Logs", icon: "📝" },
-  { id: "performance", title: "Performance Monitor", action: "View Report", icon: "⚡" },
+  { id: "backup", titleKey: "systemBackup", actionKey: "systemBackupAction", icon: "💾" },
+  { id: "security", titleKey: "systemSecurity", actionKey: "systemSecurityAction", icon: "🔒" },
+  { id: "logs", titleKey: "systemLogs", actionKey: "systemLogsAction", icon: "📝" },
+  { id: "performance", titleKey: "systemPerformance", actionKey: "systemPerformanceAction", icon: "⚡" },
 ] as const;
 
 function roleBadgeVariant(role: string): "gold" | "teal" | "navy" | "gray" {
@@ -460,10 +462,12 @@ function EditNewsForm({
 }
 
 function SystemToolsPanel({ apiEnabled }: { apiEnabled: boolean }) {
+  const { t } = useLanguage();
   const [lastBackup, setLastBackup] = useState<string | null>(() => getLastBackupLabel());
   const [backupLoading, setBackupLoading] = useState(false);
   const [backupMsg, setBackupMsg] = useState("");
   const [systemStatus, setSystemStatus] = useState<AdminSystemStatusResponse | null>(null);
+  const [activeTool, setActiveTool] = useState<(typeof SYSTEM_TOOLS)[number]["id"] | null>(null);
 
   useEffect(() => {
     if (!apiEnabled) return;
@@ -478,7 +482,7 @@ function SystemToolsPanel({ apiEnabled }: { apiEnabled: boolean }) {
       const data = await jucsoApi.downloadPortalBackup();
       downloadJsonBackup(data);
       setLastBackup(getLastBackupLabel());
-      setBackupMsg("Backup downloaded successfully.");
+      setBackupMsg(t("systemBackupSuccess"));
     } catch (error) {
       setBackupMsg(error instanceof ApiError ? error.message : "Backup failed.");
     } finally {
@@ -492,20 +496,68 @@ function SystemToolsPanel({ apiEnabled }: { apiEnabled: boolean }) {
     }
     if (id === "security") {
       if (!systemStatus) return "Checking email, SMS, and SSL configuration…";
-      return [
-        `Email: ${systemStatus.email_configured ? "configured" : "not configured"}`,
-        `SMS: ${systemStatus.sms_configured ? "configured" : "not configured"}`,
-        `SSL: ${systemStatus.ssl_enabled ? "enabled" : "disabled"}`,
-      ].join(" · ");
+      return t("registryStatus", {
+        status: systemStatus.registry_configured ? t("registryOn") : t("registryOff"),
+      });
     }
     if (id === "logs") {
-      return systemStatus?.debug
-        ? "Debug mode is on — use Railway deployment logs in production."
-        : "View application logs in your Railway deployment dashboard.";
+      return systemStatus?.cron_runs?.length
+        ? `${systemStatus.cron_runs.length} recent scheduled job(s) recorded.`
+        : "No scheduled jobs have run yet.";
     }
     return systemStatus
-      ? `API ${systemStatus.api} · Database ${systemStatus.database}`
-      : "Checking API and database connectivity…";
+      ? `${systemStatus.open_complaints ?? 0} open complaints · ${systemStatus.pending_suggestions ?? 0} pending suggestions`
+      : "Checking portal workload…";
+  };
+
+  const renderDetail = () => {
+    if (!systemStatus || !activeTool || activeTool === "backup") return null;
+
+    if (activeTool === "security") {
+      return (
+        <div className="bg-white rounded-xl p-5 shadow-card text-xs space-y-2">
+          <h3 className="font-display font-bold text-jucso-navy">{t("securityChecklist")}</h3>
+          <p>Email: {systemStatus.email_configured ? "configured" : "not configured"}</p>
+          <p>SMS: {systemStatus.sms_configured ? "configured" : "not configured"}</p>
+          <p>Storage: {systemStatus.storage_configured ? "configured" : "not configured"}</p>
+          <p>SSL: {systemStatus.ssl_enabled ? "enabled" : "disabled"}</p>
+          <p>Debug mode: {systemStatus.debug ? "on" : "off"}</p>
+          <p>{t("registryStatus", { status: systemStatus.registry_configured ? t("registryOn") : t("registryOff") })}</p>
+        </div>
+      );
+    }
+
+    if (activeTool === "logs") {
+      return (
+        <div className="bg-white rounded-xl p-5 shadow-card text-xs">
+          <h3 className="font-display font-bold text-jucso-navy mb-3">{t("cronJobLogs")}</h3>
+          {systemStatus.cron_runs?.length ? (
+            <ul className="space-y-2">
+              {systemStatus.cron_runs.map((run) => (
+                <li key={`${run.job_name}-${run.ran_at}`} className="border-b border-gray-50 pb-2">
+                  <div className="font-semibold text-jucso-navy">{run.job_name}</div>
+                  <div className="text-gray-500">{new Date(run.ran_at).toLocaleString()}</div>
+                  <div className={run.success ? "text-emerald-700" : "text-red-600"}>{run.detail || (run.success ? "OK" : "Failed")}</div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-400">No cron runs logged yet. Configure Railway cron with `railway.cron.toml`.</p>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-white rounded-xl p-5 shadow-card text-xs space-y-2">
+        <h3 className="font-display font-bold text-jucso-navy">{t("performanceMetrics")}</h3>
+        <p>Open complaints: {systemStatus.open_complaints ?? 0}</p>
+        <p>Overdue complaints: {systemStatus.overdue_complaints ?? 0}</p>
+        <p>Pending suggestions: {systemStatus.pending_suggestions ?? 0}</p>
+        <p>Overdue suggestions: {systemStatus.overdue_suggestions ?? 0}</p>
+        <p>API: {systemStatus.api} · Database: {systemStatus.database}</p>
+      </div>
+    );
   };
 
   return (
@@ -517,19 +569,23 @@ function SystemToolsPanel({ apiEnabled }: { apiEnabled: boolean }) {
             <div className="text-3xl mb-3" aria-hidden>
               {s.icon}
             </div>
-            <h3 className="font-display font-bold text-jucso-navy mb-1 text-sm">{s.title}</h3>
+            <h3 className="font-display font-bold text-jucso-navy mb-1 text-sm">{t(s.titleKey)}</h3>
             <p className="text-gray-500 text-xs mb-4">{toolDesc(s.id)}</p>
             <Button
               variant="outline"
               size="sm"
-              disabled={s.id === "backup" ? !apiEnabled || backupLoading : true}
-              onClick={s.id === "backup" ? () => void runBackup() : undefined}
+              disabled={!apiEnabled || (s.id === "backup" && backupLoading)}
+              onClick={() => {
+                if (s.id === "backup") void runBackup();
+                else setActiveTool(activeTool === s.id ? null : s.id);
+              }}
             >
-              {s.id === "backup" && backupLoading ? "Exporting…" : s.action}
+              {s.id === "backup" && backupLoading ? "Exporting…" : t(s.actionKey)}
             </Button>
           </article>
         ))}
       </div>
+      {renderDetail()}
     </div>
   );
 }
@@ -984,7 +1040,8 @@ function AddEventForm({ onCreated }: { onCreated: () => void }) {
 
 export function AdminDashboard() {
   const { complaints, suggestions, clubs, events, news, documents, apiEnabled, refreshPortalData } = useApp();
-  const [tab, setTab] = useDashboardTab(TABS, "overview");
+  const { t } = useLanguage();
+  const [tab, setTab] = useDashboardTab(ADMIN_TABS, DEFAULT_TAB);
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [adminUsers, setAdminUsers] = useState<AdminUserRow[]>([]);
   const [editingUser, setEditingUser] = useState<AdminUserRow | null>(null);
@@ -1180,13 +1237,14 @@ export function AdminDashboard() {
 
   return (
     <DashboardShell
-      label="Admin Panel"
-      title="System Administration"
-      tabs={[...TABS]}
-      activeTab={tab}
-      onTabChange={(t) => setTab(t as AdminTab)}
+      label={t("adminDashboardLabel")}
+      title={t("adminDashboardLabel")}
+      tabKeys={ADMIN_TABS}
+      activeTabKey={tab}
+      getTabLabel={(key) => t(key)}
+      onTabChange={setTab}
     >
-      {tab === "overview" && (
+      {tab === "tabAdminOverview" && (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             {overviewStats.map((s) => (
@@ -1244,7 +1302,7 @@ export function AdminDashboard() {
         </>
       )}
 
-      {tab === "users" && (
+      {tab === "tabAdminUsers" && (
         <div className="space-y-5">
           {apiEnabled && (
             <AddStaffForm
@@ -1384,7 +1442,7 @@ export function AdminDashboard() {
         </div>
       )}
 
-      {tab === "content" && (
+      {tab === "tabAdminContent" && (
         <div className="space-y-5">
           <div className="bg-white rounded-xl shadow-card p-5">
             <h2 className="font-display font-bold text-jucso-navy mb-4">Review Suggestions</h2>
@@ -1604,9 +1662,9 @@ export function AdminDashboard() {
         </div>
       )}
 
-      {tab === "system" && <SystemToolsPanel apiEnabled={apiEnabled} />}
+      {tab === "tabAdminSystem" && <SystemToolsPanel apiEnabled={apiEnabled} />}
 
-      {tab === "profile" && <ProfilePanel />}
+      {tab === "tabAdminProfile" && <ProfilePanel />}
 
       {editingUser && (
         <EditStaffModal

@@ -15,15 +15,17 @@ import { ConfidentialBadge } from "@/components/complaints/ConfidentialBadge";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { ProfilePanel } from "@/components/profile/ProfilePanel";
 import { SuggestionReviewPanel } from "@/components/suggestions/SuggestionReviewPanel";
+import { useLanguage } from "@/context/LanguageContext";
+import { MINISTER_TABS, type TranslationKey } from "@/i18n/translations";
 
-const TABS = ["incoming", "resolved", "suggestions", "overview", "profile"] as const;
-type MinisterTab = (typeof TABS)[number];
+const DEFAULT_TAB: TranslationKey = "tabMinisterIncoming";
 
 export function MinisterDashboard() {
   const { user, complaints, setComplaints, suggestions, apiEnabled, refreshPortalData } = useApp();
   if (!user?.ministry) return null;
 
-  const [tab, setTab] = useDashboardTab(TABS, "incoming");
+  const { t } = useLanguage();
+  const [tab, setTab] = useDashboardTab(MINISTER_TABS, DEFAULT_TAB);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [responseText, setResponseText] = useState("");
   const [forwardMinistry, setForwardMinistry] = useState("");
@@ -38,7 +40,7 @@ export function MinisterDashboard() {
   }, [apiEnabled]);
 
   useEffect(() => {
-    if (!apiEnabled || tab !== "overview") return;
+    if (!apiEnabled || tab !== "tabMinisterOverview") return;
     void jucsoApi.getMinisterWorkload().then(setWorkload).catch(console.error);
   }, [apiEnabled, tab]);
 
@@ -76,10 +78,10 @@ export function MinisterDashboard() {
 
   const stats = workload
     ? [
-        { icon: "📋", val: workload.open_count, lab: "Open Cases", color: "#1B2B6B" },
-        { icon: "✅", val: workload.resolved_this_week, lab: "Resolved This Week", color: "#10B981" },
-        { icon: "⏰", val: workload.overdue_count, lab: "Overdue (SLA)", color: "#EF4444" },
-        { icon: "⚠", val: workload.urgent_open, lab: "Urgent Open", color: "#F59E0B" },
+        { icon: "📋", val: workload.open_count, lab: t("openCases"), color: "#1B2B6B" },
+        { icon: "✅", val: workload.resolved_this_week, lab: t("resolvedThisWeek"), color: "#10B981" },
+        { icon: "⏰", val: workload.overdue_count, lab: t("overdueSla"), color: "#EF4444" },
+        { icon: "⚠", val: workload.urgent_open, lab: t("urgentOpen"), color: "#F59E0B" },
       ]
     : [
         { icon: "📋", val: myComplaints.length, lab: "Total Assigned", color: "#1B2B6B" },
@@ -89,12 +91,12 @@ export function MinisterDashboard() {
       ];
 
   const filtered =
-    tab === "incoming"
+    tab === "tabMinisterIncoming"
       ? myComplaints.filter((c) => c.status !== "Resolved")
       : myComplaints.filter((c) => c.status === "Resolved");
 
   const statusFiltered =
-    tab === "incoming" && statusFilter !== "All"
+    tab === "tabMinisterIncoming" && statusFilter !== "All"
       ? filtered.filter((c) => c.status === statusFilter)
       : filtered;
 
@@ -112,13 +114,14 @@ export function MinisterDashboard() {
 
   return (
     <DashboardShell
-      label={`Minister Dashboard — ${user.ministry}`}
-      title={`Welcome back, ${user.name.split(" ")[0]}`}
-      tabs={[...TABS]}
-      activeTab={tab}
-      onTabChange={(t) => setTab(t as MinisterTab)}
+      label={t("ministerDashboard", { ministry: user.ministry })}
+      title={t("welcomeBack", { name: user.name.split(" ")[0] })}
+      tabKeys={MINISTER_TABS}
+      activeTabKey={tab}
+      getTabLabel={(key) => t(key)}
+      onTabChange={setTab}
     >
-      {tab === "overview" && (
+      {tab === "tabMinisterOverview" && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {stats.map((s) => (
             <StatCard key={s.lab} icon={s.icon} value={s.val} label={s.lab} color={s.color} />
@@ -126,12 +129,12 @@ export function MinisterDashboard() {
         </div>
       )}
 
-      {(tab === "incoming" || tab === "resolved") && (
+      {(tab === "tabMinisterIncoming" || tab === "tabMinisterResolved") && (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
           <div className="md:col-span-3 bg-white rounded-xl shadow-card overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
               <h2 className="font-display font-bold text-jucso-navy">
-                {tab === "incoming" ? "Pending & In Progress" : "Resolved Cases"}
+                {tab === "tabMinisterIncoming" ? "Pending & In Progress" : "Resolved Cases"}
               </h2>
               <Button
                 variant="outline"
@@ -155,7 +158,7 @@ export function MinisterDashboard() {
                 className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-jucso-teal"
                 aria-label="Search complaints"
               />
-              {tab === "incoming" && (
+              {tab === "tabMinisterIncoming" && (
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
@@ -196,7 +199,7 @@ export function MinisterDashboard() {
                         <span className="inline-flex items-center gap-1 flex-wrap">
                           {c.id}
                           {c.urgent && <span className="text-red-500 ml-1">⚠</span>}
-                          {c.isOverdue && <span className="text-red-600 text-[10px] font-bold ml-1">OVERDUE</span>}
+                          {c.isOverdue && <span className="text-red-600 text-[10px] font-bold ml-1">{t("suggestionOverdue")}</span>}
                           {c.isConfidential && <ConfidentialBadge />}
                         </span>
                       </td>
@@ -297,7 +300,7 @@ export function MinisterDashboard() {
         </div>
       )}
 
-      {tab === "suggestions" && (
+      {tab === "tabMinisterSuggestions" && (
         <SuggestionReviewPanel
           suggestions={suggestions}
           apiEnabled={apiEnabled}
@@ -305,7 +308,7 @@ export function MinisterDashboard() {
         />
       )}
 
-      {tab === "profile" && <ProfilePanel />}
+      {tab === "tabMinisterProfile" && <ProfilePanel />}
     </DashboardShell>
   );
 }

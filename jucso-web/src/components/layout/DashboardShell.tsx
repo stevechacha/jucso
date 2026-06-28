@@ -1,19 +1,22 @@
 import type { ReactNode } from "react";
+import type { TranslationKey } from "@/i18n/translations";
 
 interface DashboardShellProps {
   label: string;
   title: string;
-  tabs: string[];
-  activeTab: string;
-  onTabChange: (tab: string) => void;
+  tabKeys: readonly TranslationKey[];
+  activeTabKey: TranslationKey;
+  getTabLabel: (key: TranslationKey) => string;
+  onTabChange: (key: TranslationKey) => void;
   children: ReactNode;
 }
 
 export function DashboardShell({
   label,
   title,
-  tabs,
-  activeTab,
+  tabKeys,
+  activeTabKey,
+  getTabLabel,
   onTabChange,
   children,
 }: DashboardShellProps) {
@@ -36,20 +39,20 @@ export function DashboardShell({
             role="tablist"
             aria-label="Dashboard sections"
           >
-            {tabs.map((t) => (
+            {tabKeys.map((key) => (
               <button
-                key={t}
+                key={key}
                 type="button"
                 role="tab"
-                aria-selected={activeTab === t}
-                onClick={() => onTabChange(t)}
-                className={`shrink-0 px-4 py-2.5 rounded-t-lg text-xs font-bold capitalize transition-all cursor-pointer ${
-                  activeTab === t
+                aria-selected={activeTabKey === key}
+                onClick={() => onTabChange(key)}
+                className={`shrink-0 px-4 py-2.5 rounded-t-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeTabKey === key
                     ? "bg-jucso-slate text-jucso-navy shadow-sm"
                     : "text-white/50 hover:text-white hover:bg-white/5"
                 }`}
               >
-                {t}
+                {getTabLabel(key)}
               </button>
             ))}
           </div>

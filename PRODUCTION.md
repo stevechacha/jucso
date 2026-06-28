@@ -69,7 +69,18 @@ python manage.py export_portal_backup --output /tmp/jucso-backup.json
 python manage.py notify_overdue_complaints
 ```
 
-Also set `COMPLAINT_SLA_DAYS=7`, `ADMIN_NOTIFICATION_EMAIL=admin@jucso.ac.tz`, and optional `SENTRY_DSN` for error monitoring.
+Also set `COMPLAINT_SLA_DAYS=7`, `SUGGESTION_SLA_DAYS=7`, `ADMIN_NOTIFICATION_EMAIL=admin@jucso.ac.tz`, and optional `SENTRY_DSN` for error monitoring.
+
+### Railway cron service
+
+1. Duplicate the API service or add a new service from the same repo (`jucso-api`).
+2. Point it at `railway.cron.toml` (config-as-code) or set:
+   - **Cron schedule:** `0 2 * * *` (2 AM daily)
+   - **Start command:** `sh scripts/run_daily_jobs.sh`
+3. Share the same env vars as the main API (`DATABASE_URL`, SMTP, etc.).
+4. Set `BACKUP_OUTPUT_PATH=/tmp/jucso-backup.json` (or mount volume if you persist backups).
+
+The daily job runs export, overdue complaint alerts, and overdue suggestion alerts. Results appear in **Admin → System → View Job Logs**.
 
 ---
 
@@ -95,26 +106,39 @@ Redeploy after changing `VITE_API_URL` (it is baked in at build time).
 
 ---
 
-## 4. Known gaps (post-pilot)
+## 4. Feature status
 
 | Feature | Status |
 |---------|--------|
 | Forgot / reset password | ✅ Built — configure SMTP on API |
 | Email / SMS notifications | ✅ Built — configure SMTP + Africa's Talking on API |
-| Public complaint tracking | ✅ Built — `/track` + `POST /api/complaints/track/` |
-| Transparency reports | ✅ Built — `/reports` + `/api/stats/transparency/` |
-| Profile settings | ✅ Built — `PATCH /api/auth/me/` |
-| Leadership directory | ✅ Built — `/api/leadership/` |
-| Public portal stats | ✅ Built — `/api/stats/public/` |
-| Complaint categories API | ✅ Built — `/api/complaints/categories/` |
-| Transparency suggestion stats | ✅ Built — included in `/api/stats/transparency/` |
-| Public clubs & events pages | ✅ Built — `/clubs` and `/events` |
-| Admin document rename | ✅ Built — `PATCH /api/admin/documents/<pk>/` |
-| Admin news & document upload | ✅ Documents via API + Supabase |
-| Complaint file attachments | ✅ Uploaded to Supabase |
-| Automated tests | ✅ Auth, complaints, password reset, additional features |
-| JWT refresh flow in web | ✅ Access token refresh in API client |
-| File uploads on Railway | ✅ Supabase Storage (configure env vars) |
+| Public complaint tracking + activity timeline | ✅ Built |
+| Complaint SLA (7-day) + overdue alerts | ✅ Built — cron: `notify_overdue_complaints` |
+| Suggestion SLA (7-day) + overdue alerts | ✅ Built — cron: `notify_overdue_suggestions` |
+| Student email verification | ✅ Built |
+| College registry verification | ✅ Built — set `STUDENT_REGISTRY_CSV` or `STUDENT_REGISTRY_API_URL` |
+| Transparency reports + suggestion stats | ✅ Built |
+| Public clubs & events pages | ✅ Built |
+| Admin staff edit (role/ministry) | ✅ Built |
+| Admin system panel (backup, security, cron logs, metrics) | ✅ Built |
+| Swahili / English (public + dashboards) | ✅ Built — toggle in navbar |
+| PWA / Add to Home Screen | ✅ Built |
+| Scheduled backup export | ✅ Built — cron: `export_portal_backup` via `run_daily_jobs.sh` |
+| Playwright E2E smoke tests | ✅ Built — `npm run test:e2e` |
+| Rate limiting + optional Sentry | ✅ Built |
+| Automated tests (API) | ✅ 60+ tests in CI |
+
+### Production configuration still required
+
+| Item | Action |
+|------|--------|
+| SMTP | Password reset, verification, notifications |
+| Supabase | File uploads |
+| SMS | Optional Africa's Talking |
+| Railway cron | Nightly `run_daily_jobs.sh` |
+| Registry CSV/API | Optional — verify real student reg numbers |
+| UptimeRobot | Monitor `/api/health/` |
+| Remove demo accounts | Before campus go-live |
 
 ---
 

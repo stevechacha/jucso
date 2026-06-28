@@ -39,8 +39,13 @@ export function mapComplaint(complaint: ApiComplaint): Complaint {
 }
 
 export function mapSuggestion(suggestion: ApiSuggestion): Suggestion {
-  const { student_name, ...rest } = suggestion;
-  return { ...rest, studentName: student_name };
+  const { student_name, due_at, is_overdue, ...rest } = suggestion;
+  return {
+    ...rest,
+    studentName: student_name,
+    dueAt: due_at,
+    isOverdue: is_overdue ?? false,
+  };
 }
 
 export function mapEvent(event: ApiEvent): Event {

@@ -14,9 +14,10 @@ import { TrackComplaintPanel } from "@/components/complaints/TrackComplaintPanel
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { EmailVerificationBanner } from "@/components/auth/EmailVerificationBanner";
 import { ProfilePanel } from "@/components/profile/ProfilePanel";
+import { useLanguage } from "@/context/LanguageContext";
+import { STUDENT_TABS, type TranslationKey } from "@/i18n/translations";
 
-const TABS = ["overview", "my complaints", "new complaint", "suggestions", "clubs", "events", "profile"] as const;
-type StudentTab = (typeof TABS)[number];
+const DEFAULT_TAB: TranslationKey = "tabStudentOverview";
 
 function formatDate() {
   return new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -29,7 +30,8 @@ export function StudentDashboard() {
 
   if (!user) return null;
 
-  const [tab, setTab] = useDashboardTab(TABS, "overview");
+  const { t } = useLanguage();
+  const [tab, setTab] = useDashboardTab(STUDENT_TABS, DEFAULT_TAB);
   const myComplaints = complaints.filter((c) => c.studentReg === user.reg);
   const mySuggestions = suggestions.filter((s) => s.studentName === user.name);
 
@@ -118,14 +120,15 @@ export function StudentDashboard() {
 
   return (
     <DashboardShell
-      label="Student Portal"
-      title={`Welcome back, ${user.name.split(" ")[0]}`}
-      tabs={[...TABS]}
-      activeTab={tab}
-      onTabChange={(t) => setTab(t as StudentTab)}
+      label={t("studentDashboardLabel")}
+      title={t("welcomeBack", { name: user.name.split(" ")[0] })}
+      tabKeys={STUDENT_TABS}
+      activeTabKey={tab}
+      getTabLabel={(key) => t(key)}
+      onTabChange={setTab}
     >
       <EmailVerificationBanner />
-      {tab === "overview" && (
+      {tab === "tabStudentOverview" && (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             {stats.map((s) => (
@@ -133,14 +136,14 @@ export function StudentDashboard() {
             ))}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-            <Button variant="navy" full onClick={() => setTab("new complaint")}>
-              Submit New Complaint
+            <Button variant="navy" full onClick={() => setTab("tabStudentNewComplaint")}>
+              {t("submitNewComplaint")}
             </Button>
-            <Button variant="teal" full onClick={() => setTab("suggestions")}>
-              Share a Suggestion
+            <Button variant="teal" full onClick={() => setTab("tabStudentSuggestions")}>
+              {t("shareSuggestion")}
             </Button>
-            <Button variant="outline" full onClick={() => setTab("my complaints")}>
-              View My Tickets
+            <Button variant="outline" full onClick={() => setTab("tabStudentMyComplaints")}>
+              {t("viewMyTickets")}
             </Button>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -157,7 +160,7 @@ export function StudentDashboard() {
         </>
       )}
 
-      {tab === "my complaints" && (
+      {tab === "tabStudentMyComplaints" && (
         <div className="bg-white rounded-xl shadow-card overflow-hidden">
           <h2 className="px-5 py-4 border-b border-gray-100 font-display font-bold text-jucso-navy">
             My Complaints ({myComplaints.length})
@@ -166,7 +169,7 @@ export function StudentDashboard() {
         </div>
       )}
 
-      {tab === "new complaint" && (
+      {tab === "tabStudentNewComplaint" && (
         <div className="max-w-lg">
           <div className="bg-white rounded-xl p-7 shadow-card">
             <h3 className="font-display font-bold text-jucso-navy text-lg mb-5">Submit New Complaint</h3>
@@ -243,7 +246,7 @@ export function StudentDashboard() {
         </div>
       )}
 
-      {tab === "suggestions" && (
+      {tab === "tabStudentSuggestions" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl p-6 shadow-card">
             <h3 className="font-display font-bold text-jucso-navy mb-4">Share an Idea</h3>
@@ -308,7 +311,7 @@ export function StudentDashboard() {
         </div>
       )}
 
-      {tab === "clubs" && (
+      {tab === "tabStudentClubs" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {clubs.map((c) => (
             <article key={c.id} className="bg-white rounded-xl p-5 shadow-card flex flex-col">
@@ -344,7 +347,7 @@ export function StudentDashboard() {
         </div>
       )}
 
-      {tab === "events" && (
+      {tab === "tabStudentEvents" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {events.map((e) => {
             const pct = Math.round((e.registered / e.capacity) * 100);
@@ -403,7 +406,7 @@ export function StudentDashboard() {
         </div>
       )}
 
-      {tab === "profile" && <ProfilePanel />}
+      {tab === "tabStudentProfile" && <ProfilePanel />}
     </DashboardShell>
   );
 }
