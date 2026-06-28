@@ -1,6 +1,6 @@
 import { useState } from "react";
+import { ApiError, isApiEnabled } from "@/api/client";
 import { jucsoApi } from "@/api/jucsoApi";
-import { isApiEnabled } from "@/api/client";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/FormFields";
 import { Footer } from "@/components/layout/Footer";
@@ -25,13 +25,23 @@ const EMPTY_FORM: ContactForm = { name: "", email: "", subject: "", message: "" 
 export function ContactPage() {
   const [sent, setSent] = useState(false);
   const [form, setForm] = useState<ContactForm>(EMPTY_FORM);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
 
   const send = async () => {
     if (!form.name || !form.email || !form.message) return;
-    if (isApiEnabled) {
-      await jucsoApi.sendContact(form);
+    setLoading(true);
+    setErr("");
+    try {
+      if (isApiEnabled) {
+        await jucsoApi.sendContact(form);
+      }
+      setSent(true);
+    } catch (error) {
+      setErr(error instanceof ApiError ? error.message : "Could not send your message. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    setSent(true);
   };
 
   return (
@@ -103,8 +113,14 @@ export function ContactPage() {
                   placeholder="Your message here..."
                   required
                 />
-                <Button type="submit" full variant="navy" disabled={!form.name || !form.email || !form.message}>
-                  Send Message
+                {err && <p className="text-xs text-red-600 mb-3">{err}</p>}
+                <Button
+                  type="submit"
+                  full
+                  variant="navy"
+                  disabled={!form.name || !form.email || !form.message || loading}
+                >
+                  {loading ? "Sending…" : "Send Message"}
                 </Button>
               </form>
             ) : (
@@ -119,6 +135,7 @@ export function ContactPage() {
                   onClick={() => {
                     setSent(false);
                     setForm(EMPTY_FORM);
+                    setErr("");
                   }}
                 >
                   Send Another

@@ -10,6 +10,7 @@ import { Input, Select, Textarea } from "@/components/ui/FormFields";
 import { StatCard } from "@/components/ui/StatCard";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { ComplaintTable } from "@/components/complaints/ComplaintTable";
+import { TrackComplaintPanel } from "@/components/complaints/TrackComplaintPanel";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { ProfilePanel } from "@/components/profile/ProfilePanel";
 
@@ -140,11 +141,16 @@ export function StudentDashboard() {
               View My Tickets
             </Button>
           </div>
-          <div className="bg-white rounded-xl shadow-card overflow-hidden">
-            <h2 className="px-5 py-4 border-b border-gray-100 font-display font-bold text-jucso-navy">
-              Recent Complaints
-            </h2>
-            <ComplaintTable complaints={myComplaints.slice(0, 3)} />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div className="lg:col-span-2 bg-white rounded-xl shadow-card overflow-hidden">
+              <h2 className="px-5 py-4 border-b border-gray-100 font-display font-bold text-jucso-navy">
+                Recent Complaints
+              </h2>
+              <ComplaintTable complaints={myComplaints.slice(0, 3)} />
+            </div>
+            <div className="bg-white rounded-xl shadow-card p-5">
+              <TrackComplaintPanel regNumber={user.reg} title="Quick track" />
+            </div>
           </div>
         </>
       )}

@@ -1,6 +1,7 @@
 import { generateStaffTempPassword } from "@/lib/generateTempPassword";
 import { downloadJsonBackup, getLastBackupLabel } from "@/lib/downloadJsonBackup";
 import { exportUsersCsv } from "@/lib/exportUsersCsv";
+import { exportComplaintsCsv } from "@/lib/exportComplaintsCsv";
 import { useDashboardTab } from "@/hooks/useDashboardTab";
 import { useEffect, useState, type FormEvent } from "react";
 import { ApiError } from "@/api/client";
@@ -15,6 +16,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { SuggestionReviewPanel } from "@/components/suggestions/SuggestionReviewPanel";
 import { ProfilePanel } from "@/components/profile/ProfilePanel";
+import { ComplaintTable } from "@/components/complaints/ComplaintTable";
 import type { Club, Event, NewsItem } from "@/types";
 
 function eventDateToInput(dateLabel: string): string {
@@ -1037,6 +1039,8 @@ export function AdminDashboard() {
     },
   ];
 
+  const openComplaints = complaints.filter((c) => c.status !== "Resolved");
+
   return (
     <DashboardShell
       label="Admin Panel"
@@ -1084,6 +1088,21 @@ export function AdminDashboard() {
                 ))}
               </ul>
             </div>
+          </div>
+          <div className="mt-5 bg-white rounded-xl shadow-card overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+              <h2 className="font-display font-bold text-jucso-navy">Open Complaints ({openComplaints.length})</h2>
+              {apiEnabled && openComplaints.length > 0 && (
+                <Button variant="outline" size="sm" onClick={() => exportComplaintsCsv(openComplaints)}>
+                  Export CSV
+                </Button>
+              )}
+            </div>
+            {openComplaints.length === 0 ? (
+              <p className="px-5 py-8 text-center text-gray-400 text-sm">No open complaints.</p>
+            ) : (
+              <ComplaintTable complaints={openComplaints.slice(0, 8)} />
+            )}
           </div>
         </>
       )}

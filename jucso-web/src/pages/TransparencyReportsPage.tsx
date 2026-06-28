@@ -42,7 +42,7 @@ export function TransparencyReportsPage() {
                 <StatCard icon="🔓" value={stats.open_complaints} label="Open" color="#F59E0B" />
                 <StatCard icon="📈" value={`${stats.resolution_rate}%`} label="Overall rate" color="#00B4C6" />
               </div>
-              <div className="bg-white rounded-xl shadow-card p-6">
+              <div className="bg-white rounded-xl shadow-card p-6 mb-8">
                 <h2 className="font-display font-bold text-jucso-navy mb-5">Ministry resolution rates</h2>
                 <div className="space-y-4">
                   {stats.ministry_stats.map((m) => (
@@ -62,6 +62,17 @@ export function TransparencyReportsPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <StatCard icon="💡" value={stats.total_suggestions} label="Suggestions received" color="#F5A623" />
+                <StatCard icon="✅" value={stats.implemented_suggestions} label="Implemented" color="#10B981" />
+                <StatCard icon="⏳" value={stats.pending_suggestions} label="Pending review" color="#6B7280" />
+                <StatCard
+                  icon="📈"
+                  value={`${stats.suggestion_review_rate}%`}
+                  label="Implementation rate"
+                  color="#00B4C6"
+                />
               </div>
             </>
           )}

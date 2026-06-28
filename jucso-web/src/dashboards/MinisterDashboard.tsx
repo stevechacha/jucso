@@ -27,6 +27,7 @@ export function MinisterDashboard() {
   const [forwardMinistry, setForwardMinistry] = useState("");
   const [ministries, setMinistries] = useState<Array<{ id: number; name: string }>>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
 
   useEffect(() => {
     if (!apiEnabled) return;
@@ -77,8 +78,13 @@ export function MinisterDashboard() {
       ? myComplaints.filter((c) => c.status !== "Resolved")
       : myComplaints.filter((c) => c.status === "Resolved");
 
+  const statusFiltered =
+    tab === "incoming" && statusFilter !== "All"
+      ? filtered.filter((c) => c.status === statusFilter)
+      : filtered;
+
   const searched = searchQuery.trim()
-    ? filtered.filter((c) => {
+    ? statusFiltered.filter((c) => {
         const q = searchQuery.toLowerCase();
         return (
           c.id.toLowerCase().includes(q) ||
@@ -87,7 +93,7 @@ export function MinisterDashboard() {
           c.category.toLowerCase().includes(q)
         );
       })
-    : filtered;
+    : statusFiltered;
 
   return (
     <DashboardShell
@@ -125,15 +131,27 @@ export function MinisterDashboard() {
                 Export CSV
               </Button>
             </div>
-            <div className="px-5 py-3 border-b border-gray-50">
+            <div className="px-5 py-3 border-b border-gray-50 flex flex-col sm:flex-row gap-2">
               <input
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by ID, student, category…"
-                className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-jucso-teal"
+                className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-jucso-teal"
                 aria-label="Search complaints"
               />
+              {tab === "incoming" && (
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-jucso-teal bg-white"
+                  aria-label="Filter by status"
+                >
+                  <option value="All">All open</option>
+                  <option value="Pending">Pending</option>
+                  <option value="In Progress">In Progress</option>
+                </select>
+              )}
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">

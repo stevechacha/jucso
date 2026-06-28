@@ -47,7 +47,10 @@ export function NewsPage() {
           </div>
 
           <div className="flex flex-col gap-4">
-            {filtered.map((n) => (
+            {filtered.length === 0 ? (
+              <p className="text-center text-gray-400 text-sm py-10">No announcements in this category yet.</p>
+            ) : (
+              filtered.map((n) => (
               <article
                 key={n.id}
                 className="bg-white rounded-xl p-5 flex gap-4 items-start shadow-card hover:shadow-card-hover transition-shadow"
@@ -67,7 +70,8 @@ export function NewsPage() {
                   <p className="text-gray-500 text-xs leading-relaxed">{n.excerpt}</p>
                 </div>
               </article>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </section>

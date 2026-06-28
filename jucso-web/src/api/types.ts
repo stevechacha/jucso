@@ -117,6 +117,10 @@ export interface TransparencyStatsResponse {
     resolved: number;
     rate: number;
   }>;
+  total_suggestions: number;
+  implemented_suggestions: number;
+  pending_suggestions: number;
+  suggestion_review_rate: number;
 }
 
 export interface PublicStatsResponse {
