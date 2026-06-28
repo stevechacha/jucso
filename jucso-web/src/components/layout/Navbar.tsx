@@ -151,6 +151,7 @@ function PortalNavbar({
   if (!user) return null;
 
   const portalLabel = PORTAL_ROLE_LABELS[user.role];
+  const onDashboard = page === "dashboard";
 
   return (
     <>
@@ -158,18 +159,16 @@ function PortalNavbar({
         <span className="text-[10px] font-bold uppercase tracking-wide text-jucso-teal/80 border border-jucso-teal/30 rounded-full px-2.5 py-1">
           {portalLabel}
         </span>
-        <button
-          type="button"
-          onClick={() => navigate("dashboard")}
-          className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-            page === "dashboard"
-              ? "text-jucso-teal border-b-2 border-jucso-teal rounded-none"
-              : "text-white/60 hover:text-white"
-          }`}
-        >
-          Dashboard
-        </button>
-        <div className="ml-2 pl-3 border-l border-white/10">
+        {!onDashboard && (
+          <button
+            type="button"
+            onClick={() => navigate("dashboard")}
+            className="px-3 py-1.5 rounded-md text-xs font-semibold text-white/60 hover:text-white transition-all cursor-pointer"
+          >
+            Dashboard
+          </button>
+        )}
+        <div className={`${onDashboard ? "" : "ml-2 pl-3 border-l border-white/10"}`}>
           <UserMenu onSignOut={onSignOut} />
         </div>
       </div>
@@ -187,15 +186,15 @@ function PortalNavbar({
       {mobileOpen && (
         <div className="md:hidden absolute left-0 right-0 top-14 bg-jucso-navy-dark border-t border-white/10 px-4 pb-4 shadow-lg">
           <div className="py-2 text-[10px] font-bold uppercase tracking-wide text-jucso-teal">{portalLabel}</div>
-          <button
-            type="button"
-            onClick={() => navigate("dashboard")}
-            className={`block w-full text-left py-2.5 text-sm font-semibold border-b border-white/5 cursor-pointer ${
-              page === "dashboard" ? "text-jucso-teal" : "text-white/60"
-            }`}
-          >
-            Dashboard
-          </button>
+          {!onDashboard && (
+            <button
+              type="button"
+              onClick={() => navigate("dashboard")}
+              className="block w-full text-left py-2.5 text-sm font-semibold border-b border-white/5 cursor-pointer text-white/60"
+            >
+              Dashboard
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {

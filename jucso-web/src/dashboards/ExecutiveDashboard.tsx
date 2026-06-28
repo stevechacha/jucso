@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useDashboardTab } from "@/hooks/useDashboardTab";
 import { jucsoApi, type ExecutiveStats } from "@/api/jucsoApi";
 import { useApp } from "@/context/AppContext";
 import { StatCard } from "@/components/ui/StatCard";
@@ -12,7 +13,7 @@ export function ExecutiveDashboard() {
   const { user, complaints, apiEnabled } = useApp();
   if (!user) return null;
 
-  const [tab, setTab] = useState<ExecutiveTab>("overview");
+  const [tab, setTab] = useDashboardTab(TABS, "overview");
   const [filterMin, setFilterMin] = useState("All");
   const [stats, setStats] = useState<ExecutiveStats | null>(null);
 

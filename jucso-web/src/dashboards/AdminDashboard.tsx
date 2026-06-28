@@ -1,4 +1,5 @@
 import { generateStaffTempPassword } from "@/lib/generateTempPassword";
+import { useDashboardTab } from "@/hooks/useDashboardTab";
 import { useEffect, useState, type FormEvent } from "react";
 import { ApiError } from "@/api/client";
 import { jucsoApi, type AdminOverview, type AdminUserRow } from "@/api/jucsoApi";
@@ -6,7 +7,7 @@ import { DEMO_USERS } from "@/constants/mock-data";
 import { useApp } from "@/context/AppContext";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Input, Select } from "@/components/ui/FormFields";
+import { Input, Select, Textarea } from "@/components/ui/FormFields";
 import { StatCard } from "@/components/ui/StatCard";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 
@@ -249,9 +250,72 @@ function UploadDocumentForm({ onUploaded }: { onUploaded: () => void }) {
   );
 }
 
+function AddNewsForm({ onCreated }: { onCreated: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [excerpt, setExcerpt] = useState("");
+  const [tag, setTag] = useState("Announcement");
+  const [err, setErr] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErr("");
+    setSuccess("");
+    try {
+      await jucsoApi.createNews({ title: title.trim(), excerpt: excerpt.trim(), tag });
+      setSuccess(`Published “${title.trim()}”.`);
+      setTitle("");
+      setExcerpt("");
+      setTag("Announcement");
+      onCreated();
+    } catch (error) {
+      setErr(error instanceof ApiError ? error.message : "Could not publish announcement.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <Button variant="teal" size="sm" onClick={() => setOpen(true)}>
+        + Add Announcement
+      </Button>
+    );
+  }
+
+  return (
+    <div className="mt-4 border border-gray-100 rounded-xl p-4 bg-jucso-slate/40">
+      <h3 className="font-display font-bold text-jucso-navy text-sm mb-3">New announcement</h3>
+      <form onSubmit={(e) => void submit(e)}>
+        <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+        <Textarea label="Summary" value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={3} required />
+        <Select label="Category" value={tag} onChange={(e) => setTag(e.target.value)}>
+          <option value="Announcement">Announcement</option>
+          <option value="Events">Events</option>
+          <option value="Clubs">Clubs</option>
+          <option value="Notice">Notice</option>
+        </Select>
+        {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
+        {success && <p className="text-xs text-emerald-700 mb-2">{success}</p>}
+        <div className="flex gap-2">
+          <Button type="submit" variant="navy" size="sm" disabled={loading}>
+            {loading ? "Publishing…" : "Publish"}
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>
+            Close
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export function AdminDashboard() {
   const { complaints, suggestions, clubs, events, news, documents, apiEnabled, refreshPortalData } = useApp();
-  const [tab, setTab] = useState<AdminTab>("overview");
+  const [tab, setTab] = useDashboardTab(TABS, "overview");
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [adminUsers, setAdminUsers] = useState<AdminUserRow[]>([]);
   const [userPage, setUserPage] = useState(1);
@@ -468,16 +532,17 @@ export function AdminDashboard() {
                       {n.tag} · {n.date}
                     </div>
                   </div>
-                  <Button size="sm" variant="outline">
-                    Edit
-                  </Button>
                 </li>
               ))}
             </ul>
             <div className="mt-4">
-              <Button variant="teal" size="sm">
-                + Add Announcement
-              </Button>
+              {apiEnabled ? (
+                <AddNewsForm onCreated={() => void refreshPortalData()} />
+              ) : (
+                <Button variant="teal" size="sm" disabled>
+                  + Add Announcement
+                </Button>
+              )}
             </div>
           </div>
           <div className="bg-white rounded-xl shadow-card p-5">

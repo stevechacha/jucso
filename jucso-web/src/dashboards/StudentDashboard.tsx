@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useDashboardTab } from "@/hooks/useDashboardTab";
 import { jucsoApi } from "@/api/jucsoApi";
 import { CAT_TO_MINISTRY } from "@/constants/mock-data";
 import { useApp } from "@/context/AppContext";
@@ -24,7 +25,7 @@ export function StudentDashboard() {
 
   if (!user) return null;
 
-  const [tab, setTab] = useState<StudentTab>("overview");
+  const [tab, setTab] = useDashboardTab(TABS, "overview");
   const myComplaints = complaints.filter((c) => c.studentReg === user.reg);
   const mySuggestions = suggestions.filter((s) => s.studentName === user.name);
 
@@ -117,6 +118,17 @@ export function StudentDashboard() {
             {stats.map((s) => (
               <StatCard key={s.lab} icon={s.icon} value={s.val} label={s.lab} color={s.color} />
             ))}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+            <Button variant="navy" full onClick={() => setTab("new complaint")}>
+              Submit New Complaint
+            </Button>
+            <Button variant="teal" full onClick={() => setTab("suggestions")}>
+              Share a Suggestion
+            </Button>
+            <Button variant="outline" full onClick={() => setTab("my complaints")}>
+              View My Tickets
+            </Button>
           </div>
           <div className="bg-white rounded-xl shadow-card overflow-hidden">
             <h2 className="px-5 py-4 border-b border-gray-100 font-display font-bold text-jucso-navy">

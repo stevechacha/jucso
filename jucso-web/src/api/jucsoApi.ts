@@ -236,4 +236,8 @@ export const jucsoApi = {
       downloadUrl: doc.download_url,
     };
   },
+
+  async createNews(data: { title: string; excerpt: string; tag: string; published_at?: string }) {
+    return apiRequest<NewsItem>("/api/admin/news/", { method: "POST", body: data });
+  },
 };

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useDashboardTab } from "@/hooks/useDashboardTab";
 import { jucsoApi } from "@/api/jucsoApi";
 import { useApp } from "@/context/AppContext";
 import type { ComplaintStatus } from "@/types";
@@ -15,7 +16,7 @@ export function MinisterDashboard() {
   const { user, complaints, setComplaints, apiEnabled, refreshPortalData } = useApp();
   if (!user?.ministry) return null;
 
-  const [tab, setTab] = useState<MinisterTab>("incoming");
+  const [tab, setTab] = useDashboardTab(TABS, "incoming");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [responseText, setResponseText] = useState("");
 
