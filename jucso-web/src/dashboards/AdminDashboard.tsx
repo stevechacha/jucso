@@ -152,8 +152,76 @@ function AddStaffForm({ onCreated }: { onCreated: (user: AdminUserRow) => void }
   );
 }
 
+function UploadDocumentForm({ onUploaded }: { onUploaded: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [err, setErr] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !file) {
+      setErr("Document name and file are required.");
+      return;
+    }
+    setLoading(true);
+    setErr("");
+    setSuccess("");
+    try {
+      await jucsoApi.uploadDocument({ name: name.trim(), file });
+      setSuccess(`Uploaded “${name.trim()}”.`);
+      setName("");
+      setFile(null);
+      onUploaded();
+    } catch (error) {
+      setErr(error instanceof ApiError ? error.message : "Upload failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <Button variant="teal" size="sm" onClick={() => setOpen(true)}>
+        + Upload Document
+      </Button>
+    );
+  }
+
+  return (
+    <div className="mt-4 border border-gray-100 rounded-xl p-4 bg-jucso-slate/40">
+      <h3 className="font-display font-bold text-jucso-navy text-sm mb-3">Upload to Supabase Storage</h3>
+      <form onSubmit={(e) => void submit(e)}>
+        <Input label="Document name" value={name} onChange={(e) => setName(e.target.value)} required />
+        <label className="block mb-4">
+          <span className="block text-xs font-semibold text-gray-600 mb-1.5">File</span>
+          <input
+            type="file"
+            accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            className="block w-full text-xs text-gray-600"
+            required
+          />
+        </label>
+        {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
+        {success && <p className="text-xs text-emerald-700 mb-2">{success}</p>}
+        <div className="flex gap-2">
+          <Button type="submit" variant="navy" size="sm" disabled={loading}>
+            {loading ? "Uploading…" : "Upload"}
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>
+            Close
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export function AdminDashboard() {
-  const { complaints, suggestions, clubs, events, news, documents, apiEnabled } = useApp();
+  const { complaints, suggestions, clubs, events, news, documents, apiEnabled, refreshPortalData } = useApp();
   const [tab, setTab] = useState<AdminTab>("overview");
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [adminUsers, setAdminUsers] = useState<AdminUserRow[]>([]);
@@ -401,9 +469,13 @@ export function AdminDashboard() {
               ))}
             </ul>
             <div className="mt-4">
-              <Button variant="teal" size="sm">
-                + Upload Document
-              </Button>
+              {apiEnabled ? (
+                <UploadDocumentForm onUploaded={() => void refreshPortalData()} />
+              ) : (
+                <Button variant="teal" size="sm" disabled>
+                  + Upload Document
+                </Button>
+              )}
             </div>
           </div>
         </div>

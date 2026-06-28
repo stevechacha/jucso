@@ -31,6 +31,7 @@ export function StudentDashboard() {
   const [newCat, setNewCat] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newUrgent, setNewUrgent] = useState(false);
+  const [supportingFile, setSupportingFile] = useState<File | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
   const [sugTitle, setSugTitle] = useState("");
@@ -40,7 +41,12 @@ export function StudentDashboard() {
   const submitComplaint = async () => {
     if (!newCat || !newDesc.trim()) return;
     if (apiEnabled) {
-      await jucsoApi.createComplaint({ category: newCat, description: newDesc, urgent: newUrgent });
+      await jucsoApi.createComplaint({
+        category: newCat,
+        description: newDesc,
+        urgent: newUrgent,
+        supportingDocument: supportingFile ?? undefined,
+      });
       await refreshPortalData();
     } else {
       const c: Complaint = {
@@ -62,6 +68,7 @@ export function StudentDashboard() {
       setNewCat("");
       setNewDesc("");
       setNewUrgent(false);
+      setSupportingFile(null);
     }, 3000);
   };
 
@@ -171,6 +178,18 @@ export function StudentDashboard() {
                     className="rounded"
                   />
                   <span className="text-xs font-semibold text-red-600">Mark as urgent</span>
+                </label>
+                <label className="block mb-4">
+                  <span className="block text-xs font-semibold text-gray-600 mb-1.5">
+                    Supporting document (optional)
+                  </span>
+                  <input
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx"
+                    onChange={(e) => setSupportingFile(e.target.files?.[0] ?? null)}
+                    className="block w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-jucso-slate file:text-jucso-navy file:font-semibold"
+                  />
+                  <span className="text-[10px] text-gray-400 mt-1 block">PDF, Word, or images — max 5 MB</span>
                 </label>
                 <Button full variant="navy" onClick={submitComplaint} disabled={!newCat || !newDesc.trim()}>
                   Submit Complaint

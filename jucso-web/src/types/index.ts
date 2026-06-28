@@ -36,6 +36,7 @@ export interface Complaint {
   studentReg: string;
   response?: string;
   urgent?: boolean;
+  supportingDocumentUrl?: string;
 }
 
 export interface Suggestion {

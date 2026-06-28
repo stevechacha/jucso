@@ -107,10 +107,23 @@ export const jucsoApi = {
     return complaints.map(mapComplaint);
   },
 
-  async createComplaint(data: { category: string; description: string; urgent?: boolean }) {
+  async createComplaint(data: {
+    category: string;
+    description: string;
+    urgent?: boolean;
+    supportingDocument?: File;
+  }) {
+    const form = new FormData();
+    form.append("category", data.category);
+    form.append("description", data.description);
+    form.append("urgent", String(Boolean(data.urgent)));
+    if (data.supportingDocument) {
+      form.append("supporting_document", data.supportingDocument);
+    }
     const complaint = await apiRequest<ApiComplaint>("/api/complaints/", {
       method: "POST",
-      body: data,
+      body: form,
+      isFormData: true,
     });
     return mapComplaint(complaint);
   },
@@ -194,5 +207,25 @@ export const jucsoApi = {
   async getAdminUsers() {
     const users = await apiRequest<ApiUser[]>("/api/admin/users/");
     return users.map(mapAdminUser);
+  },
+
+  async uploadDocument(data: { name: string; file: File; file_type?: string }) {
+    const form = new FormData();
+    form.append("name", data.name);
+    form.append("file", data.file);
+    if (data.file_type) form.append("file_type", data.file_type);
+    const doc = await apiRequest<ApiDocument>("/api/admin/documents/", {
+      method: "POST",
+      body: form,
+      isFormData: true,
+    });
+    return {
+      id: doc.id,
+      name: doc.name,
+      size: doc.size,
+      type: doc.type,
+      date: doc.date,
+      downloadUrl: doc.download_url,
+    };
   },
 };

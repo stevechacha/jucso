@@ -11,8 +11,13 @@ export function mapUser(user: ApiUser): User {
 }
 
 export function mapComplaint(complaint: ApiComplaint): Complaint {
-  const { student_name, student_reg, ...rest } = complaint;
-  return { ...rest, studentName: student_name, studentReg: student_reg };
+  const { student_name, student_reg, supporting_document_url, ...rest } = complaint;
+  return {
+    ...rest,
+    studentName: student_name,
+    studentReg: student_reg,
+    supportingDocumentUrl: supporting_document_url,
+  };
 }
 
 export function mapSuggestion(suggestion: ApiSuggestion): Suggestion {

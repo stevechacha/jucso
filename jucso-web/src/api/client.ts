@@ -39,6 +39,7 @@ export function setToken(token: string | null) {
 interface RequestOptions extends Omit<RequestInit, "body"> {
   body?: unknown;
   auth?: boolean;
+  isFormData?: boolean;
 }
 
 export class ApiError extends Error {
@@ -95,7 +96,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   const headers: Record<string, string> = {
     Accept: "application/json",
-    ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}),
+    ...(options.body !== undefined && !options.isFormData ? { "Content-Type": "application/json" } : {}),
     ...(options.headers as Record<string, string> | undefined),
   };
 
@@ -106,7 +107,12 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    body:
+      options.body === undefined
+        ? undefined
+        : options.isFormData
+          ? (options.body as BodyInit)
+          : JSON.stringify(options.body),
   });
 
   if (response.status === 401 && token) {

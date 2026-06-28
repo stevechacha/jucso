@@ -20,6 +20,7 @@ export interface ApiComplaint {
   student_reg: string;
   response?: string;
   urgent?: boolean;
+  supporting_document_url?: string;
 }
 
 export interface ApiSuggestion {
