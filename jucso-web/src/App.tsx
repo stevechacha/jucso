@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { PUBLIC_PAGES } from "@/constants/mock-data";
 import { apiBaseUrl, isApiEnabled, setUnauthorizedHandler } from "@/api/client";
 import { AppProvider, useApp } from "@/context/AppContext";
 import type { PortalType } from "@/types";
@@ -40,7 +41,14 @@ function DashboardRouter() {
 }
 
 function PageRouter() {
-  const { page, user, openLogin } = useApp();
+  const { page, user, openLogin, setPage } = useApp();
+
+  useEffect(() => {
+    if (!user) return;
+    if ((PUBLIC_PAGES as readonly string[]).includes(page)) {
+      setPage("dashboard");
+    }
+  }, [user, page, setPage]);
 
   if (page === "dashboard") {
     if (!user) {

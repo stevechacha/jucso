@@ -91,6 +91,13 @@ export const CAT_TO_MINISTRY: Record<string, string> = {
 
 export const PUBLIC_PAGES = ["home", "about", "services", "news", "documents", "contact"] as const;
 
+export const PORTAL_ROLE_LABELS = {
+  student: "Student Portal",
+  minister: "Minister Portal",
+  executive: "Executive Portal",
+  admin: "Admin Portal",
+} as const;
+
 export const STATUS_STYLES: Record<string, string> = {
   Pending: "bg-gray-100 text-gray-600",
   "In Progress": "bg-amber-50 text-amber-600",
