@@ -1,5 +1,9 @@
+import { useEffect, useState } from "react";
 import { HOME_STATS, MINISTERS, SERVICE_CARDS } from "@/constants/mock-data";
+import { jucsoApi } from "@/api/jucsoApi";
+import { isApiEnabled } from "@/api/client";
 import { useApp } from "@/context/AppContext";
+import type { LeadershipMember } from "@/types";
 import { Badge, newsTagVariant } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Footer } from "@/components/layout/Footer";
@@ -7,6 +11,19 @@ import { Hero } from "@/components/layout/Hero";
 
 export function HomePage() {
   const { setPage, handleLoginClick, news } = useApp();
+  const [leaders, setLeaders] = useState<LeadershipMember[]>(
+    MINISTERS.map((m) => ({ name: m.name, role: m.role, ministry: "", initials: m.initials })),
+  );
+
+  useEffect(() => {
+    if (!isApiEnabled) return;
+    void jucsoApi
+      .getLeadership()
+      .then((data) => {
+        if (data.length > 0) setLeaders(data);
+      })
+      .catch(console.error);
+  }, []);
 
   return (
     <div>
@@ -32,6 +49,12 @@ export function HomePage() {
             </Button>
             <Button variant="ghost" onClick={() => setPage("about")}>
               Learn More
+            </Button>
+            <Button variant="ghost" onClick={() => setPage("track")}>
+              Track Complaint
+            </Button>
+            <Button variant="ghost" onClick={() => setPage("reports")}>
+              Transparency Reports
             </Button>
           </>
         }
@@ -93,9 +116,9 @@ export function HomePage() {
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {MINISTERS.map((m) => (
+            {leaders.slice(0, 6).map((m) => (
               <article
-                key={m.initials}
+                key={m.initials + m.name}
                 className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-3 hover:bg-white/10 transition-all"
               >
                 <div

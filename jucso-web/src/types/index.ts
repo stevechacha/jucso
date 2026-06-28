@@ -107,3 +107,10 @@ export interface Minister {
   name: string;
   role: string;
 }
+
+export interface LeadershipMember {
+  name: string;
+  role: string;
+  ministry?: string;
+  initials: string;
+}

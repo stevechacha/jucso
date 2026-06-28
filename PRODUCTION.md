@@ -86,11 +86,15 @@ Redeploy after changing `VITE_API_URL` (it is baked in at build time).
 | Feature | Status |
 |---------|--------|
 | Forgot / reset password | ✅ Built — configure SMTP on API |
-| Email / SMS notifications | Not built |
+| Email / SMS notifications | ✅ Built — configure SMTP + Africa's Talking on API |
+| Public complaint tracking | ✅ Built — `/track` + `POST /api/complaints/track/` |
+| Transparency reports | ✅ Built — `/reports` + `/api/stats/transparency/` |
+| Profile settings | ✅ Built — `PATCH /api/auth/me/` |
+| Leadership directory | ✅ Built — `/api/leadership/` |
 | Admin news & document upload | ✅ Documents via API + Supabase |
 | Complaint file attachments | ✅ Uploaded to Supabase |
-| Automated tests | ✅ Auth, complaints, password reset |
-| JWT refresh flow in web | Access token only in localStorage |
+| Automated tests | ✅ Auth, complaints, password reset, additional features |
+| JWT refresh flow in web | ✅ Access token refresh in API client |
 | File uploads on Railway | ✅ Supabase Storage (configure env vars) |
 
 ---

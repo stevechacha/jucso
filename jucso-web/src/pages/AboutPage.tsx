@@ -1,4 +1,8 @@
+import { useEffect, useState } from "react";
 import { MINISTERS } from "@/constants/mock-data";
+import { jucsoApi } from "@/api/jucsoApi";
+import { isApiEnabled } from "@/api/client";
+import type { LeadershipMember } from "@/types";
 import { Badge } from "@/components/ui/Badge";
 import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/layout/Hero";
@@ -30,7 +34,37 @@ const MANDATE_ITEMS = [
   "Advocate for improvements to academic and campus welfare services.",
 ] as const;
 
+const FALLBACK_LEADERS: LeadershipMember[] = [
+  { initials: "NS", name: "Dr. Neema Salim", role: "President", ministry: "" },
+  { initials: "MT", name: "Marcus Tarimo", role: "Vice President", ministry: "" },
+  ...MINISTERS.map((m) => ({ name: m.name, role: m.role, ministry: "", initials: m.initials })),
+];
+
+const ROLE_COLORS: Record<string, string> = {
+  Executive: "#F5A623",
+  President: "#F5A623",
+  "Vice President": "#F5A623",
+};
+
+function roleColor(role: string) {
+  if (role in ROLE_COLORS) return ROLE_COLORS[role];
+  if (role.includes("Minister")) return "#00B4C6";
+  return "#1B2B6B";
+}
+
 export function AboutPage() {
+  const [leaders, setLeaders] = useState<LeadershipMember[]>(FALLBACK_LEADERS);
+
+  useEffect(() => {
+    if (!isApiEnabled) return;
+    void jucsoApi
+      .getLeadership()
+      .then((data) => {
+        if (data.length > 0) setLeaders(data);
+      })
+      .catch(console.error);
+  }, []);
+
   return (
     <div>
       <Hero
@@ -123,30 +157,29 @@ export function AboutPage() {
             <h2 className="heading-display text-2xl md:text-3xl mt-3">The 2026–2027 Cabinet</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              { initials: "NS", name: "Dr. Neema Salim", role: "President", color: "#F5A623" },
-              { initials: "MT", name: "Marcus Tarimo", role: "Vice President", color: "#F5A623" },
-              ...MINISTERS.map((m) => ({ ...m, color: "#00B4C6" })),
-            ].map((p) => (
-              <article
-                key={p.initials}
-                className="flex items-center gap-4 p-4 border border-gray-100 rounded-xl hover:shadow-card transition-shadow"
-              >
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center font-black text-white text-sm shrink-0"
-                  style={{ background: `linear-gradient(135deg,${p.color},#1B2B6B)` }}
-                  aria-hidden
+            {leaders.map((p) => {
+              const color = roleColor(p.role);
+              return (
+                <article
+                  key={`${p.initials}-${p.name}`}
+                  className="flex items-center gap-4 p-4 border border-gray-100 rounded-xl hover:shadow-card transition-shadow"
                 >
-                  {p.initials}
-                </div>
-                <div>
-                  <div className="font-bold text-jucso-navy text-sm">{p.name}</div>
-                  <div className="text-xs mt-0.5" style={{ color: p.color }}>
-                    {p.role}
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center font-black text-white text-sm shrink-0"
+                    style={{ background: `linear-gradient(135deg,${color},#1B2B6B)` }}
+                    aria-hidden
+                  >
+                    {p.initials}
                   </div>
-                </div>
-              </article>
-            ))}
+                  <div>
+                    <div className="font-bold text-jucso-navy text-sm">{p.name}</div>
+                    <div className="text-xs mt-0.5" style={{ color }}>
+                      {p.role}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>

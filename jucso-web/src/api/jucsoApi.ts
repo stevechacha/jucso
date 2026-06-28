@@ -136,6 +136,10 @@ export const jucsoApi = {
     });
   },
 
+  getLeadership() {
+    return apiRequest<import("@/types").LeadershipMember[]>("/api/leadership/", { auth: false });
+  },
+
   async changePassword(data: { current_password: string; new_password: string }) {
     const res = await apiRequest<{ detail: string; user: ApiUser }>("/api/auth/change-password/", {
       method: "POST",
@@ -316,10 +320,36 @@ export const jucsoApi = {
 
   async getContactMessages() {
     const response = await apiRequest<
-      | Array<{ id: string; name: string; email: string; subject: string; message: string; date: string }>
-      | { results: Array<{ id: string; name: string; email: string; subject: string; message: string; date: string }> }
+      | Array<{
+          id: string;
+          name: string;
+          email: string;
+          subject: string;
+          message: string;
+          date: string;
+          is_read: boolean;
+        }>
+      | {
+          results: Array<{
+            id: string;
+            name: string;
+            email: string;
+            subject: string;
+            message: string;
+            date: string;
+            is_read: boolean;
+          }>;
+        }
     >("/api/admin/contact-messages/");
     return Array.isArray(response) ? response : response.results;
+  },
+
+  markContactMessageRead(messageId: string, isRead = true) {
+    const pk = parseInt(messageId.replace(/^MSG-/i, ""), 10);
+    return apiRequest<{ id: string; is_read: boolean }>(`/api/admin/contact-messages/${pk}/`, {
+      method: "PATCH",
+      body: { is_read: isRead },
+    });
   },
 
   async createClub(data: { name: string; description: string; leader: string; category: string }) {
@@ -329,6 +359,14 @@ export const jucsoApi = {
   deleteClub(clubId: string) {
     const pk = parseInt(clubId.replace(/^CLB-/i, ""), 10);
     return apiRequest<void>(`/api/admin/clubs/${pk}/`, { method: "DELETE" });
+  },
+
+  updateClub(
+    clubId: string,
+    data: { name?: string; description?: string; leader?: string; category?: string },
+  ) {
+    const pk = parseInt(clubId.replace(/^CLB-/i, ""), 10);
+    return apiRequest<Club>(`/api/admin/clubs/${pk}/`, { method: "PATCH", body: data });
   },
 
   async createEvent(data: {
@@ -345,6 +383,21 @@ export const jucsoApi = {
   deleteEvent(eventId: string) {
     const pk = parseInt(eventId.replace(/^EVT-/i, ""), 10);
     return apiRequest<void>(`/api/admin/events/${pk}/`, { method: "DELETE" });
+  },
+
+  async updateEvent(
+    eventId: string,
+    data: {
+      title?: string;
+      description?: string;
+      location?: string;
+      event_date?: string;
+      capacity?: number;
+    },
+  ) {
+    const pk = parseInt(eventId.replace(/^EVT-/i, ""), 10);
+    const event = await apiRequest<ApiEvent>(`/api/admin/events/${pk}/`, { method: "PATCH", body: data });
+    return mapEvent(event);
   },
 
   getSystemStatus() {

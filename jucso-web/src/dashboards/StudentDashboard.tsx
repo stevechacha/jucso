@@ -21,7 +21,7 @@ function formatDate() {
 }
 
 export function StudentDashboard() {
-  const { user, complaints, setComplaints, suggestions, setSuggestions, clubs, setClubs, events, setEvents, apiEnabled, refreshPortalData } =
+  const { user, complaints, setComplaints, suggestions, setSuggestions, clubs, setClubs, events, setEvents, apiEnabled, refreshPortalData, setPage } =
     useApp();
 
   if (!user) return null;
@@ -35,6 +35,7 @@ export function StudentDashboard() {
   const [newUrgent, setNewUrgent] = useState(false);
   const [supportingFile, setSupportingFile] = useState<File | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [lastTrackingId, setLastTrackingId] = useState<string | null>(null);
 
   const [sugTitle, setSugTitle] = useState("");
   const [sugDesc, setSugDesc] = useState("");
@@ -43,12 +44,13 @@ export function StudentDashboard() {
   const submitComplaint = async () => {
     if (!newCat || !newDesc.trim()) return;
     if (apiEnabled) {
-      await jucsoApi.createComplaint({
+      const complaint = await jucsoApi.createComplaint({
         category: newCat,
         description: newDesc,
         urgent: newUrgent,
         supportingDocument: supportingFile ?? undefined,
       });
+      setLastTrackingId(complaint.id);
       await refreshPortalData();
     } else {
       const c: Complaint = {
@@ -63,10 +65,12 @@ export function StudentDashboard() {
         urgent: newUrgent,
       };
       setComplaints((prev) => [c, ...prev]);
+      setLastTrackingId(c.id);
     }
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
+      setLastTrackingId(null);
       setNewCat("");
       setNewDesc("");
       setNewUrgent(false);
@@ -159,7 +163,20 @@ export function StudentDashboard() {
                   ✅
                 </div>
                 <div className="font-display font-bold text-emerald-800">Complaint Submitted!</div>
-                <p className="text-emerald-700 text-xs mt-2">Your complaint has been routed to the correct ministry.</p>
+                {lastTrackingId && (
+                  <p className="text-emerald-800 text-sm font-bold mt-3">Tracking ID: {lastTrackingId}</p>
+                )}
+                <p className="text-emerald-700 text-xs mt-2">
+                  Your complaint has been routed to the correct ministry. Save your tracking ID or check status at{" "}
+                  <button
+                    type="button"
+                    className="underline font-semibold"
+                    onClick={() => setPage("track")}
+                  >
+                    Track complaint
+                  </button>
+                  .
+                </p>
               </div>
             ) : (
               <>

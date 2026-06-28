@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDashboardTab } from "@/hooks/useDashboardTab";
+import { exportComplaintsCsv } from "@/lib/exportComplaintsCsv";
 import { jucsoApi } from "@/api/jucsoApi";
 import { useApp } from "@/context/AppContext";
 import type { ComplaintStatus } from "@/types";
@@ -107,9 +108,23 @@ export function MinisterDashboard() {
       {(tab === "incoming" || tab === "resolved") && (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
           <div className="md:col-span-3 bg-white rounded-xl shadow-card overflow-hidden">
-            <h2 className="px-5 py-4 border-b border-gray-100 font-display font-bold text-jucso-navy">
-              {tab === "incoming" ? "Pending & In Progress" : "Resolved Cases"}
-            </h2>
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+              <h2 className="font-display font-bold text-jucso-navy">
+                {tab === "incoming" ? "Pending & In Progress" : "Resolved Cases"}
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  exportComplaintsCsv(
+                    searched,
+                    `jucso-${user.ministry?.toLowerCase().replace(/\s+/g, "-") ?? "ministry"}-complaints.csv`,
+                  )
+                }
+              >
+                Export CSV
+              </Button>
+            </div>
             <div className="px-5 py-3 border-b border-gray-50">
               <input
                 type="search"

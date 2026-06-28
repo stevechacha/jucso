@@ -3,6 +3,7 @@ import { useDashboardTab } from "@/hooks/useDashboardTab";
 import { jucsoApi, type ExecutiveStats } from "@/api/jucsoApi";
 import { useApp } from "@/context/AppContext";
 import { exportComplaintsCsv } from "@/lib/exportComplaintsCsv";
+import { exportSuggestionsCsv } from "@/lib/exportSuggestionsCsv";
 import { Button } from "@/components/ui/Button";
 import { ConfidentialBadge } from "@/components/complaints/ConfidentialBadge";
 import { StatCard } from "@/components/ui/StatCard";
@@ -20,6 +21,8 @@ export function ExecutiveDashboard() {
 
   const [tab, setTab] = useDashboardTab(TABS, "overview");
   const [filterMin, setFilterMin] = useState("All");
+  const [filterStatus, setFilterStatus] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState<ExecutiveStats | null>(null);
 
   useEffect(() => {
@@ -28,7 +31,18 @@ export function ExecutiveDashboard() {
   }, [apiEnabled, complaints]);
 
   const ministries = [...new Set(complaints.map((c) => c.ministry))];
-  const filtered = filterMin === "All" ? complaints : complaints.filter((c) => c.ministry === filterMin);
+  const filtered = complaints.filter((c) => {
+    if (filterMin !== "All" && c.ministry !== filterMin) return false;
+    if (filterStatus !== "All" && c.status !== filterStatus) return false;
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      c.id.toLowerCase().includes(q) ||
+      c.studentName.toLowerCase().includes(q) ||
+      c.category.toLowerCase().includes(q) ||
+      c.description.toLowerCase().includes(q)
+    );
+  });
 
   const miniStats =
     stats?.ministry_stats ??
@@ -141,6 +155,25 @@ export function ExecutiveDashboard() {
               <Button size="sm" variant="outline" onClick={() => exportComplaintsCsv(filtered)}>
                 Export CSV
               </Button>
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search complaints…"
+                className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-jucso-teal"
+                aria-label="Search complaints"
+              />
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-jucso-teal"
+                aria-label="Filter by status"
+              >
+                <option value="All">All statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Resolved">Resolved</option>
+              </select>
               <select
               value={filterMin}
               onChange={(e) => setFilterMin(e.target.value)}
@@ -197,11 +230,18 @@ export function ExecutiveDashboard() {
       )}
 
       {tab === "suggestions" && (
-        <SuggestionReviewPanel
-          suggestions={suggestions}
-          apiEnabled={apiEnabled}
-          onUpdated={() => void refreshPortalData()}
-        />
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <Button size="sm" variant="outline" onClick={() => exportSuggestionsCsv(suggestions)}>
+              Export suggestions CSV
+            </Button>
+          </div>
+          <SuggestionReviewPanel
+            suggestions={suggestions}
+            apiEnabled={apiEnabled}
+            onUpdated={() => void refreshPortalData()}
+          />
+        </div>
       )}
 
       {tab === "ministry stats" && (

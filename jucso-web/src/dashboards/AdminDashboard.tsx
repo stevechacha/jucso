@@ -14,7 +14,13 @@ import { StatCard } from "@/components/ui/StatCard";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { SuggestionReviewPanel } from "@/components/suggestions/SuggestionReviewPanel";
 import { ProfilePanel } from "@/components/profile/ProfilePanel";
-import type { NewsItem } from "@/types";
+import type { Club, Event, NewsItem } from "@/types";
+
+function eventDateToInput(dateLabel: string): string {
+  const parsed = new Date(dateLabel);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return parsed.toISOString().slice(0, 10);
+}
 
 const TABS = ["overview", "users", "content", "system", "profile"] as const;
 type AdminTab = (typeof TABS)[number];
@@ -453,21 +459,51 @@ function SystemToolsPanel({ apiEnabled }: { apiEnabled: boolean }) {
 
 function ContactInboxPanel() {
   const [messages, setMessages] = useState<
-    Array<{ id: string; name: string; email: string; subject: string; message: string; date: string }>
+    Array<{
+      id: string;
+      name: string;
+      email: string;
+      subject: string;
+      message: string;
+      date: string;
+      is_read: boolean;
+    }>
   >([]);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = () => {
     void jucsoApi
       .getContactMessages()
       .then(setMessages)
       .catch(console.error)
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
   }, []);
+
+  const markRead = async (id: string) => {
+    setUpdatingId(id);
+    try {
+      await jucsoApi.markContactMessageRead(id, true);
+      setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, is_read: true } : m)));
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const unread = messages.filter((m) => !m.is_read).length;
 
   return (
     <div className="bg-white rounded-xl shadow-card p-5">
-      <h2 className="font-display font-bold text-jucso-navy mb-4">Contact Inbox ({messages.length})</h2>
+      <h2 className="font-display font-bold text-jucso-navy mb-4">
+        Contact Inbox ({messages.length}
+        {unread > 0 ? ` · ${unread} unread` : ""})
+      </h2>
       {loading ? (
         <p className="text-gray-400 text-sm">Loading messages…</p>
       ) : messages.length === 0 ? (
@@ -475,20 +511,156 @@ function ContactInboxPanel() {
       ) : (
         <ul className="max-h-80 overflow-y-auto">
           {messages.map((m) => (
-            <li key={m.id} className="py-3 border-b border-gray-50 last:border-0">
+            <li
+              key={m.id}
+              className={`py-3 border-b border-gray-50 last:border-0 ${m.is_read ? "opacity-70" : "bg-indigo-50/40 -mx-2 px-2 rounded-lg"}`}
+            >
               <div className="flex justify-between gap-2 text-xs mb-1">
-                <span className="font-semibold text-jucso-navy">{m.subject}</span>
+                <span className="font-semibold text-jucso-navy">{m.subject || "(No subject)"}</span>
                 <span className="text-gray-400 whitespace-nowrap">{m.date}</span>
               </div>
               <div className="text-[10px] text-gray-500 mb-1">
                 {m.name} · {m.email}
               </div>
-              <p className="text-xs text-gray-600 leading-relaxed">{m.message}</p>
+              <p className="text-xs text-gray-600 leading-relaxed mb-2">{m.message}</p>
+              {!m.is_read && (
+                <Button size="sm" variant="outline" disabled={updatingId === m.id} onClick={() => void markRead(m.id)}>
+                  {updatingId === m.id ? "…" : "Mark as read"}
+                </Button>
+              )}
             </li>
           ))}
         </ul>
       )}
     </div>
+  );
+}
+
+function EditClubForm({
+  item,
+  onSaved,
+  onCancel,
+}: {
+  item: Club;
+  onSaved: () => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState(item.name);
+  const [leader, setLeader] = useState(item.leader);
+  const [category, setCategory] = useState(item.category);
+  const [description, setDescription] = useState(item.description);
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErr("");
+    try {
+      await jucsoApi.updateClub(item.id, {
+        name: name.trim(),
+        leader: leader.trim(),
+        category,
+        description: description.trim(),
+      });
+      onSaved();
+    } catch (error) {
+      setErr(error instanceof ApiError ? error.message : "Could not update club.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={(e) => void submit(e)} className="mt-2 border border-indigo-100 rounded-lg p-3 bg-indigo-50/40">
+      <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+      <Input label="Leader" value={leader} onChange={(e) => setLeader(e.target.value)} required />
+      <Select label="Category" value={category} onChange={(e) => setCategory(e.target.value)}>
+        <option value="Academic">Academic</option>
+        <option value="Sports">Sports</option>
+        <option value="Arts">Arts</option>
+        <option value="Social">Social</option>
+      </Select>
+      <Textarea
+        label="Description"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        rows={2}
+        required
+      />
+      {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
+      <div className="flex gap-2">
+        <Button type="submit" variant="navy" size="sm" disabled={loading}>
+          {loading ? "Saving…" : "Save"}
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function EditEventForm({
+  item,
+  onSaved,
+  onCancel,
+}: {
+  item: Event;
+  onSaved: () => void;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState(item.title);
+  const [location, setLocation] = useState(item.location);
+  const [eventDate, setEventDate] = useState(eventDateToInput(item.date));
+  const [capacity, setCapacity] = useState(String(item.capacity));
+  const [description, setDescription] = useState(item.description);
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErr("");
+    try {
+      await jucsoApi.updateEvent(item.id, {
+        title: title.trim(),
+        location: location.trim(),
+        event_date: eventDate,
+        capacity: parseInt(capacity, 10),
+        description: description.trim(),
+      });
+      onSaved();
+    } catch (error) {
+      setErr(error instanceof ApiError ? error.message : "Could not update event.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={(e) => void submit(e)} className="mt-2 border border-indigo-100 rounded-lg p-3 bg-indigo-50/40">
+      <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+      <Input label="Location" value={location} onChange={(e) => setLocation(e.target.value)} required />
+      <Input label="Date" type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
+      <Input label="Capacity" type="number" min={1} value={capacity} onChange={(e) => setCapacity(e.target.value)} required />
+      <Textarea
+        label="Description"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        rows={2}
+        required
+      />
+      {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
+      <div className="flex gap-2">
+        <Button type="submit" variant="navy" size="sm" disabled={loading}>
+          {loading ? "Saving…" : "Save"}
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </form>
   );
 }
 
@@ -662,6 +834,8 @@ export function AdminDashboard() {
   const [systemStatus, setSystemStatus] = useState<AdminSystemStatusResponse | null>(null);
   const [deletingClubId, setDeletingClubId] = useState<string | null>(null);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
+  const [editingClubId, setEditingClubId] = useState<string | null>(null);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!apiEnabled) return;
@@ -1081,20 +1255,41 @@ export function AdminDashboard() {
               <h2 className="font-display font-bold text-jucso-navy mb-4">Clubs ({clubs.length})</h2>
               <ul className="mb-4 max-h-40 overflow-y-auto">
                 {clubs.slice(0, 8).map((c) => (
-                  <li key={c.id} className="py-2 border-b border-gray-50 last:border-0 text-xs flex justify-between gap-2">
-                    <div>
-                      <div className="font-semibold text-jucso-navy">{c.name}</div>
-                      <div className="text-gray-400 text-[10px]">{c.category} · {c.members} members</div>
+                  <li key={c.id} className="py-2 border-b border-gray-50 last:border-0 text-xs">
+                    <div className="flex justify-between gap-2">
+                      <div>
+                        <div className="font-semibold text-jucso-navy">{c.name}</div>
+                        <div className="text-gray-400 text-[10px]">{c.category} · {c.members} members</div>
+                      </div>
+                      {apiEnabled && (
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setEditingClubId(editingClubId === c.id ? null : c.id)}
+                          >
+                            {editingClubId === c.id ? "Close" : "Edit"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={deletingClubId === c.id}
+                            onClick={() => void removeClub(c.id)}
+                          >
+                            {deletingClubId === c.id ? "…" : "Remove"}
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                    {apiEnabled && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={deletingClubId === c.id}
-                        onClick={() => void removeClub(c.id)}
-                      >
-                        {deletingClubId === c.id ? "…" : "Remove"}
-                      </Button>
+                    {editingClubId === c.id && (
+                      <EditClubForm
+                        item={c}
+                        onCancel={() => setEditingClubId(null)}
+                        onSaved={() => {
+                          setEditingClubId(null);
+                          void refreshPortalData();
+                        }}
+                      />
                     )}
                   </li>
                 ))}
@@ -1105,20 +1300,41 @@ export function AdminDashboard() {
               <h2 className="font-display font-bold text-jucso-navy mb-4">Events ({events.length})</h2>
               <ul className="mb-4 max-h-40 overflow-y-auto">
                 {events.slice(0, 8).map((e) => (
-                  <li key={e.id} className="py-2 border-b border-gray-50 last:border-0 text-xs flex justify-between gap-2">
-                    <div>
-                      <div className="font-semibold text-jucso-navy">{e.title}</div>
-                      <div className="text-gray-400 text-[10px]">{e.date} · {e.location}</div>
+                  <li key={e.id} className="py-2 border-b border-gray-50 last:border-0 text-xs">
+                    <div className="flex justify-between gap-2">
+                      <div>
+                        <div className="font-semibold text-jucso-navy">{e.title}</div>
+                        <div className="text-gray-400 text-[10px]">{e.date} · {e.location}</div>
+                      </div>
+                      {apiEnabled && (
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setEditingEventId(editingEventId === e.id ? null : e.id)}
+                          >
+                            {editingEventId === e.id ? "Close" : "Edit"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={deletingEventId === e.id}
+                            onClick={() => void removeEvent(e.id)}
+                          >
+                            {deletingEventId === e.id ? "…" : "Remove"}
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                    {apiEnabled && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={deletingEventId === e.id}
-                        onClick={() => void removeEvent(e.id)}
-                      >
-                        {deletingEventId === e.id ? "…" : "Remove"}
-                      </Button>
+                    {editingEventId === e.id && (
+                      <EditEventForm
+                        item={e}
+                        onCancel={() => setEditingEventId(null)}
+                        onSaved={() => {
+                          setEditingEventId(null);
+                          void refreshPortalData();
+                        }}
+                      />
                     )}
                   </li>
                 ))}
