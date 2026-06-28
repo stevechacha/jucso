@@ -22,15 +22,18 @@ export function Navbar() {
   const navigate = (target: PageId) => {
     setPage(target);
     setMobileOpen(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  const navPages = user
+    ? (["dashboard", ...PUBLIC_PAGES] as const)
+    : PUBLIC_PAGES;
 
   return (
     <nav className="bg-jucso-navy-dark sticky top-0 z-40 shadow-lg backdrop-blur-sm" aria-label="Main">
       <div className="flex items-center justify-between px-4 h-14 max-w-7xl mx-auto">
         <button
           type="button"
-          onClick={() => navigate("home")}
+          onClick={() => navigate(user ? "dashboard" : "home")}
           className="flex items-center gap-2.5 cursor-pointer group"
           aria-label="JUCSO home"
         >
@@ -46,7 +49,7 @@ export function Navbar() {
         </button>
 
         <div className="hidden md:flex items-center gap-0.5">
-          {PUBLIC_PAGES.map((p) => (
+          {navPages.map((p) => (
             <button
               key={p}
               type="button"
@@ -54,24 +57,17 @@ export function Navbar() {
               className={`px-3 py-1.5 rounded-md text-xs font-semibold capitalize transition-all cursor-pointer ${
                 page === p
                   ? "text-jucso-teal border-b-2 border-jucso-teal rounded-none"
-                  : "text-white/60 hover:text-white"
+                  : p === "dashboard" && user
+                    ? "text-jucso-gold hover:text-white"
+                    : "text-white/60 hover:text-white"
               }`}
             >
-              {p}
+              {p === "dashboard" ? "Dashboard" : p}
             </button>
           ))}
 
           {user ? (
-            <div className="flex items-center gap-2 ml-3">
-              <button
-                type="button"
-                onClick={() => navigate("dashboard")}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                  page === "dashboard" ? "text-jucso-teal" : "text-white/60 hover:text-white"
-                }`}
-              >
-                Dashboard
-              </button>
+            <div className="flex items-center gap-2 ml-3 pl-3 border-l border-white/10">
               <div
                 className="w-8 h-8 rounded-full bg-jucso-teal flex items-center justify-center text-white text-xs font-black"
                 title={user.name}
@@ -112,16 +108,16 @@ export function Navbar() {
 
       {mobileOpen && (
         <div className="md:hidden bg-jucso-navy-dark border-t border-white/10 px-4 pb-4">
-          {[...PUBLIC_PAGES, ...(user ? (["dashboard"] as const) : [])].map((p) => (
+          {navPages.map((p) => (
             <button
               key={p}
               type="button"
               onClick={() => navigate(p)}
               className={`block w-full text-left py-2.5 text-sm font-semibold capitalize border-b border-white/5 cursor-pointer ${
-                page === p ? "text-jucso-teal" : "text-white/60"
+                page === p ? "text-jucso-teal" : p === "dashboard" && user ? "text-jucso-gold" : "text-white/60"
               }`}
             >
-              {p}
+              {p === "dashboard" ? "Dashboard" : p}
             </button>
           ))}
           {user ? (

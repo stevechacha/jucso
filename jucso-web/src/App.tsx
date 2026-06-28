@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { pathToPage, syncUrlForPage } from "@/lib/routing";
 import {
   CLUBS,
   DOCS,
@@ -70,8 +71,28 @@ function PageRouter() {
   }
 }
 
+function usePageNavigation(): [PageId, Dispatch<SetStateAction<PageId>>] {
+  const [page, setPageState] = useState<PageId>(() => pathToPage(window.location.pathname));
+
+  const setPage: Dispatch<SetStateAction<PageId>> = useCallback((value) => {
+    setPageState((current) => {
+      const next = typeof value === "function" ? value(current) : value;
+      syncUrlForPage(next);
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    const onPopState = () => setPageState(pathToPage(window.location.pathname));
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  return [page, setPage];
+}
+
 export default function App() {
-  const [page, setPage] = useState<PageId>("home");
+  const [page, setPage] = usePageNavigation();
   const [user, setUser] = useState<User | null>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
@@ -129,22 +150,34 @@ export default function App() {
     void jucsoApi
       .me()
       .then((sessionUser) => {
+        if (!sessionUser) return;
         setUser(sessionUser);
+        setPage("dashboard");
+        syncUrlForPage("dashboard", true);
+        window.scrollTo({ top: 0, behavior: "instant" });
       })
       .catch(() => setUser(null));
-  }, []);
+  }, [setPage]);
+
+  const goToPage = useCallback(
+    (target: PageId) => {
+      setPage(target);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    [setPage],
+  );
 
   const login = (u: User) => {
     setUser(u);
     setShowLogin(false);
-    setPage("dashboard");
+    goToPage("dashboard");
     void refreshPortalData(u);
   };
 
   const logout = () => {
     jucsoApi.logout();
     setUser(null);
-    setPage("home");
+    goToPage("home");
     setComplaints(INITIAL_COMPLAINTS);
     setSuggestions(INITIAL_SUGGESTIONS);
     setClubs(CLUBS);
@@ -169,7 +202,7 @@ export default function App() {
   };
 
   const handleLoginClick = (portal: PortalType = "student") => {
-    if (user) setPage("dashboard");
+    if (user) goToPage("dashboard");
     else openLogin(portal);
   };
 
@@ -177,7 +210,7 @@ export default function App() {
     <AppProvider
       value={{
         page,
-        setPage,
+        setPage: goToPage,
         user,
         login,
         logout,
