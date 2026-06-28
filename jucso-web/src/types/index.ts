@@ -23,6 +23,7 @@ export interface User {
   reg: string;
   role: Role;
   ministry?: string;
+  mustChangePassword?: boolean;
 }
 
 export interface Complaint {

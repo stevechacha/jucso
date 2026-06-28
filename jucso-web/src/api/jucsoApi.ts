@@ -102,6 +102,14 @@ export const jucsoApi = {
     return apiRequest<ApiUser>("/api/auth/me/").then(mapUser);
   },
 
+  async changePassword(data: { current_password: string; new_password: string }) {
+    const res = await apiRequest<{ detail: string; user: ApiUser }>("/api/auth/change-password/", {
+      method: "POST",
+      body: data,
+    });
+    return { message: res.detail, user: mapUser(res.user) };
+  },
+
   async getComplaints() {
     const complaints = await apiRequest<ApiComplaint[]>("/api/complaints/");
     return complaints.map(mapComplaint);

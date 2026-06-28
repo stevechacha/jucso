@@ -6,6 +6,7 @@ import type { PortalType } from "@/types";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { ForgotPasswordModal } from "@/components/auth/ForgotPasswordModal";
 import { RegisterModal } from "@/components/auth/RegisterModal";
+import { ForcePasswordChangeScreen } from "@/components/auth/ForcePasswordChangeScreen";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { ApiStatusBanner } from "@/components/layout/ApiStatusBanner";
 import { Navbar } from "@/components/layout/Navbar";
@@ -46,11 +47,15 @@ function PageRouter() {
   const { page, user, openLogin, setPage } = useApp();
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || user.mustChangePassword) return;
     if ((PUBLIC_PAGES as readonly string[]).includes(page)) {
       setPage("dashboard");
     }
   }, [user, page, setPage]);
+
+  if (user?.mustChangePassword) {
+    return <ForcePasswordChangeScreen />;
+  }
 
   if (page === "dashboard") {
     if (!user) {
@@ -123,7 +128,7 @@ export default function App() {
     if (isApiEnabled) void refreshPortalData(null);
   }, [goToPage, resetPrivateData, refreshPortalData]);
 
-  const { user, sessionLoading, login: authLogin, logout: authLogout } = useAuthSession({
+  const { user, sessionLoading, login: authLogin, logout: authLogout, setUser } = useAuthSession({
     onNavigate: goToPage,
     onUnauthorized: handleUnauthorized,
   });
@@ -180,6 +185,7 @@ export default function App() {
         page,
         setPage: goToPage,
         user,
+        setUser,
         sessionLoading,
         login,
         logout,

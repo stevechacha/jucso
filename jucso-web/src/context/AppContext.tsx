@@ -5,6 +5,7 @@ export interface AppContextValue {
   page: PageId;
   setPage: (page: PageId) => void;
   user: User | null;
+  setUser: (user: User | null) => void;
   sessionLoading: boolean;
   login: (user: User) => void;
   logout: () => void;

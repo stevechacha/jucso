@@ -1,3 +1,4 @@
+import { generateStaffTempPassword } from "@/lib/generateTempPassword";
 import { useEffect, useState, type FormEvent } from "react";
 import { ApiError } from "@/api/client";
 import { jucsoApi, type AdminOverview, type AdminUserRow } from "@/api/jucsoApi";
@@ -55,6 +56,7 @@ function AddStaffForm({ onCreated }: { onCreated: (user: AdminUserRow) => void }
   useEffect(() => {
     if (!open) return;
     void jucsoApi.getMinistries().then(setMinistries).catch(console.error);
+    setForm((prev) => (prev.password ? prev : { ...prev, password: generateStaffTempPassword() }));
   }, [open]);
 
   const update = (field: keyof typeof form, value: string) => {
@@ -79,7 +81,9 @@ function AddStaffForm({ onCreated }: { onCreated: (user: AdminUserRow) => void }
         phone_number: form.phone_number.trim() || undefined,
       });
       onCreated(user);
-      setSuccess(`${user.name} added as ${user.role}.`);
+      setSuccess(
+        `${user.name} added as ${user.role}. Share the temporary password in person or a secure channel — they must change it on first login.`,
+      );
       setForm({
         reg_number: "",
         first_name: "",
@@ -140,7 +144,32 @@ function AddStaffForm({ onCreated }: { onCreated: (user: AdminUserRow) => void }
               ))}
             </Select>
           )}
-          <Input label="Temporary Password" type="password" value={form.password} onChange={(e) => update("password", e.target.value)} minLength={8} required />
+          <div className="md:col-span-2">
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <Input
+                  label="Temporary Password"
+                  type="text"
+                  value={form.password}
+                  onChange={(e) => update("password", e.target.value)}
+                  minLength={8}
+                  required
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mb-0.5 shrink-0"
+                onClick={() => update("password", generateStaffTempPassword())}
+              >
+                Regenerate
+              </Button>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-1">
+              Auto-generated format: JUCSO-xxxxxxxxxx! — share once, then the staff member sets their own password at first login.
+            </p>
+          </div>
         </div>
         {err && <p className="text-xs text-red-600 mb-3 bg-red-50 rounded-lg p-2">{err}</p>}
         {success && <p className="text-xs text-emerald-700 mb-3 bg-emerald-50 rounded-lg p-2">{success}</p>}
