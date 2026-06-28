@@ -81,6 +81,7 @@ export interface Document {
   size: string;
   type: string;
   date: string;
+  downloadUrl?: string;
 }
 
 export interface Minister {

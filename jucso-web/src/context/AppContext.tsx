@@ -13,6 +13,9 @@ interface AppContextValue {
   closeLogin: () => void;
   handleLoginClick: (portal?: PortalType) => void;
   apiEnabled: boolean;
+  apiBaseUrl: string;
+  dataLoading: boolean;
+  dataError: string | null;
   refreshPortalData: () => Promise<void>;
   complaints: Complaint[];
   setComplaints: React.Dispatch<React.SetStateAction<Complaint[]>>;

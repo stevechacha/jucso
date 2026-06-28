@@ -1,4 +1,4 @@
-import { apiRequest, setToken } from "./client";
+import { apiRequest, getToken, setToken } from "./client";
 import {
   mapAdminUser,
   mapComplaint,
@@ -7,7 +7,7 @@ import {
   mapUser,
   type AdminUserRow,
 } from "./mappers";
-import type { Club, Complaint, Document, NewsItem, PortalType } from "@/types";
+import type { Club, Complaint, NewsItem, PortalType } from "@/types";
 
 interface LoginResponse {
   access: string;
@@ -96,7 +96,7 @@ export const jucsoApi = {
   },
 
   getClubs() {
-    return apiRequest<Club[]>("/api/clubs/", { auth: false });
+    return apiRequest<Club[]>("/api/clubs/", { auth: Boolean(getToken()) });
   },
 
   toggleClubJoin(clubId: string) {
@@ -105,7 +105,9 @@ export const jucsoApi = {
   },
 
   async getEvents() {
-    const events = await apiRequest<Parameters<typeof mapEvent>[0][]>("/api/events/", { auth: false });
+    const events = await apiRequest<Parameters<typeof mapEvent>[0][]>("/api/events/", {
+      auth: Boolean(getToken()),
+    });
     return events.map(mapEvent);
   },
 
@@ -122,8 +124,25 @@ export const jucsoApi = {
     return apiRequest<NewsItem[]>(`/api/news/${query}`, { auth: false });
   },
 
-  getDocuments() {
-    return apiRequest<Document[]>("/api/documents/", { auth: false });
+  async getDocuments() {
+    const docs = await apiRequest<
+      Array<{
+        id: string;
+        name: string;
+        size: string;
+        type: string;
+        date: string;
+        download_url?: string;
+      }>
+    >("/api/documents/", { auth: false });
+    return docs.map((doc) => ({
+      id: doc.id,
+      name: doc.name,
+      size: doc.size,
+      type: doc.type,
+      date: doc.date,
+      downloadUrl: doc.download_url,
+    }));
   },
 
   sendContact(data: { name: string; email: string; subject: string; message: string }) {

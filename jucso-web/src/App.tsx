@@ -7,11 +7,12 @@ import {
   INITIAL_SUGGESTIONS,
   NEWS,
 } from "@/constants/mock-data";
-import { isApiEnabled } from "@/api/client";
+import { apiBaseUrl, isApiEnabled } from "@/api/client";
 import { jucsoApi } from "@/api/jucsoApi";
 import { AppProvider, useApp } from "@/context/AppContext";
 import type { Document, NewsItem, PageId, PortalType, User } from "@/types";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { ApiStatusBanner } from "@/components/layout/ApiStatusBanner";
 import { Navbar } from "@/components/layout/Navbar";
 import { AdminDashboard } from "@/dashboards/AdminDashboard";
 import { ExecutiveDashboard } from "@/dashboards/ExecutiveDashboard";
@@ -73,6 +74,8 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [loginPortal, setLoginPortal] = useState<PortalType>("student");
+  const [dataLoading, setDataLoading] = useState(isApiEnabled);
+  const [dataError, setDataError] = useState<string | null>(null);
   const [complaints, setComplaints] = useState(INITIAL_COMPLAINTS);
   const [suggestions, setSuggestions] = useState(INITIAL_SUGGESTIONS);
   const [clubs, setClubs] = useState(CLUBS);
@@ -80,8 +83,11 @@ export default function App() {
   const [news, setNews] = useState<NewsItem[]>(NEWS);
   const [documents, setDocuments] = useState<Document[]>(DOCS);
 
-  const refreshPortalData = useCallback(async () => {
+  const refreshPortalData = useCallback(async (activeUser: User | null = user) => {
     if (!isApiEnabled) return;
+
+    setDataLoading(true);
+    setDataError(null);
 
     try {
       const [newsData, clubsData, eventsData, docsData] = await Promise.all([
@@ -95,7 +101,7 @@ export default function App() {
       setEvents(eventsData);
       setDocuments(docsData);
 
-      if (user) {
+      if (activeUser) {
         const [complaintsData, suggestionsData] = await Promise.all([
           jucsoApi.getComplaints(),
           jucsoApi.getSuggestions(),
@@ -104,24 +110,33 @@ export default function App() {
         setSuggestions(suggestionsData);
       }
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not load portal data";
+      setDataError(message);
       console.error("Failed to sync portal data:", error);
+    } finally {
+      setDataLoading(false);
     }
   }, [user]);
 
   useEffect(() => {
-    void refreshPortalData();
-  }, [refreshPortalData]);
+    void refreshPortalData(user);
+  }, [refreshPortalData, user]);
 
   useEffect(() => {
     if (!isApiEnabled) return;
-    void jucsoApi.me().then(setUser).catch(() => setUser(null));
+    void jucsoApi
+      .me()
+      .then((sessionUser) => {
+        setUser(sessionUser);
+      })
+      .catch(() => setUser(null));
   }, []);
 
   const login = (u: User) => {
     setUser(u);
     setShowLogin(false);
     setPage("dashboard");
-    void refreshPortalData();
+    void refreshPortalData(u);
   };
 
   const logout = () => {
@@ -130,6 +145,14 @@ export default function App() {
     setPage("home");
     setComplaints(INITIAL_COMPLAINTS);
     setSuggestions(INITIAL_SUGGESTIONS);
+    setClubs(CLUBS);
+    setEvents(EVENTS);
+    if (!isApiEnabled) {
+      setNews(NEWS);
+      setDocuments(DOCS);
+    } else {
+      void refreshPortalData(null);
+    }
   };
 
   const openLogin = (portal: PortalType = "student") => {
@@ -156,7 +179,10 @@ export default function App() {
         closeLogin: () => setShowLogin(false),
         handleLoginClick,
         apiEnabled: isApiEnabled,
-        refreshPortalData,
+        apiBaseUrl,
+        dataLoading,
+        dataError,
+        refreshPortalData: () => refreshPortalData(user),
         complaints,
         setComplaints,
         suggestions,
@@ -170,6 +196,7 @@ export default function App() {
       }}
     >
       <div className="min-h-screen bg-jucso-slate">
+        <ApiStatusBanner />
         <Navbar />
         <PageRouter />
         {showLogin && (

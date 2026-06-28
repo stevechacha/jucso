@@ -1,6 +1,24 @@
-const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/$/, "") ?? "";
 const TOKEN_KEY = "jucso_access_token";
 
+function resolveApiBase(): string {
+  const configured = import.meta.env.VITE_API_URL?.replace(/\/$/, "");
+  if (configured) return configured;
+
+  if (import.meta.env.DEV) {
+    return "http://localhost:8000";
+  }
+
+  const { protocol, hostname } = window.location;
+  if (hostname.includes("jucso-web")) {
+    return `${protocol}//${hostname.replace("jucso-web", "jucso-api")}`;
+  }
+
+  return "";
+}
+
+const API_BASE = resolveApiBase();
+
+export const apiBaseUrl = API_BASE;
 export const isApiEnabled = Boolean(API_BASE);
 
 export function getToken(): string | null {
@@ -27,6 +45,28 @@ export class ApiError extends Error {
   }
 }
 
+function parseErrorDetail(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") return null;
+
+  if ("detail" in payload) {
+    const detail = (payload as { detail: unknown }).detail;
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail)) return detail.map(String).join(" ");
+  }
+
+  const messages = Object.entries(payload as Record<string, unknown>).flatMap(([field, value]) => {
+    if (field === "non_field_errors" && Array.isArray(value)) {
+      return value.map(String);
+    }
+    if (Array.isArray(value)) {
+      return value.map((item) => `${field}: ${String(item)}`);
+    }
+    return [];
+  });
+
+  return messages.length > 0 ? messages.join(" ") : null;
+}
+
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   if (!API_BASE) {
     throw new ApiError("API URL is not configured", 0);
@@ -38,7 +78,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     ...(options.headers as Record<string, string> | undefined),
   };
 
-  if (options.auth !== false) {
+  const useAuth = options.auth ?? true;
+  if (useAuth) {
     const token = getToken();
     if (token) headers.Authorization = `Bearer ${token}`;
   }
@@ -52,8 +93,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (!response.ok) {
     let detail = response.statusText;
     try {
-      const err = (await response.json()) as { detail?: string };
-      if (err.detail) detail = err.detail;
+      const err = await response.json();
+      detail = parseErrorDetail(err) ?? detail;
     } catch {
       /* ignore */
     }
