@@ -1,25 +1,19 @@
-import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react";
-import { pathToPage, syncUrlForPage } from "@/lib/routing";
-import {
-  CLUBS,
-  DOCS,
-  EVENTS,
-  INITIAL_COMPLAINTS,
-  INITIAL_SUGGESTIONS,
-  NEWS,
-} from "@/constants/mock-data";
-import { apiBaseUrl, isApiEnabled } from "@/api/client";
-import { jucsoApi } from "@/api/jucsoApi";
+import { useCallback, useEffect, useState } from "react";
+import { apiBaseUrl, isApiEnabled, setUnauthorizedHandler } from "@/api/client";
 import { AppProvider, useApp } from "@/context/AppContext";
-import type { Document, NewsItem, PageId, PortalType, User } from "@/types";
+import type { PortalType } from "@/types";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { RegisterModal } from "@/components/auth/RegisterModal";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { ApiStatusBanner } from "@/components/layout/ApiStatusBanner";
 import { Navbar } from "@/components/layout/Navbar";
 import { AdminDashboard } from "@/dashboards/AdminDashboard";
 import { ExecutiveDashboard } from "@/dashboards/ExecutiveDashboard";
 import { MinisterDashboard } from "@/dashboards/MinisterDashboard";
 import { StudentDashboard } from "@/dashboards/StudentDashboard";
+import { useAuthSession } from "@/hooks/useAuthSession";
+import { usePageNavigation } from "@/hooks/usePageNavigation";
+import { usePortalData } from "@/hooks/usePortalData";
 import { AboutPage } from "@/pages/AboutPage";
 import { ContactPage } from "@/pages/ContactPage";
 import { DocumentsPage } from "@/pages/DocumentsPage";
@@ -46,10 +40,26 @@ function DashboardRouter() {
 }
 
 function PageRouter() {
-  const { page, user } = useApp();
+  const { page, user, openLogin } = useApp();
 
   if (page === "dashboard") {
-    if (!user) return <HomePage />;
+    if (!user) {
+      return (
+        <div className="min-h-[50vh] flex items-center justify-center bg-jucso-slate px-6">
+          <div className="max-w-sm text-center">
+            <h1 className="font-display font-bold text-xl text-jucso-navy mb-2">Sign in required</h1>
+            <p className="text-sm text-gray-500 mb-4">Open the Student or Staff portal to access your dashboard.</p>
+            <button
+              type="button"
+              onClick={() => openLogin("student")}
+              className="text-sm font-semibold text-jucso-teal hover:underline cursor-pointer"
+            >
+              Go to sign in →
+            </button>
+          </div>
+        </div>
+      );
+    }
     return <DashboardRouter />;
   }
 
@@ -71,123 +81,59 @@ function PageRouter() {
   }
 }
 
-function usePageNavigation(): [PageId, Dispatch<SetStateAction<PageId>>] {
-  const [page, setPageState] = useState<PageId>(() => pathToPage(window.location.pathname));
-
-  const setPage: Dispatch<SetStateAction<PageId>> = useCallback((value) => {
-    setPageState((current) => {
-      const next = typeof value === "function" ? value(current) : value;
-      syncUrlForPage(next);
-      return next;
-    });
-  }, []);
-
-  useEffect(() => {
-    const onPopState = () => setPageState(pathToPage(window.location.pathname));
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
-  }, []);
-
-  return [page, setPage];
-}
-
 export default function App() {
-  const [page, setPage] = usePageNavigation();
-  const [user, setUser] = useState<User | null>(null);
+  const [page, goToPage] = usePageNavigation();
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [loginPortal, setLoginPortal] = useState<PortalType>("student");
-  const [dataLoading, setDataLoading] = useState(isApiEnabled);
-  const [dataError, setDataError] = useState<string | null>(null);
-  const [complaints, setComplaints] = useState(INITIAL_COMPLAINTS);
-  const [suggestions, setSuggestions] = useState(INITIAL_SUGGESTIONS);
-  const [clubs, setClubs] = useState(CLUBS);
-  const [events, setEvents] = useState(EVENTS);
-  const [news, setNews] = useState<NewsItem[]>(NEWS);
-  const [documents, setDocuments] = useState<Document[]>(DOCS);
 
-  const refreshPortalData = useCallback(async (activeUser: User | null = user) => {
-    if (!isApiEnabled) return;
+  const {
+    dataLoading,
+    dataError,
+    complaints,
+    setComplaints,
+    suggestions,
+    setSuggestions,
+    clubs,
+    setClubs,
+    events,
+    setEvents,
+    news,
+    documents,
+    refreshPortalData,
+    resetPrivateData,
+  } = usePortalData();
 
-    setDataLoading(true);
-    setDataError(null);
+  const handleUnauthorized = useCallback(() => {
+    goToPage("home");
+    resetPrivateData();
+    if (isApiEnabled) void refreshPortalData(null);
+  }, [goToPage, resetPrivateData, refreshPortalData]);
 
-    try {
-      const [newsData, clubsData, eventsData, docsData] = await Promise.all([
-        jucsoApi.getNews(),
-        jucsoApi.getClubs(),
-        jucsoApi.getEvents(),
-        jucsoApi.getDocuments(),
-      ]);
-      setNews(newsData);
-      setClubs(clubsData);
-      setEvents(eventsData);
-      setDocuments(docsData);
-
-      if (activeUser) {
-        const [complaintsData, suggestionsData] = await Promise.all([
-          jucsoApi.getComplaints(),
-          jucsoApi.getSuggestions(),
-        ]);
-        setComplaints(complaintsData);
-        setSuggestions(suggestionsData);
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not load portal data";
-      setDataError(message);
-      console.error("Failed to sync portal data:", error);
-    } finally {
-      setDataLoading(false);
-    }
-  }, [user]);
+  const { user, sessionLoading, login: authLogin, logout: authLogout } = useAuthSession({
+    onNavigate: goToPage,
+    onUnauthorized: handleUnauthorized,
+  });
 
   useEffect(() => {
     void refreshPortalData(user);
-  }, [refreshPortalData, user]);
+  }, [user, refreshPortalData]);
 
   useEffect(() => {
-    if (!isApiEnabled) return;
-    void jucsoApi
-      .me()
-      .then((sessionUser) => {
-        if (!sessionUser) return;
-        setUser(sessionUser);
-        setPage("dashboard");
-        syncUrlForPage("dashboard", true);
-        window.scrollTo({ top: 0, behavior: "instant" });
-      })
-      .catch(() => setUser(null));
-  }, [setPage]);
+    setUnauthorizedHandler(() => {
+      authLogout();
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [authLogout]);
 
-  const goToPage = useCallback(
-    (target: PageId) => {
-      setPage(target);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    },
-    [setPage],
-  );
-
-  const login = (u: User) => {
-    setUser(u);
+  const login = (nextUser: Parameters<typeof authLogin>[0]) => {
+    authLogin(nextUser);
     setShowLogin(false);
-    goToPage("dashboard");
-    void refreshPortalData(u);
+    void refreshPortalData(nextUser);
   };
 
   const logout = () => {
-    jucsoApi.logout();
-    setUser(null);
-    goToPage("home");
-    setComplaints(INITIAL_COMPLAINTS);
-    setSuggestions(INITIAL_SUGGESTIONS);
-    setClubs(CLUBS);
-    setEvents(EVENTS);
-    if (!isApiEnabled) {
-      setNews(NEWS);
-      setDocuments(DOCS);
-    } else {
-      void refreshPortalData(null);
-    }
+    authLogout();
   };
 
   const openLogin = (portal: PortalType = "student") => {
@@ -212,6 +158,7 @@ export default function App() {
         page,
         setPage: goToPage,
         user,
+        sessionLoading,
         login,
         logout,
         showLogin,
@@ -239,7 +186,9 @@ export default function App() {
       <div className="min-h-screen bg-jucso-slate">
         <ApiStatusBanner />
         <Navbar />
-        <PageRouter />
+        <AuthGuard>
+          <PageRouter />
+        </AuthGuard>
         {showLogin && (
           <LoginModal
             key={loginPortal}

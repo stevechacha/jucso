@@ -1,5 +1,11 @@
 const TOKEN_KEY = "jucso_access_token";
 
+let unauthorizedHandler: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  unauthorizedHandler = handler;
+}
+
 function resolveApiBase(): string {
   const configured = import.meta.env.VITE_API_URL?.replace(/\/$/, "");
   if (configured) return configured;
@@ -52,6 +58,14 @@ function parseErrorDetail(payload: unknown): string | null {
     const detail = (payload as { detail: unknown }).detail;
     if (typeof detail === "string") return detail;
     if (Array.isArray(detail)) return detail.map(String).join(" ");
+    if (detail && typeof detail === "object") {
+      return Object.entries(detail as Record<string, unknown>)
+        .flatMap(([field, value]) => {
+          if (Array.isArray(value)) return value.map((item) => `${field}: ${String(item)}`);
+          return [`${field}: ${String(value)}`];
+        })
+        .join(" ");
+    }
   }
 
   const messages = Object.entries(payload as Record<string, unknown>).flatMap(([field, value]) => {
@@ -67,6 +81,13 @@ function parseErrorDetail(payload: unknown): string | null {
   return messages.length > 0 ? messages.join(" ") : null;
 }
 
+function unwrapPaginated<T>(data: T | { results: T }): T {
+  if (data && typeof data === "object" && "results" in data && Array.isArray(data.results)) {
+    return data.results as T;
+  }
+  return data as T;
+}
+
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   if (!API_BASE) {
     throw new ApiError("API URL is not configured", 0);
@@ -79,16 +100,19 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   };
 
   const useAuth = options.auth ?? true;
-  if (useAuth) {
-    const token = getToken();
-    if (token) headers.Authorization = `Bearer ${token}`;
-  }
+  const token = useAuth ? getToken() : null;
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers,
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
   });
+
+  if (response.status === 401 && token) {
+    setToken(null);
+    unauthorizedHandler?.();
+  }
 
   if (!response.ok) {
     let detail = response.statusText;
@@ -104,8 +128,5 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (response.status === 204) return undefined as T;
 
   const data = (await response.json()) as T | { results: T };
-  if (data && typeof data === "object" && "results" in data && Array.isArray(data.results)) {
-    return data.results as T;
-  }
-  return data as T;
+  return unwrapPaginated(data);
 }

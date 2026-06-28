@@ -1,24 +1,5 @@
 import type { Complaint, Event, Suggestion, User } from "@/types";
-
-type ApiUser = {
-  reg_number: string;
-  name: string;
-  role: User["role"];
-  ministry?: string;
-};
-
-type ApiComplaint = Omit<Complaint, "studentName" | "studentReg"> & {
-  student_name: string;
-  student_reg: string;
-};
-
-type ApiSuggestion = Omit<Suggestion, "studentName"> & {
-  student_name: string;
-};
-
-type ApiEvent = Omit<Event, "isRegistered"> & {
-  is_registered?: boolean;
-};
+import type { ApiComplaint, ApiEvent, ApiSuggestion, ApiUser } from "./types";
 
 export function mapUser(user: ApiUser): User {
   return {
@@ -51,7 +32,7 @@ export interface AdminUserRow extends User {
   isActive: boolean;
 }
 
-export function mapAdminUser(user: ApiUser & { email?: string; is_active?: boolean }): AdminUserRow {
+export function mapAdminUser(user: ApiUser): AdminUserRow {
   return {
     ...mapUser(user),
     email: user.email,

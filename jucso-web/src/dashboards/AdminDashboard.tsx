@@ -140,7 +140,7 @@ function AddStaffForm({ onCreated }: { onCreated: (user: AdminUserRow) => void }
               ))}
             </Select>
           )}
-          <Input label="Temporary Password" type="password" value={form.password} onChange={(e) => update("password", e.target.value)} minLength={6} required />
+          <Input label="Temporary Password" type="password" value={form.password} onChange={(e) => update("password", e.target.value)} minLength={8} required />
         </div>
         {err && <p className="text-xs text-red-600 mb-3 bg-red-50 rounded-lg p-2">{err}</p>}
         {success && <p className="text-xs text-emerald-700 mb-3 bg-emerald-50 rounded-lg p-2">{success}</p>}

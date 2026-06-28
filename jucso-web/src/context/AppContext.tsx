@@ -1,10 +1,11 @@
 import { createContext, useContext, type ReactNode } from "react";
 import type { Club, Complaint, Document, Event, NewsItem, PageId, PortalType, Suggestion, User } from "@/types";
 
-interface AppContextValue {
+export interface AppContextValue {
   page: PageId;
   setPage: (page: PageId) => void;
   user: User | null;
+  sessionLoading: boolean;
   login: (user: User) => void;
   logout: () => void;
   showLogin: boolean;

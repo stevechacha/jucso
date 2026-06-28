@@ -132,7 +132,7 @@ export function RegisterModal({ onRegistered, onClose, onBackToLogin }: Register
             type="password"
             value={form.password}
             onChange={(e) => update("password", e.target.value)}
-            minLength={6}
+            minLength={8}
             required
           />
           <Input
@@ -140,7 +140,7 @@ export function RegisterModal({ onRegistered, onClose, onBackToLogin }: Register
             type="password"
             value={form.confirm}
             onChange={(e) => update("confirm", e.target.value)}
-            minLength={6}
+            minLength={8}
             required
           />
 
