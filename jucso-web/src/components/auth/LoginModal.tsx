@@ -26,6 +26,7 @@ const PLACEHOLDERS: Record<PortalType, string> = {
   staff: "e.g. MIN/ACAD/001",
 };
 
+const showDemoHints = import.meta.env.DEV;
 const STAFF_ROLES = new Set(["minister", "executive", "admin"]);
 
 interface LoginModalProps {
@@ -131,7 +132,7 @@ export function LoginModal({ portal, onLogin, onClose, onRegister }: LoginModalP
             type="password"
             value={pw}
             onChange={(e) => setPw(e.target.value)}
-            placeholder={isApiEnabled ? "demo123" : "Any password (demo)"}
+            placeholder={showDemoHints ? (isApiEnabled ? "demo123" : "Any password (demo)") : "Your password"}
             onKeyDown={onKeyDown}
             autoComplete="current-password"
           />
@@ -142,24 +143,26 @@ export function LoginModal({ portal, onLogin, onClose, onRegister }: LoginModalP
             </p>
           )}
 
-          <div className="mt-1 mb-3 text-xs text-gray-400 bg-gray-50 rounded-lg p-3">
-            {portal === "student" ? (
-              <>
-                <strong className="text-gray-600">Student demo:</strong> JUC/2024/001
-              </>
-            ) : (
-              <>
-                <strong className="text-gray-600">Staff demo:</strong> MIN/ACAD/001 · EXEC/PRES/001 ·
-                ADMIN/001
-              </>
-            )}
-            {isApiEnabled && (
-              <>
-                <br />
-                Password: <strong>demo123</strong>
-              </>
-            )}
-          </div>
+          {showDemoHints && (
+            <div className="mt-1 mb-3 text-xs text-gray-400 bg-gray-50 rounded-lg p-3">
+              {portal === "student" ? (
+                <>
+                  <strong className="text-gray-600">Student demo:</strong> JUC/2024/001
+                </>
+              ) : (
+                <>
+                  <strong className="text-gray-600">Staff demo:</strong> MIN/ACAD/001 · EXEC/PRES/001 ·
+                  ADMIN/001
+                </>
+              )}
+              {isApiEnabled && (
+                <>
+                  <br />
+                  Password: <strong>demo123</strong>
+                </>
+              )}
+            </div>
+          )}
 
           <Button type="submit" full variant="navy" disabled={loading}>
             {loading ? "Signing in…" : "Sign In →"}
