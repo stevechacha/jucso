@@ -87,7 +87,7 @@ export function ExecutiveDashboard() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="bg-white rounded-xl shadow-card p-5">
-              <h2 className="font-display font-extrabold text-jucso-navy mb-4">Ministry Resolution Rates</h2>
+              <h2 className="font-display font-bold text-jucso-navy mb-4">Ministry Resolution Rates</h2>
               {miniStats.map((m) => (
                 <div key={m.name} className="mb-3">
                   <div className="flex justify-between text-xs mb-1">
@@ -106,7 +106,7 @@ export function ExecutiveDashboard() {
               ))}
             </div>
             <div className="bg-white rounded-xl shadow-card p-5">
-              <h2 className="font-display font-extrabold text-jucso-navy mb-4">Urgent Issues</h2>
+              <h2 className="font-display font-bold text-jucso-navy mb-4">Urgent Issues</h2>
               {urgentIssues.length === 0 ? (
                 <p className="text-gray-400 text-sm text-center py-6">No urgent open issues 🎉</p>
               ) : (
@@ -130,7 +130,7 @@ export function ExecutiveDashboard() {
       {tab === "all complaints" && (
         <div className="bg-white rounded-xl shadow-card overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
-            <h2 className="font-display font-extrabold text-jucso-navy">All Complaints ({filtered.length})</h2>
+            <h2 className="font-display font-bold text-jucso-navy">All Complaints ({filtered.length})</h2>
             <select
               value={filterMin}
               onChange={(e) => setFilterMin(e.target.value)}
@@ -186,7 +186,7 @@ export function ExecutiveDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {miniStats.map((m) => (
             <article key={m.name} className="bg-white rounded-xl p-5 shadow-card">
-              <h3 className="font-display font-extrabold text-jucso-navy mb-4 text-sm">{m.name}</h3>
+              <h3 className="font-display font-bold text-jucso-navy mb-4 text-sm">{m.name}</h3>
               <div className="grid grid-cols-3 gap-2 mb-4 text-center">
                 {[
                   { v: m.total, l: "Total", c: "#1B2B6B" },
@@ -194,7 +194,7 @@ export function ExecutiveDashboard() {
                   { v: m.resolved, l: "Resolved", c: "#10B981" },
                 ].map((s) => (
                   <div key={s.l} className="bg-jucso-slate rounded-lg p-2">
-                    <div className="font-display font-extrabold text-lg" style={{ color: s.c }}>
+                    <div className="font-display font-bold text-lg" style={{ color: s.c }}>
                       {s.v}
                     </div>
                     <div className="text-[9px] text-gray-400 uppercase tracking-widest">{s.l}</div>

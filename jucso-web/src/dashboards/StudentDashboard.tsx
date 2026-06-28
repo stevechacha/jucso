@@ -112,7 +112,7 @@ export function StudentDashboard() {
             ))}
           </div>
           <div className="bg-white rounded-xl shadow-card overflow-hidden">
-            <h2 className="px-5 py-4 border-b border-gray-100 font-display font-extrabold text-jucso-navy">
+            <h2 className="px-5 py-4 border-b border-gray-100 font-display font-bold text-jucso-navy">
               Recent Complaints
             </h2>
             <ComplaintTable complaints={myComplaints.slice(0, 3)} />
@@ -122,7 +122,7 @@ export function StudentDashboard() {
 
       {tab === "my complaints" && (
         <div className="bg-white rounded-xl shadow-card overflow-hidden">
-          <h2 className="px-5 py-4 border-b border-gray-100 font-display font-extrabold text-jucso-navy">
+          <h2 className="px-5 py-4 border-b border-gray-100 font-display font-bold text-jucso-navy">
             My Complaints ({myComplaints.length})
           </h2>
           <ComplaintTable complaints={myComplaints} showResponse />
@@ -132,13 +132,13 @@ export function StudentDashboard() {
       {tab === "new complaint" && (
         <div className="max-w-lg">
           <div className="bg-white rounded-xl p-7 shadow-card">
-            <h3 className="font-display font-extrabold text-jucso-navy text-lg mb-5">Submit New Complaint</h3>
+            <h3 className="font-display font-bold text-jucso-navy text-lg mb-5">Submit New Complaint</h3>
             {submitted ? (
               <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-center">
                 <div className="text-3xl mb-2" aria-hidden>
                   ✅
                 </div>
-                <div className="font-display font-extrabold text-emerald-800">Complaint Submitted!</div>
+                <div className="font-display font-bold text-emerald-800">Complaint Submitted!</div>
                 <p className="text-emerald-700 text-xs mt-2">Your complaint has been routed to the correct ministry.</p>
               </div>
             ) : (
@@ -184,13 +184,13 @@ export function StudentDashboard() {
       {tab === "suggestions" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl p-6 shadow-card">
-            <h3 className="font-display font-extrabold text-jucso-navy mb-4">Share an Idea</h3>
+            <h3 className="font-display font-bold text-jucso-navy mb-4">Share an Idea</h3>
             {sugSubmitted ? (
               <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-center">
                 <div className="text-3xl mb-2" aria-hidden>
                   💡
                 </div>
-                <div className="font-display font-extrabold text-emerald-800">Suggestion Received!</div>
+                <div className="font-display font-bold text-emerald-800">Suggestion Received!</div>
                 <p className="text-emerald-700 text-xs mt-2">JUCSO leadership will review it within 7 days.</p>
               </div>
             ) : (
@@ -215,7 +215,7 @@ export function StudentDashboard() {
             )}
           </div>
           <div>
-            <h3 className="font-display font-extrabold text-jucso-navy mb-4">My Suggestions</h3>
+            <h3 className="font-display font-bold text-jucso-navy mb-4">My Suggestions</h3>
             {mySuggestions.length === 0 ? (
               <div className="bg-white rounded-xl p-6 text-center text-gray-400 text-sm shadow-card">
                 No suggestions submitted yet.
@@ -244,7 +244,7 @@ export function StudentDashboard() {
                 <Badge variant="navy">{c.category}</Badge>
                 <span className="text-gray-400 text-xs">{c.members} members</span>
               </div>
-              <h3 className="font-display font-extrabold text-jucso-navy mb-2 text-sm flex-1">{c.name}</h3>
+              <h3 className="font-display font-bold text-jucso-navy mb-2 text-sm flex-1">{c.name}</h3>
               <p className="text-gray-500 text-xs leading-relaxed mb-4">{c.description}</p>
               <p className="text-gray-400 text-xs mb-4">Leader: {c.leader}</p>
               <Button
@@ -280,7 +280,7 @@ export function StudentDashboard() {
             return (
               <article key={e.id} className="bg-white rounded-xl p-5 shadow-card">
                 <div className="flex justify-between items-start mb-3 gap-2">
-                  <h3 className="font-display font-extrabold text-jucso-navy text-sm">{e.title}</h3>
+                  <h3 className="font-display font-bold text-jucso-navy text-sm">{e.title}</h3>
                   {e.isRegistered && <Badge variant="green">Registered</Badge>}
                 </div>
                 <p className="text-gray-500 text-xs leading-relaxed mb-3">{e.description}</p>

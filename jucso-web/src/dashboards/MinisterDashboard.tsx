@@ -66,7 +66,7 @@ export function MinisterDashboard() {
       {(tab === "incoming" || tab === "resolved") && (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
           <div className="md:col-span-3 bg-white rounded-xl shadow-card overflow-hidden">
-            <h2 className="px-5 py-4 border-b border-gray-100 font-display font-extrabold text-jucso-navy">
+            <h2 className="px-5 py-4 border-b border-gray-100 font-display font-bold text-jucso-navy">
               {tab === "incoming" ? "Pending & In Progress" : "Resolved Cases"}
             </h2>
             <div className="overflow-x-auto">
@@ -113,7 +113,7 @@ export function MinisterDashboard() {
             {selected ? (
               <div className="bg-white rounded-xl p-5 shadow-card">
                 <div className="flex justify-between items-start mb-4">
-                  <h3 className="font-display font-extrabold text-jucso-navy text-sm">Complaint {selected.id}</h3>
+                  <h3 className="font-display font-bold text-jucso-navy text-sm">Complaint {selected.id}</h3>
                   <StatusPill status={selected.status} />
                 </div>
                 <p className="text-xs text-gray-400 mb-1">

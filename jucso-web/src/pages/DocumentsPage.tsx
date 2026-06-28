@@ -19,7 +19,7 @@ export function DocumentsPage() {
         <div className="max-w-3xl mx-auto px-6">
           <div className="bg-white rounded-xl shadow-card overflow-hidden">
             <header className="px-6 py-4 border-b border-gray-100">
-              <h2 className="font-display font-extrabold text-jucso-navy text-lg">Official Documents</h2>
+              <h2 className="font-display font-bold text-jucso-navy text-lg">Official Documents</h2>
               <p className="text-gray-400 text-xs mt-0.5">All documents are official JUCSO publications</p>
             </header>
             <ul>

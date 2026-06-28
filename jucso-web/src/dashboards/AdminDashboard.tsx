@@ -107,7 +107,7 @@ export function AdminDashboard() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="bg-white rounded-xl shadow-card p-5">
-              <h2 className="font-display font-extrabold text-jucso-navy mb-4">System Status</h2>
+              <h2 className="font-display font-bold text-jucso-navy mb-4">System Status</h2>
               <ul>
                 {SYSTEM_STATUS.map((s) => (
                   <li
@@ -124,7 +124,7 @@ export function AdminDashboard() {
               </ul>
             </div>
             <div className="bg-white rounded-xl shadow-card p-5">
-              <h2 className="font-display font-extrabold text-jucso-navy mb-4">Activity Summary</h2>
+              <h2 className="font-display font-bold text-jucso-navy mb-4">Activity Summary</h2>
               <ul>
                 {activitySummary.map((s) => (
                   <li
@@ -132,7 +132,7 @@ export function AdminDashboard() {
                     className="flex justify-between items-center py-2.5 border-b border-gray-50 last:border-0"
                   >
                     <span className="text-gray-600 text-xs">{s.lab}</span>
-                    <span className="text-jucso-navy text-sm font-display font-extrabold">{s.val}</span>
+                    <span className="text-jucso-navy text-sm font-display font-bold">{s.val}</span>
                   </li>
                 ))}
               </ul>
@@ -143,7 +143,7 @@ export function AdminDashboard() {
 
       {tab === "users" && (
         <div className="bg-white rounded-xl shadow-card overflow-hidden">
-          <h2 className="px-5 py-4 border-b border-gray-100 font-display font-extrabold text-jucso-navy">
+          <h2 className="px-5 py-4 border-b border-gray-100 font-display font-bold text-jucso-navy">
             Registered Users ({users.length})
           </h2>
           <div className="overflow-x-auto">
@@ -190,7 +190,7 @@ export function AdminDashboard() {
       {tab === "content" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="bg-white rounded-xl shadow-card p-5">
-            <h2 className="font-display font-extrabold text-jucso-navy mb-4">
+            <h2 className="font-display font-bold text-jucso-navy mb-4">
               News & Announcements ({news.length})
             </h2>
             <ul>
@@ -215,7 +215,7 @@ export function AdminDashboard() {
             </div>
           </div>
           <div className="bg-white rounded-xl shadow-card p-5">
-            <h2 className="font-display font-extrabold text-jucso-navy mb-4">Documents ({documents.length})</h2>
+            <h2 className="font-display font-bold text-jucso-navy mb-4">Documents ({documents.length})</h2>
             <ul>
               {documents.map((d) => (
                 <li key={d.id} className="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0">
@@ -247,7 +247,7 @@ export function AdminDashboard() {
               <div className="text-3xl mb-3" aria-hidden>
                 {s.icon}
               </div>
-              <h3 className="font-display font-extrabold text-jucso-navy mb-1 text-sm">{s.title}</h3>
+              <h3 className="font-display font-bold text-jucso-navy mb-1 text-sm">{s.title}</h3>
               <p className="text-gray-500 text-xs mb-4">{s.desc}</p>
               <Button variant="outline" size="sm">
                 {s.action}

@@ -41,6 +41,6 @@
   }
 
   .heading-display {
-    @apply font-display font-extrabold tracking-tight text-jucso-navy;
+    @apply font-display font-bold tracking-tight text-jucso-navy;
   }
 }

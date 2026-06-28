@@ -27,7 +27,7 @@ export function Hero({ badge, title, subtitle, cta }: HeroProps) {
 
       <div className="relative max-w-2xl mx-auto text-center">
         <Badge variant="teal">{badge}</Badge>
-        <h1 className="font-display font-extrabold text-white text-3xl md:text-5xl mt-4 mb-4 leading-tight tracking-tight">
+        <h1 className="font-display font-bold text-white text-3xl md:text-5xl mt-4 mb-4 leading-tight tracking-tight">
           {title}
         </h1>
         {subtitle && (

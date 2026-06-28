@@ -46,7 +46,7 @@ export function ServicesPage() {
               <div className="text-3xl mb-3" aria-hidden>
                 {s.icon}
               </div>
-              <h3 className="font-display font-extrabold text-jucso-navy mb-2 text-sm flex-1">{s.title}</h3>
+              <h3 className="font-display font-bold text-jucso-navy mb-2 text-sm flex-1">{s.title}</h3>
               <p className="text-gray-500 text-xs leading-relaxed mb-4">{s.desc}</p>
               <Button variant="navy" size="sm" onClick={handleLoginClick}>
                 Get Started →
@@ -95,7 +95,7 @@ export function ServicesPage() {
               <div className="text-4xl mb-3" aria-hidden>
                 ✅
               </div>
-              <h3 className="font-display font-extrabold text-emerald-800 text-lg mb-2">Complaint Submitted!</h3>
+              <h3 className="font-display font-bold text-emerald-800 text-lg mb-2">Complaint Submitted!</h3>
               <p className="text-emerald-700 text-xs mb-5 leading-relaxed">
                 In the live system you&apos;d receive a tracking number and your complaint is routed automatically to the
                 correct minister.

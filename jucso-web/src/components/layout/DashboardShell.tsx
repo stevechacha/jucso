@@ -21,8 +21,8 @@ export function DashboardShell({
     <div>
       <header className="bg-gradient-to-r from-jucso-navy-dark to-jucso-navy px-6 py-5">
         <div className="max-w-6xl mx-auto">
-          <p className="text-jucso-teal text-[10px] font-bold uppercase tracking-widest">{label}</p>
-          <h1 className="text-white font-display font-extrabold text-xl mt-1 mb-4">{title}</h1>
+          <p className="text-jucso-teal text-[10px] font-bold uppercase tracking-wide">{label}</p>
+          <h1 className="text-white font-display font-bold text-xl mt-1 mb-4">{title}</h1>
           <div className="flex gap-1 flex-wrap" role="tablist">
             {tabs.map((t) => (
               <button

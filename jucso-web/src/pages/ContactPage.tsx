@@ -112,7 +112,7 @@ export function ContactPage() {
                 <div className="text-4xl mb-3" aria-hidden>
                   ✉️
                 </div>
-                <h3 className="font-display font-extrabold text-emerald-800 text-lg mb-2">Message Sent!</h3>
+                <h3 className="font-display font-bold text-emerald-800 text-lg mb-2">Message Sent!</h3>
                 <p className="text-emerald-700 text-xs mb-5">We&apos;ll get back to you within 2 working days.</p>
                 <Button
                   variant="navy"

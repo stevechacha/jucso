@@ -36,10 +36,10 @@ export function Navbar() {
         >
           <BrandMark />
           <div className="text-left">
-            <div className="text-white font-display font-extrabold text-sm tracking-wide group-hover:text-jucso-teal transition-colors">
+            <div className="text-white font-display font-bold text-sm tracking-normal group-hover:text-jucso-teal transition-colors">
               JUCSO
             </div>
-            <div className="text-jucso-teal text-[9px] font-semibold tracking-widest uppercase">
+            <div className="text-jucso-teal text-[9px] font-semibold tracking-wide uppercase">
               Jordan University College
             </div>
           </div>

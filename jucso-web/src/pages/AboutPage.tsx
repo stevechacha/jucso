@@ -54,7 +54,7 @@ export function AboutPage() {
                 className="rounded-xl p-7 bg-jucso-slate"
                 style={{ borderTop: `5px solid ${p.color}` }}
               >
-                <h3 className="font-display font-extrabold text-2xl mb-3" style={{ color: p.color }}>
+                <h3 className="font-display font-bold text-2xl mb-3" style={{ color: p.color }}>
                   {p.word}
                 </h3>
                 <p className="text-gray-500 text-sm leading-relaxed">{p.desc}</p>
@@ -104,10 +104,10 @@ export function AboutPage() {
                 <div key={lab} className="flex items-center gap-5">
                   {i > 0 && <div className="w-px h-10 bg-white/15" aria-hidden />}
                   <div className="text-center">
-                    <div className="font-display font-extrabold text-xl" style={{ color }}>
+                    <div className="font-display font-bold text-xl" style={{ color }}>
                       {val}
                     </div>
-                    <div className="text-white/50 text-[10px] uppercase tracking-widest">{lab}</div>
+                    <div className="text-white/50 text-[10px] uppercase tracking-wide">{lab}</div>
                   </div>
                 </div>
               ))}

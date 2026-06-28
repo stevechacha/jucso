@@ -63,7 +63,7 @@ export function NewsPage() {
                     <Badge variant={newsTagVariant(n.tag)}>{n.tag}</Badge>
                     <time className="text-gray-400 text-xs">{n.date}</time>
                   </div>
-                  <h3 className="font-display font-extrabold text-jucso-navy text-sm mb-1">{n.title}</h3>
+                  <h3 className="font-display font-bold text-jucso-navy text-sm mb-1">{n.title}</h3>
                   <p className="text-gray-500 text-xs leading-relaxed">{n.excerpt}</p>
                 </div>
               </article>

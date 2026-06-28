@@ -37,8 +37,8 @@ export function HomePage() {
       <section className="bg-jucso-teal px-6 py-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-center" aria-label="Key statistics">
         {HOME_STATS.map(([val, lab]) => (
           <div key={lab}>
-            <div className="text-white font-display font-extrabold text-2xl md:text-3xl">{val}</div>
-            <div className="text-white/75 text-[10px] font-semibold uppercase tracking-widest mt-1">
+            <div className="text-white font-display font-bold text-2xl md:text-3xl">{val}</div>
+            <div className="text-white/75 text-[10px] font-semibold uppercase tracking-wide mt-1">
               {lab}
             </div>
           </div>
@@ -65,7 +65,7 @@ export function HomePage() {
                 <div className="text-3xl mb-3" aria-hidden>
                   {icon}
                 </div>
-                <h3 className="font-display font-extrabold text-jucso-navy mb-2 text-sm">{title}</h3>
+                <h3 className="font-display font-bold text-jucso-navy mb-2 text-sm">{title}</h3>
                 <p className="text-gray-500 text-xs leading-relaxed">{desc}</p>
               </article>
             ))}
@@ -82,7 +82,7 @@ export function HomePage() {
       <section className="page-section bg-jucso-navy">
         <div className="section-container">
           <Badge variant="teal">Your Ministers</Badge>
-          <h2 className="font-display font-extrabold text-2xl md:text-3xl text-white mt-3 mb-2">
+          <h2 className="font-display font-bold text-2xl md:text-3xl text-white mt-3 mb-2">
             Elected to serve you.
           </h2>
           <p className="text-white/50 text-sm mb-8">
@@ -133,7 +133,7 @@ export function HomePage() {
                   <Badge variant={newsTagVariant(n.tag)}>{n.tag}</Badge>
                   <time className="text-gray-400 text-xs">{n.date}</time>
                 </div>
-                <h3 className="font-display font-extrabold text-jucso-navy text-sm mb-2">{n.title}</h3>
+                <h3 className="font-display font-bold text-jucso-navy text-sm mb-2">{n.title}</h3>
                 <p className="text-gray-500 text-xs leading-relaxed">{n.excerpt}</p>
               </article>
             ))}
@@ -143,7 +143,7 @@ export function HomePage() {
 
       <section className="page-section bg-gradient-to-r from-jucso-teal to-jucso-navy text-center">
         <div className="section-container">
-          <h2 className="text-white font-display font-extrabold text-2xl md:text-4xl mb-3">
+          <h2 className="text-white font-display font-bold text-2xl md:text-4xl mb-3">
             Ready to make your voice heard?
           </h2>
           <p className="text-white/75 text-sm max-w-sm mx-auto mb-7">

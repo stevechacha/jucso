@@ -14,7 +14,7 @@ export function Footer() {
     <footer className="bg-jucso-navy-dark px-6 pt-12 pb-6">
       <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
         <div className="col-span-2 md:col-span-1">
-          <div className="text-white font-display font-extrabold text-xl mb-2">JUCSO</div>
+          <div className="text-white font-display font-bold text-xl mb-2">JUCSO</div>
           <p className="text-white/40 text-xs leading-relaxed max-w-[200px]">
             Jordan University College Student Organization — Leading People to Excellence.
           </p>
@@ -22,7 +22,7 @@ export function Footer() {
 
         {FOOTER_LINKS.map((col) => (
           <div key={col.head}>
-            <div className="text-jucso-teal text-[10px] font-bold uppercase tracking-widest mb-3">
+            <div className="text-jucso-teal text-[10px] font-bold uppercase tracking-wide mb-3">
               {col.head}
             </div>
             {col.links.map((l) => (
