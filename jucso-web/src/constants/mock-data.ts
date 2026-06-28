@@ -89,7 +89,7 @@ export const CAT_TO_MINISTRY: Record<string, string> = {
   Other: "Academics",
 };
 
-export const PUBLIC_PAGES = ["home", "about", "services", "news", "documents", "contact"] as const;
+export const PUBLIC_PAGES = ["home", "about", "services", "news", "documents", "contact", "track", "reports"] as const;
 
 export const PORTAL_ROLE_LABELS = {
   student: "Student Portal",

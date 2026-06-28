@@ -7,6 +7,8 @@ export function mapUser(user: ApiUser): User {
     reg: user.reg_number,
     role: user.role,
     ministry: user.ministry,
+    email: user.email,
+    phone: user.phone_number,
     mustChangePassword: user.must_change_password ?? false,
   };
 }

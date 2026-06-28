@@ -11,8 +11,9 @@ import { StatCard } from "@/components/ui/StatCard";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { ComplaintTable } from "@/components/complaints/ComplaintTable";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { ProfilePanel } from "@/components/profile/ProfilePanel";
 
-const TABS = ["overview", "my complaints", "new complaint", "suggestions", "clubs", "events"] as const;
+const TABS = ["overview", "my complaints", "new complaint", "suggestions", "clubs", "events", "profile"] as const;
 type StudentTab = (typeof TABS)[number];
 
 function formatDate() {
@@ -366,6 +367,8 @@ export function StudentDashboard() {
           })}
         </div>
       )}
+
+      {tab === "profile" && <ProfilePanel />}
     </DashboardShell>
   );
 }

@@ -7,6 +7,8 @@ const PAGE_PATHS: Record<PageId, string> = {
   news: "/news",
   documents: "/documents",
   contact: "/contact",
+  track: "/track",
+  reports: "/reports",
   dashboard: "/dashboard",
   "reset-password": "/reset-password",
 };

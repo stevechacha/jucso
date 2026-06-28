@@ -10,9 +10,10 @@ import { StatusPill } from "@/components/ui/StatusPill";
 import { ComplaintAttachmentLink } from "@/components/complaints/ComplaintAttachmentLink";
 import { ConfidentialBadge } from "@/components/complaints/ConfidentialBadge";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { ProfilePanel } from "@/components/profile/ProfilePanel";
 import { SuggestionReviewPanel } from "@/components/suggestions/SuggestionReviewPanel";
 
-const TABS = ["incoming", "resolved", "suggestions", "overview"] as const;
+const TABS = ["incoming", "resolved", "suggestions", "overview", "profile"] as const;
 type MinisterTab = (typeof TABS)[number];
 
 export function MinisterDashboard() {
@@ -24,6 +25,7 @@ export function MinisterDashboard() {
   const [responseText, setResponseText] = useState("");
   const [forwardMinistry, setForwardMinistry] = useState("");
   const [ministries, setMinistries] = useState<Array<{ id: number; name: string }>>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (!apiEnabled) return;
@@ -74,6 +76,18 @@ export function MinisterDashboard() {
       ? myComplaints.filter((c) => c.status !== "Resolved")
       : myComplaints.filter((c) => c.status === "Resolved");
 
+  const searched = searchQuery.trim()
+    ? filtered.filter((c) => {
+        const q = searchQuery.toLowerCase();
+        return (
+          c.id.toLowerCase().includes(q) ||
+          c.studentName.toLowerCase().includes(q) ||
+          c.description.toLowerCase().includes(q) ||
+          c.category.toLowerCase().includes(q)
+        );
+      })
+    : filtered;
+
   return (
     <DashboardShell
       label={`Minister Dashboard — ${user.ministry}`}
@@ -96,6 +110,16 @@ export function MinisterDashboard() {
             <h2 className="px-5 py-4 border-b border-gray-100 font-display font-bold text-jucso-navy">
               {tab === "incoming" ? "Pending & In Progress" : "Resolved Cases"}
             </h2>
+            <div className="px-5 py-3 border-b border-gray-50">
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by ID, student, category…"
+                className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-jucso-teal"
+                aria-label="Search complaints"
+              />
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
@@ -112,7 +136,7 @@ export function MinisterDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((c, i) => (
+                  {searched.map((c, i) => (
                     <tr
                       key={c.id}
                       onClick={() => setSelectedId(c.id)}
@@ -223,6 +247,8 @@ export function MinisterDashboard() {
           onUpdated={() => void refreshPortalData()}
         />
       )}
+
+      {tab === "profile" && <ProfilePanel />}
     </DashboardShell>
   );
 }

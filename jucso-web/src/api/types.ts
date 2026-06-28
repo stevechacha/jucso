@@ -6,6 +6,7 @@ export interface ApiUser {
   role: User["role"];
   ministry?: string;
   email?: string;
+  phone_number?: string;
   is_active?: boolean;
   must_change_password?: boolean;
 }
@@ -102,6 +103,20 @@ export interface AdminSystemStatusResponse {
   storage_configured: boolean;
   debug: boolean;
   ssl_enabled: boolean;
+}
+
+export interface TransparencyStatsResponse {
+  total_complaints: number;
+  resolved_complaints: number;
+  open_complaints: number;
+  resolution_rate: number;
+  ministry_stats: Array<{
+    name: string;
+    total: number;
+    pending: number;
+    resolved: number;
+    rate: number;
+  }>;
 }
 
 export interface MinistryOption {

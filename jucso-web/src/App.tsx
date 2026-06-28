@@ -24,6 +24,8 @@ import { HomePage } from "@/pages/HomePage";
 import { NewsPage } from "@/pages/NewsPage";
 import { ServicesPage } from "@/pages/ServicesPage";
 import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
+import { TrackComplaintPage } from "@/pages/TrackComplaintPage";
+import { TransparencyReportsPage } from "@/pages/TransparencyReportsPage";
 
 function DashboardRouter() {
   const { user } = useApp();
@@ -91,6 +93,10 @@ function PageRouter() {
       return <DocumentsPage />;
     case "contact":
       return <ContactPage />;
+    case "track":
+      return <TrackComplaintPage />;
+    case "reports":
+      return <TransparencyReportsPage />;
     case "reset-password":
       return <ResetPasswordPage />;
     default:

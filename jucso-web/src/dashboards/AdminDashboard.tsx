@@ -13,9 +13,10 @@ import { Input, Select, Textarea } from "@/components/ui/FormFields";
 import { StatCard } from "@/components/ui/StatCard";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { SuggestionReviewPanel } from "@/components/suggestions/SuggestionReviewPanel";
+import { ProfilePanel } from "@/components/profile/ProfilePanel";
 import type { NewsItem } from "@/types";
 
-const TABS = ["overview", "users", "content", "system"] as const;
+const TABS = ["overview", "users", "content", "system", "profile"] as const;
 type AdminTab = (typeof TABS)[number];
 const USERS_PER_PAGE = 7;
 
@@ -659,6 +660,8 @@ export function AdminDashboard() {
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
   const [editingNewsId, setEditingNewsId] = useState<string | null>(null);
   const [systemStatus, setSystemStatus] = useState<AdminSystemStatusResponse | null>(null);
+  const [deletingClubId, setDeletingClubId] = useState<string | null>(null);
+  const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!apiEnabled) return;
@@ -724,6 +727,32 @@ export function AdminDashboard() {
       console.error(error);
     } finally {
       setDeletingDocId(null);
+    }
+  };
+
+  const removeClub = async (id: string) => {
+    if (!window.confirm("Deactivate this club?")) return;
+    setDeletingClubId(id);
+    try {
+      await jucsoApi.deleteClub(id);
+      await refreshPortalData();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setDeletingClubId(null);
+    }
+  };
+
+  const removeEvent = async (id: string) => {
+    if (!window.confirm("Deactivate this event?")) return;
+    setDeletingEventId(id);
+    try {
+      await jucsoApi.deleteEvent(id);
+      await refreshPortalData();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setDeletingEventId(null);
     }
   };
 
@@ -1051,10 +1080,22 @@ export function AdminDashboard() {
             <div className="bg-white rounded-xl shadow-card p-5">
               <h2 className="font-display font-bold text-jucso-navy mb-4">Clubs ({clubs.length})</h2>
               <ul className="mb-4 max-h-40 overflow-y-auto">
-                {clubs.slice(0, 5).map((c) => (
-                  <li key={c.id} className="py-2 border-b border-gray-50 last:border-0 text-xs">
-                    <div className="font-semibold text-jucso-navy">{c.name}</div>
-                    <div className="text-gray-400 text-[10px]">{c.category} · {c.members} members</div>
+                {clubs.slice(0, 8).map((c) => (
+                  <li key={c.id} className="py-2 border-b border-gray-50 last:border-0 text-xs flex justify-between gap-2">
+                    <div>
+                      <div className="font-semibold text-jucso-navy">{c.name}</div>
+                      <div className="text-gray-400 text-[10px]">{c.category} · {c.members} members</div>
+                    </div>
+                    {apiEnabled && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={deletingClubId === c.id}
+                        onClick={() => void removeClub(c.id)}
+                      >
+                        {deletingClubId === c.id ? "…" : "Remove"}
+                      </Button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -1063,10 +1104,22 @@ export function AdminDashboard() {
             <div className="bg-white rounded-xl shadow-card p-5">
               <h2 className="font-display font-bold text-jucso-navy mb-4">Events ({events.length})</h2>
               <ul className="mb-4 max-h-40 overflow-y-auto">
-                {events.slice(0, 5).map((e) => (
-                  <li key={e.id} className="py-2 border-b border-gray-50 last:border-0 text-xs">
-                    <div className="font-semibold text-jucso-navy">{e.title}</div>
-                    <div className="text-gray-400 text-[10px]">{e.date} · {e.location}</div>
+                {events.slice(0, 8).map((e) => (
+                  <li key={e.id} className="py-2 border-b border-gray-50 last:border-0 text-xs flex justify-between gap-2">
+                    <div>
+                      <div className="font-semibold text-jucso-navy">{e.title}</div>
+                      <div className="text-gray-400 text-[10px]">{e.date} · {e.location}</div>
+                    </div>
+                    {apiEnabled && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={deletingEventId === e.id}
+                        onClick={() => void removeEvent(e.id)}
+                      >
+                        {deletingEventId === e.id ? "…" : "Remove"}
+                      </Button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -1078,6 +1131,8 @@ export function AdminDashboard() {
       )}
 
       {tab === "system" && <SystemToolsPanel apiEnabled={apiEnabled} />}
+
+      {tab === "profile" && <ProfilePanel />}
     </DashboardShell>
   );
 }

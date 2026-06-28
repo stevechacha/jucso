@@ -15,6 +15,8 @@ export type PageId =
   | "news"
   | "documents"
   | "contact"
+  | "track"
+  | "reports"
   | "dashboard"
   | "reset-password";
 
@@ -23,7 +25,18 @@ export interface User {
   reg: string;
   role: Role;
   ministry?: string;
+  email?: string;
+  phone?: string;
   mustChangePassword?: boolean;
+}
+
+export interface TrackedComplaint {
+  id: string;
+  category: string;
+  ministry: string;
+  status: ComplaintStatus;
+  date: string;
+  response?: string;
 }
 
 export interface Complaint {

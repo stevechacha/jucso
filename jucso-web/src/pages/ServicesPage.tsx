@@ -17,7 +17,7 @@ const ALL_SERVICES = [
 ] as const;
 
 export function ServicesPage() {
-  const { handleLoginClick } = useApp();
+  const { handleLoginClick, setPage } = useApp();
   const [catForm, setCatForm] = useState("");
   const [descForm, setDescForm] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -48,8 +48,14 @@ export function ServicesPage() {
               </div>
               <h3 className="font-display font-bold text-jucso-navy mb-2 text-sm flex-1">{s.title}</h3>
               <p className="text-gray-500 text-xs leading-relaxed mb-4">{s.desc}</p>
-              <Button variant="navy" size="sm" onClick={() => handleLoginClick("student")}>
-                Get Started →
+              <Button
+                variant="navy"
+                size="sm"
+                onClick={() =>
+                  s.title === "Performance Reports" ? setPage("reports") : handleLoginClick("student")
+                }
+              >
+                {s.title === "Performance Reports" ? "View Reports →" : "Get Started →"}
               </Button>
             </article>
           ))}

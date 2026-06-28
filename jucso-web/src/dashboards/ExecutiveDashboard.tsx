@@ -8,9 +8,10 @@ import { ConfidentialBadge } from "@/components/complaints/ConfidentialBadge";
 import { StatCard } from "@/components/ui/StatCard";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { ProfilePanel } from "@/components/profile/ProfilePanel";
 import { SuggestionReviewPanel } from "@/components/suggestions/SuggestionReviewPanel";
 
-const TABS = ["overview", "all complaints", "suggestions", "ministry stats"] as const;
+const TABS = ["overview", "all complaints", "suggestions", "ministry stats", "profile"] as const;
 type ExecutiveTab = (typeof TABS)[number];
 
 export function ExecutiveDashboard() {
@@ -238,6 +239,8 @@ export function ExecutiveDashboard() {
           ))}
         </div>
       )}
+
+      {tab === "profile" && <ProfilePanel />}
     </DashboardShell>
   );
 }

@@ -104,6 +104,38 @@ export const jucsoApi = {
     return apiRequest<ApiUser>("/api/auth/me/").then(mapUser);
   },
 
+  async updateProfile(data: {
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    phone_number?: string;
+  }) {
+    const user = await apiRequest<ApiUser>("/api/auth/me/", { method: "PATCH", body: data });
+    return mapUser(user);
+  },
+
+  async trackComplaint(tracking_id: string, reg_number: string) {
+    const complaint = await apiRequest<{
+      id: string;
+      category: string;
+      ministry: string;
+      status: Complaint["status"];
+      date: string;
+      response?: string;
+    }>("/api/complaints/track/", {
+      method: "POST",
+      body: { tracking_id, reg_number },
+      auth: false,
+    });
+    return complaint;
+  },
+
+  getTransparencyStats() {
+    return apiRequest<import("@/api/types").TransparencyStatsResponse>("/api/stats/transparency/", {
+      auth: false,
+    });
+  },
+
   async changePassword(data: { current_password: string; new_password: string }) {
     const res = await apiRequest<{ detail: string; user: ApiUser }>("/api/auth/change-password/", {
       method: "POST",
@@ -294,6 +326,11 @@ export const jucsoApi = {
     return apiRequest<Club>("/api/admin/clubs/", { method: "POST", body: data });
   },
 
+  deleteClub(clubId: string) {
+    const pk = parseInt(clubId.replace(/^CLB-/i, ""), 10);
+    return apiRequest<void>(`/api/admin/clubs/${pk}/`, { method: "DELETE" });
+  },
+
   async createEvent(data: {
     title: string;
     description: string;
@@ -303,6 +340,11 @@ export const jucsoApi = {
   }) {
     const event = await apiRequest<ApiEvent>("/api/admin/events/", { method: "POST", body: data });
     return mapEvent(event);
+  },
+
+  deleteEvent(eventId: string) {
+    const pk = parseInt(eventId.replace(/^EVT-/i, ""), 10);
+    return apiRequest<void>(`/api/admin/events/${pk}/`, { method: "DELETE" });
   },
 
   getSystemStatus() {
