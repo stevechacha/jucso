@@ -57,6 +57,20 @@ Or create a new admin via Django admin and deactivate `ADMIN/001`.
 
 Monitor with [UptimeRobot](https://uptimerobot.com) or similar on `/api/health/`.
 
+### Scheduled jobs (nightly)
+
+Configure a Railway cron service or external scheduler:
+
+```bash
+# JSON export (store output in object storage or attach to ticket)
+python manage.py export_portal_backup --output /tmp/jucso-backup.json
+
+# Email ministers/leadership about complaints past SLA
+python manage.py notify_overdue_complaints
+```
+
+Also set `COMPLAINT_SLA_DAYS=7`, `ADMIN_NOTIFICATION_EMAIL=admin@jucso.ac.tz`, and optional `SENTRY_DSN` for error monitoring.
+
 ---
 
 ## 2. Railway — Web (`jucso-web`)

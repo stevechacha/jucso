@@ -52,6 +52,80 @@ function roleBadgeVariant(role: string): "gold" | "teal" | "navy" | "gray" {
   return "gray";
 }
 
+function EditStaffModal({
+  user,
+  onClose,
+  onSaved,
+}: {
+  user: AdminUserRow;
+  onClose: () => void;
+  onSaved: (user: AdminUserRow) => void;
+}) {
+  const [ministries, setMinistries] = useState<Array<{ id: number; name: string }>>([]);
+  const [role, setRole] = useState<"minister" | "executive">(
+    user.role === "executive" ? "executive" : "minister",
+  );
+  const [ministry, setMinistry] = useState(user.ministry ?? "");
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    void jucsoApi.getMinistries().then(setMinistries).catch(console.error);
+  }, []);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErr("");
+    try {
+      const updated = await jucsoApi.updateAdminUser(user.reg, {
+        role,
+        ministry: role === "minister" ? ministry : "",
+      });
+      onSaved(updated);
+      onClose();
+    } catch (error) {
+      setErr(error instanceof ApiError ? error.message : "Could not update staff member.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-white rounded-xl shadow-card p-5 w-full max-w-md">
+        <h2 className="font-display font-bold text-jucso-navy mb-1">Edit staff — {user.name}</h2>
+        <p className="text-xs text-gray-500 mb-4">{user.reg}</p>
+        <form onSubmit={(e) => void submit(e)}>
+          <Select label="Role" value={role} onChange={(e) => setRole(e.target.value as "minister" | "executive")}>
+            <option value="minister">Minister</option>
+            <option value="executive">Executive</option>
+          </Select>
+          {role === "minister" && (
+            <Select label="Ministry" value={ministry} onChange={(e) => setMinistry(e.target.value)} required>
+              <option value="">Select ministry</option>
+              {ministries.map((m) => (
+                <option key={m.id} value={m.name}>
+                  {m.name}
+                </option>
+              ))}
+            </Select>
+          )}
+          {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
+          <div className="flex gap-2 mt-3">
+            <Button type="submit" variant="teal" size="sm" disabled={loading}>
+              {loading ? "Saving…" : "Save changes"}
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function AddStaffForm({ onCreated }: { onCreated: (user: AdminUserRow) => void }) {
   const [open, setOpen] = useState(false);
   const [ministries, setMinistries] = useState<Array<{ id: number; name: string }>>([]);
@@ -913,6 +987,7 @@ export function AdminDashboard() {
   const [tab, setTab] = useDashboardTab(TABS, "overview");
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [adminUsers, setAdminUsers] = useState<AdminUserRow[]>([]);
+  const [editingUser, setEditingUser] = useState<AdminUserRow | null>(null);
   const [userPage, setUserPage] = useState(1);
   const [deletingNewsId, setDeletingNewsId] = useState<string | null>(null);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
@@ -1241,15 +1316,26 @@ export function AdminDashboard() {
                     <td className="px-4 py-3 text-gray-500">{u.ministry ?? "—"}</td>
                     <td className="px-4 py-3">
                       {apiEnabled && "isActive" in u ? (
-                        <button
-                          type="button"
-                          onClick={() => void toggleUserActive(u as AdminUserRow)}
-                          className={`text-xs font-semibold underline cursor-pointer ${
-                            u.isActive === false ? "text-emerald-600" : "text-red-600"
-                          }`}
-                        >
-                          {u.isActive === false ? "Activate" : "Deactivate"}
-                        </button>
+                        <div className="flex flex-col gap-1 items-start">
+                          {(u.role === "minister" || u.role === "executive") && (
+                            <button
+                              type="button"
+                              onClick={() => setEditingUser(u as AdminUserRow)}
+                              className="text-xs font-semibold text-jucso-teal underline cursor-pointer"
+                            >
+                              Edit
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => void toggleUserActive(u as AdminUserRow)}
+                            className={`text-xs font-semibold underline cursor-pointer ${
+                              u.isActive === false ? "text-emerald-600" : "text-red-600"
+                            }`}
+                          >
+                            {u.isActive === false ? "Activate" : "Deactivate"}
+                          </button>
+                        </div>
                       ) : (
                         <span
                           className={`font-semibold text-xs ${
@@ -1521,6 +1607,17 @@ export function AdminDashboard() {
       {tab === "system" && <SystemToolsPanel apiEnabled={apiEnabled} />}
 
       {tab === "profile" && <ProfilePanel />}
+
+      {editingUser && (
+        <EditStaffModal
+          user={editingUser}
+          onClose={() => setEditingUser(null)}
+          onSaved={(updated) => {
+            setAdminUsers((prev) => prev.map((u) => (u.reg === updated.reg ? updated : u)));
+            setEditingUser(null);
+          }}
+        />
+      )}
     </DashboardShell>
   );
 }

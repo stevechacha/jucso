@@ -12,6 +12,7 @@ import { StatusPill } from "@/components/ui/StatusPill";
 import { ComplaintTable } from "@/components/complaints/ComplaintTable";
 import { TrackComplaintPanel } from "@/components/complaints/TrackComplaintPanel";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { EmailVerificationBanner } from "@/components/auth/EmailVerificationBanner";
 import { ProfilePanel } from "@/components/profile/ProfilePanel";
 
 const TABS = ["overview", "my complaints", "new complaint", "suggestions", "clubs", "events", "profile"] as const;
@@ -123,6 +124,7 @@ export function StudentDashboard() {
       activeTab={tab}
       onTabChange={(t) => setTab(t as StudentTab)}
     >
+      <EmailVerificationBanner />
       {tab === "overview" && (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">

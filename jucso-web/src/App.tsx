@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { PUBLIC_PAGES } from "@/constants/mock-data";
 import { apiBaseUrl, isApiEnabled, setUnauthorizedHandler } from "@/api/client";
 import { AppProvider, useApp } from "@/context/AppContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 import type { PortalType } from "@/types";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { ForgotPasswordModal } from "@/components/auth/ForgotPasswordModal";
@@ -27,6 +28,7 @@ import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 import { TrackComplaintPage } from "@/pages/TrackComplaintPage";
 import { TransparencyReportsPage } from "@/pages/TransparencyReportsPage";
 import { ClubsPage } from "@/pages/ClubsPage";
+import { VerifyEmailPage } from "@/pages/VerifyEmailPage";
 import { EventsPage } from "@/pages/EventsPage";
 
 function DashboardRouter() {
@@ -105,6 +107,8 @@ function PageRouter() {
       return <EventsPage />;
     case "reset-password":
       return <ResetPasswordPage />;
+    case "verify-email":
+      return <VerifyEmailPage />;
     default:
       return <HomePage />;
   }
@@ -192,7 +196,8 @@ export default function App() {
   };
 
   return (
-    <AppProvider
+    <LanguageProvider>
+      <AppProvider
       value={{
         page,
         setPage: goToPage,
@@ -254,5 +259,6 @@ export default function App() {
         )}
       </div>
     </AppProvider>
+    </LanguageProvider>
   );
 }

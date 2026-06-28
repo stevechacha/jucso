@@ -13,6 +13,7 @@ const PAGE_PATHS: Record<PageId, string> = {
   events: "/events",
   dashboard: "/dashboard",
   "reset-password": "/reset-password",
+  "verify-email": "/verify-email",
 };
 
 const PATH_PAGES = new Map<string, PageId>(

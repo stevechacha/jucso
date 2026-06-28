@@ -122,12 +122,30 @@ export const jucsoApi = {
       status: Complaint["status"];
       date: string;
       response?: string;
+      due_at?: string;
+      is_overdue?: boolean;
+      activity?: import("@/api/types").ApiComplaintActivity[];
     }>("/api/complaints/track/", {
       method: "POST",
       body: { tracking_id, reg_number },
       auth: false,
     });
-    return complaint;
+    return {
+      id: complaint.id,
+      category: complaint.category,
+      ministry: complaint.ministry,
+      status: complaint.status,
+      date: complaint.date,
+      response: complaint.response,
+      dueAt: complaint.due_at,
+      isOverdue: complaint.is_overdue,
+      activity: complaint.activity?.map((a) => ({
+        action: a.action,
+        detail: a.detail,
+        actorName: a.actor_name,
+        timestamp: a.timestamp,
+      })),
+    };
   },
 
   getTransparencyStats() {
@@ -180,6 +198,44 @@ export const jucsoApi = {
       body: { is_active: isActive },
     });
     return mapAdminUser(user);
+  },
+
+  async updateAdminUser(
+    regNumber: string,
+    data: {
+      is_active?: boolean;
+      role?: "student" | "minister" | "executive" | "admin";
+      ministry?: string;
+      first_name?: string;
+      last_name?: string;
+      email?: string;
+    },
+  ) {
+    const user = await apiRequest<ApiUser>(`/api/admin/users/${encodeURIComponent(regNumber)}/`, {
+      method: "PATCH",
+      body: data,
+    });
+    return mapAdminUser(user);
+  },
+
+  verifyEmail(uid: string, token: string) {
+    return apiRequest<{ detail: string; user: ApiUser }>("/api/auth/verify-email/", {
+      method: "POST",
+      body: { uid, token },
+      auth: false,
+    });
+  },
+
+  resendVerification(data: { email?: string; reg_number?: string }) {
+    return apiRequest<{ detail: string }>("/api/auth/resend-verification/", {
+      method: "POST",
+      body: data,
+      auth: false,
+    }).then((res) => res.detail);
+  },
+
+  getMinisterWorkload() {
+    return apiRequest<import("@/api/types").MinisterWorkloadResponse>("/api/stats/minister-workload/");
   },
 
   async getComplaints() {

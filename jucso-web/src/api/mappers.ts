@@ -10,17 +10,31 @@ export function mapUser(user: ApiUser): User {
     email: user.email,
     phone: user.phone_number,
     mustChangePassword: user.must_change_password ?? false,
+    emailVerified: user.email_verified ?? true,
+  };
+}
+
+function mapActivity(activity: import("./types").ApiComplaintActivity) {
+  return {
+    action: activity.action,
+    detail: activity.detail,
+    actorName: activity.actor_name,
+    timestamp: activity.timestamp,
   };
 }
 
 export function mapComplaint(complaint: ApiComplaint): Complaint {
-  const { student_name, student_reg, supporting_document_url, is_confidential, ...rest } = complaint;
+  const { student_name, student_reg, supporting_document_url, is_confidential, due_at, is_overdue, activity, ...rest } =
+    complaint;
   return {
     ...rest,
     studentName: student_name,
     studentReg: student_reg,
     supportingDocumentUrl: supporting_document_url,
     isConfidential: is_confidential ?? false,
+    dueAt: due_at,
+    isOverdue: is_overdue ?? false,
+    activity: activity?.map(mapActivity),
   };
 }
 

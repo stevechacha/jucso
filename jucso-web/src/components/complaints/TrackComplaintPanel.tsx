@@ -4,6 +4,7 @@ import { jucsoApi } from "@/api/jucsoApi";
 import type { TrackedComplaint } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/FormFields";
+import { ComplaintActivityTimeline } from "@/components/complaints/ComplaintActivityTimeline";
 import { StatusPill } from "@/components/ui/StatusPill";
 
 interface TrackComplaintPanelProps {
@@ -71,6 +72,11 @@ export function TrackComplaintPanel({ regNumber = "", title = "Track a complaint
             </div>
             <StatusPill status={result.status} />
           </div>
+          {result.isOverdue ? (
+            <p className="text-xs font-semibold text-red-600 mb-2">Overdue — past SLA due date ({result.dueAt})</p>
+          ) : result.dueAt ? (
+            <p className="text-xs text-gray-500 mb-2">Due by {result.dueAt}</p>
+          ) : null}
           <dl className="grid grid-cols-1 gap-2 text-xs mb-3">
             <div className="flex justify-between gap-4">
               <dt className="text-gray-500">Category</dt>
@@ -88,6 +94,7 @@ export function TrackComplaintPanel({ regNumber = "", title = "Track a complaint
           ) : (
             <p className="text-xs text-gray-400 italic">No response yet.</p>
           )}
+          {result.activity?.length ? <ComplaintActivityTimeline activity={result.activity} compact /> : null}
         </div>
       )}
     </div>

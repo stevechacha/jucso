@@ -1,0 +1,18 @@
+{
+  "name": "JUCSO Portal",
+  "short_name": "JUCSO",
+  "description": "Jordan University College Student Organization digital portal",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1B2B6B",
+  "theme_color": "#1B2B6B",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

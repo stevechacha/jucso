@@ -20,7 +20,8 @@ export type PageId =
   | "clubs"
   | "events"
   | "dashboard"
-  | "reset-password";
+  | "reset-password"
+  | "verify-email";
 
 export interface User {
   name: string;
@@ -30,6 +31,14 @@ export interface User {
   email?: string;
   phone?: string;
   mustChangePassword?: boolean;
+  emailVerified?: boolean;
+}
+
+export interface ComplaintActivity {
+  action: string;
+  detail: string;
+  actorName: string;
+  timestamp: string;
 }
 
 export interface TrackedComplaint {
@@ -39,6 +48,9 @@ export interface TrackedComplaint {
   status: ComplaintStatus;
   date: string;
   response?: string;
+  dueAt?: string;
+  isOverdue?: boolean;
+  activity?: ComplaintActivity[];
 }
 
 export interface Complaint {
@@ -54,6 +66,9 @@ export interface Complaint {
   urgent?: boolean;
   isConfidential?: boolean;
   supportingDocumentUrl?: string;
+  dueAt?: string;
+  isOverdue?: boolean;
+  activity?: ComplaintActivity[];
 }
 
 export interface Suggestion {

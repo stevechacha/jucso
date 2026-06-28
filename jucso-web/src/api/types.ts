@@ -9,6 +9,14 @@ export interface ApiUser {
   phone_number?: string;
   is_active?: boolean;
   must_change_password?: boolean;
+  email_verified?: boolean;
+}
+
+export interface ApiComplaintActivity {
+  action: string;
+  detail: string;
+  actor_name: string;
+  timestamp: string;
 }
 
 export interface ApiComplaint {
@@ -24,6 +32,9 @@ export interface ApiComplaint {
   urgent?: boolean;
   is_confidential?: boolean;
   supporting_document_url?: string;
+  due_at?: string;
+  is_overdue?: boolean;
+  activity?: ApiComplaintActivity[];
 }
 
 export interface ApiSuggestion {
@@ -129,6 +140,17 @@ export interface PublicStatsResponse {
   resolution_rate: number;
   active_clubs: number;
   upcoming_events: number;
+  total_suggestions: number;
+  implemented_suggestions: number;
+}
+
+export interface MinisterWorkloadResponse {
+  open_count: number;
+  resolved_this_week: number;
+  overdue_count: number;
+  urgent_open: number;
+  pending: number;
+  in_progress: number;
 }
 
 export interface ComplaintCategoryOption {

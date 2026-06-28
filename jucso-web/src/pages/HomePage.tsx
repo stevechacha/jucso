@@ -3,6 +3,7 @@ import { HOME_STATS, MINISTERS, SERVICE_CARDS } from "@/constants/mock-data";
 import { jucsoApi } from "@/api/jucsoApi";
 import { isApiEnabled } from "@/api/client";
 import { useApp } from "@/context/AppContext";
+import { useLanguage } from "@/context/LanguageContext";
 import type { LeadershipMember } from "@/types";
 import type { PublicStatsResponse } from "@/api/types";
 import { Badge, newsTagVariant } from "@/components/ui/Badge";
@@ -12,6 +13,7 @@ import { Hero } from "@/components/layout/Hero";
 
 export function HomePage() {
   const { setPage, handleLoginClick, news, events } = useApp();
+  const { t } = useLanguage();
   const [leaders, setLeaders] = useState<LeadershipMember[]>(
     MINISTERS.map((m) => ({ name: m.name, role: m.role, ministry: "", initials: m.initials })),
   );
@@ -34,15 +36,16 @@ export function HomePage() {
     void jucsoApi
       .getPublicStats()
       .then((stats: PublicStatsResponse) => {
-        setHomeStats([
-          [stats.students_registered.toLocaleString(), "Students Registered"],
-          [String(stats.ministries), "Active Ministries"],
-          [`${stats.resolution_rate}%`, "Complaint Resolution"],
-          [String(stats.active_clubs), "Active Clubs"],
-        ]);
+        const rows: [string, string][] = [
+          [stats.students_registered.toLocaleString(), t("studentsRegistered")],
+          [String(stats.ministries), t("activeMinistries")],
+          [`${stats.resolution_rate}%`, t("complaintResolution")],
+          [String(stats.implemented_suggestions ?? 0), t("ideasImplemented")],
+        ];
+        setHomeStats(rows);
       })
       .catch(console.error);
-  }, []);
+  }, [t]);
 
   return (
     <div>
@@ -61,19 +64,19 @@ export function HomePage() {
         cta={
           <>
             <Button variant="gold" onClick={() => handleLoginClick("student")}>
-              Student Portal →
+              {t("studentPortal")} →
             </Button>
             <Button variant="ghost" onClick={() => handleLoginClick("staff")}>
-              Staff Portal
+              {t("staffPortal")}
             </Button>
             <Button variant="ghost" onClick={() => setPage("about")}>
               Learn More
             </Button>
             <Button variant="ghost" onClick={() => setPage("track")}>
-              Track Complaint
+              {t("trackComplaint")}
             </Button>
             <Button variant="ghost" onClick={() => setPage("reports")}>
-              Transparency Reports
+              {t("transparency")}
             </Button>
           </>
         }

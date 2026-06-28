@@ -4,10 +4,12 @@ import { exportComplaintsCsv } from "@/lib/exportComplaintsCsv";
 import { jucsoApi } from "@/api/jucsoApi";
 import { useApp } from "@/context/AppContext";
 import type { ComplaintStatus } from "@/types";
+import type { MinisterWorkloadResponse } from "@/api/types";
 import { Button } from "@/components/ui/Button";
 import { Select, Textarea } from "@/components/ui/FormFields";
 import { StatCard } from "@/components/ui/StatCard";
 import { StatusPill } from "@/components/ui/StatusPill";
+import { ComplaintActivityTimeline } from "@/components/complaints/ComplaintActivityTimeline";
 import { ComplaintAttachmentLink } from "@/components/complaints/ComplaintAttachmentLink";
 import { ConfidentialBadge } from "@/components/complaints/ConfidentialBadge";
 import { DashboardShell } from "@/components/layout/DashboardShell";
@@ -28,11 +30,17 @@ export function MinisterDashboard() {
   const [ministries, setMinistries] = useState<Array<{ id: number; name: string }>>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [workload, setWorkload] = useState<MinisterWorkloadResponse | null>(null);
 
   useEffect(() => {
     if (!apiEnabled) return;
     void jucsoApi.getMinistries().then(setMinistries).catch(console.error);
   }, [apiEnabled]);
+
+  useEffect(() => {
+    if (!apiEnabled || tab !== "overview") return;
+    void jucsoApi.getMinisterWorkload().then(setWorkload).catch(console.error);
+  }, [apiEnabled, tab]);
 
   const myComplaints = complaints.filter((c) => c.ministry === user.ministry);
   const selected = complaints.find((c) => c.id === selectedId);
@@ -66,12 +74,19 @@ export function MinisterDashboard() {
     setForwardMinistry("");
   };
 
-  const stats = [
-    { icon: "📋", val: myComplaints.length, lab: "Total Assigned", color: "#1B2B6B" },
-    { icon: "⏳", val: myComplaints.filter((c) => c.status === "Pending").length, lab: "Pending", color: "#6B7280" },
-    { icon: "🔄", val: myComplaints.filter((c) => c.status === "In Progress").length, lab: "In Progress", color: "#F59E0B" },
-    { icon: "✅", val: myComplaints.filter((c) => c.status === "Resolved").length, lab: "Resolved", color: "#10B981" },
-  ];
+  const stats = workload
+    ? [
+        { icon: "📋", val: workload.open_count, lab: "Open Cases", color: "#1B2B6B" },
+        { icon: "✅", val: workload.resolved_this_week, lab: "Resolved This Week", color: "#10B981" },
+        { icon: "⏰", val: workload.overdue_count, lab: "Overdue (SLA)", color: "#EF4444" },
+        { icon: "⚠", val: workload.urgent_open, lab: "Urgent Open", color: "#F59E0B" },
+      ]
+    : [
+        { icon: "📋", val: myComplaints.length, lab: "Total Assigned", color: "#1B2B6B" },
+        { icon: "⏳", val: myComplaints.filter((c) => c.status === "Pending").length, lab: "Pending", color: "#6B7280" },
+        { icon: "🔄", val: myComplaints.filter((c) => c.status === "In Progress").length, lab: "In Progress", color: "#F59E0B" },
+        { icon: "✅", val: myComplaints.filter((c) => c.status === "Resolved").length, lab: "Resolved", color: "#10B981" },
+      ];
 
   const filtered =
     tab === "incoming"
@@ -181,6 +196,7 @@ export function MinisterDashboard() {
                         <span className="inline-flex items-center gap-1 flex-wrap">
                           {c.id}
                           {c.urgent && <span className="text-red-500 ml-1">⚠</span>}
+                          {c.isOverdue && <span className="text-red-600 text-[10px] font-bold ml-1">OVERDUE</span>}
                           {c.isConfidential && <ConfidentialBadge />}
                         </span>
                       </td>
@@ -211,6 +227,11 @@ export function MinisterDashboard() {
                   {selected.studentReg})
                 </p>
                 <p className="text-xs text-gray-400 mb-3">Filed: {selected.date}</p>
+                {selected.isOverdue ? (
+                  <p className="text-xs font-semibold text-red-600 mb-2">Overdue — due {selected.dueAt}</p>
+                ) : selected.dueAt ? (
+                  <p className="text-xs text-gray-500 mb-2">SLA due: {selected.dueAt}</p>
+                ) : null}
                 <div className="bg-jucso-slate rounded-lg p-3 mb-4">
                   <div className="font-semibold text-jucso-navy text-xs mb-1">{selected.category}</div>
                   <p className="text-gray-600 text-xs leading-relaxed">{selected.description}</p>
@@ -223,6 +244,9 @@ export function MinisterDashboard() {
                     </p>
                   </div>
                 )}
+                {selected.activity?.length ? (
+                  <ComplaintActivityTimeline activity={selected.activity} compact />
+                ) : null}
                 <Textarea
                   label="Write Response"
                   value={responseText}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PORTAL_ROLE_LABELS, PUBLIC_PAGES } from "@/constants/mock-data";
 import { useApp } from "@/context/AppContext";
+import { useLanguage } from "@/context/LanguageContext";
 import type { PageId } from "@/types";
 import { Button } from "@/components/ui/Button";
 
@@ -211,6 +212,21 @@ function PortalNavbar({
   );
 }
 
+function LanguageToggle() {
+  const { locale, setLocale } = useLanguage();
+  const next = locale === "en" ? "sw" : "en";
+  return (
+    <button
+      type="button"
+      onClick={() => setLocale(next)}
+      className="text-[10px] font-bold uppercase tracking-wide text-white/70 border border-white/20 rounded-full px-2.5 py-1 hover:text-white hover:border-white/40 cursor-pointer"
+      aria-label={`Switch language to ${next === "en" ? "English" : "Kiswahili"}`}
+    >
+      {locale === "en" ? "SW" : "EN"}
+    </button>
+  );
+}
+
 export function Navbar() {
   const { page, setPage, user, handleLoginClick, logout } = useApp();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -255,7 +271,9 @@ export function Navbar() {
           </div>
         </button>
 
-        {user ? (
+        <div className="flex items-center gap-3">
+          <LanguageToggle />
+          {user ? (
           <PortalNavbar
             page={page}
             navigate={navigate}
@@ -263,7 +281,7 @@ export function Navbar() {
             setMobileOpen={setMobileOpen}
             onSignOut={signOut}
           />
-        ) : (
+          ) : (
           <PublicNavbar
             page={page}
             navigate={navigate}
@@ -272,7 +290,8 @@ export function Navbar() {
             onStudentPortal={openStudentPortal}
             onStaffPortal={openStaffPortal}
           />
-        )}
+          )}
+        </div>
       </div>
     </nav>
   );
