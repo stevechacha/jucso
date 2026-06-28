@@ -1,6 +1,9 @@
 export const ROLES = ["student", "minister", "executive", "admin"] as const;
 export type Role = (typeof ROLES)[number];
 
+export const PORTALS = ["student", "staff"] as const;
+export type PortalType = (typeof PORTALS)[number];
+
 export type ComplaintStatus = "Pending" | "In Progress" | "Resolved";
 export type SuggestionStatus = "Received" | "Under Review" | "Implemented";
 export type NewsTag = "Announcement" | "Events" | "Clubs" | "Notice";

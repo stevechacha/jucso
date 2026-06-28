@@ -10,7 +10,7 @@ import {
 import { isApiEnabled } from "@/api/client";
 import { jucsoApi } from "@/api/jucsoApi";
 import { AppProvider, useApp } from "@/context/AppContext";
-import type { Document, NewsItem, PageId, User } from "@/types";
+import type { Document, NewsItem, PageId, PortalType, User } from "@/types";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { Navbar } from "@/components/layout/Navbar";
 import { AdminDashboard } from "@/dashboards/AdminDashboard";
@@ -72,6 +72,7 @@ export default function App() {
   const [page, setPage] = useState<PageId>("home");
   const [user, setUser] = useState<User | null>(null);
   const [showLogin, setShowLogin] = useState(false);
+  const [loginPortal, setLoginPortal] = useState<PortalType>("student");
   const [complaints, setComplaints] = useState(INITIAL_COMPLAINTS);
   const [suggestions, setSuggestions] = useState(INITIAL_SUGGESTIONS);
   const [clubs, setClubs] = useState(CLUBS);
@@ -131,9 +132,14 @@ export default function App() {
     setSuggestions(INITIAL_SUGGESTIONS);
   };
 
-  const handleLoginClick = () => {
+  const openLogin = (portal: PortalType = "student") => {
+    setLoginPortal(portal);
+    setShowLogin(true);
+  };
+
+  const handleLoginClick = (portal: PortalType = "student") => {
     if (user) setPage("dashboard");
-    else setShowLogin(true);
+    else openLogin(portal);
   };
 
   return (
@@ -145,7 +151,8 @@ export default function App() {
         login,
         logout,
         showLogin,
-        openLogin: () => setShowLogin(true),
+        loginPortal,
+        openLogin,
         closeLogin: () => setShowLogin(false),
         handleLoginClick,
         apiEnabled: isApiEnabled,
@@ -165,7 +172,14 @@ export default function App() {
       <div className="min-h-screen bg-jucso-slate">
         <Navbar />
         <PageRouter />
-        {showLogin && <LoginModal onLogin={login} onClose={() => setShowLogin(false)} />}
+        {showLogin && (
+          <LoginModal
+            key={loginPortal}
+            portal={loginPortal}
+            onLogin={login}
+            onClose={() => setShowLogin(false)}
+          />
+        )}
       </div>
     </AppProvider>
   );

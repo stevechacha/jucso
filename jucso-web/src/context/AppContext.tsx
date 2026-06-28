@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from "react";
-import type { Club, Complaint, Document, Event, NewsItem, PageId, Suggestion, User } from "@/types";
+import type { Club, Complaint, Document, Event, NewsItem, PageId, PortalType, Suggestion, User } from "@/types";
 
 interface AppContextValue {
   page: PageId;
@@ -8,9 +8,10 @@ interface AppContextValue {
   login: (user: User) => void;
   logout: () => void;
   showLogin: boolean;
-  openLogin: () => void;
+  loginPortal: PortalType;
+  openLogin: (portal?: PortalType) => void;
   closeLogin: () => void;
-  handleLoginClick: () => void;
+  handleLoginClick: (portal?: PortalType) => void;
   apiEnabled: boolean;
   refreshPortalData: () => Promise<void>;
   complaints: Complaint[];

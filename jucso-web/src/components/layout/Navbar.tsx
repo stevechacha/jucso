@@ -88,9 +88,14 @@ export function Navbar() {
               </button>
             </div>
           ) : (
-            <Button variant="gold" size="sm" onClick={handleLoginClick} className="ml-3">
-              Student Login
-            </Button>
+            <div className="flex items-center gap-2 ml-3">
+              <Button variant="gold" size="sm" onClick={() => handleLoginClick("student")}>
+                Student Portal
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleLoginClick("staff")} className="!text-white !border-white/30 hover:!bg-white/10">
+                Staff Portal
+              </Button>
+            </div>
           )}
         </div>
 
@@ -131,18 +136,31 @@ export function Navbar() {
               Sign Out
             </button>
           ) : (
-            <Button
-              variant="gold"
-              size="sm"
-              full
-              onClick={() => {
-                handleLoginClick();
-                setMobileOpen(false);
-              }}
-              className="mt-3"
-            >
-              Student Login
-            </Button>
+            <div className="mt-3 flex flex-col gap-2">
+              <Button
+                variant="gold"
+                size="sm"
+                full
+                onClick={() => {
+                  handleLoginClick("student");
+                  setMobileOpen(false);
+                }}
+              >
+                Student Portal
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                full
+                onClick={() => {
+                  handleLoginClick("staff");
+                  setMobileOpen(false);
+                }}
+                className="!text-white !border-white/30 hover:!bg-white/10"
+              >
+                Staff Portal
+              </Button>
+            </div>
           )}
         </div>
       )}

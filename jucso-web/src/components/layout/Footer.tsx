@@ -39,13 +39,22 @@ export function Footer() {
               </button>
             ))}
             {col.head === "Connect" && (
-              <button
-                type="button"
-                onClick={handleLoginClick}
-                className="block text-white/45 text-xs mb-2 hover:text-white/80 transition-colors cursor-pointer text-left"
-              >
-                Student Login
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleLoginClick("student")}
+                  className="block text-white/45 text-xs mb-2 hover:text-white/80 transition-colors cursor-pointer text-left"
+                >
+                  Student Portal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLoginClick("staff")}
+                  className="block text-white/45 text-xs mb-2 hover:text-white/80 transition-colors cursor-pointer text-left"
+                >
+                  Staff Portal
+                </button>
+              </>
             )}
           </div>
         ))}

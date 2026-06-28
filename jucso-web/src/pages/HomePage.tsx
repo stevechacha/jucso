@@ -24,8 +24,11 @@ export function HomePage() {
         subtitle="JUCSO is Jordan University College's official student government — your voice on academics, welfare, clubs, and campus life."
         cta={
           <>
-            <Button variant="gold" onClick={handleLoginClick}>
-              Access the Portal →
+            <Button variant="gold" onClick={() => handleLoginClick("student")}>
+              Student Portal →
+            </Button>
+            <Button variant="ghost" onClick={() => handleLoginClick("staff")}>
+              Staff Portal
             </Button>
             <Button variant="ghost" onClick={() => setPage("about")}>
               Learn More
@@ -149,8 +152,8 @@ export function HomePage() {
           <p className="text-white/75 text-sm max-w-sm mx-auto mb-7">
             Register once. Track your complaint. See real results. JUCSO accountability starts here.
           </p>
-          <Button variant="gold" onClick={handleLoginClick}>
-            Sign In to the Portal →
+          <Button variant="gold" onClick={() => handleLoginClick("student")}>
+            Sign In to Student Portal →
           </Button>
         </div>
       </section>

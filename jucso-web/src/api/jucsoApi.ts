@@ -7,7 +7,7 @@ import {
   mapUser,
   type AdminUserRow,
 } from "./mappers";
-import type { Club, Complaint, Document, NewsItem, User } from "@/types";
+import type { Club, Complaint, Document, NewsItem, PortalType } from "@/types";
 
 interface LoginResponse {
   access: string;
@@ -42,10 +42,10 @@ export interface AdminOverview {
 }
 
 export const jucsoApi = {
-  async login(reg_number: string, password: string, role: User["role"]) {
+  async login(reg_number: string, password: string, portal: PortalType) {
     const res = await apiRequest<LoginResponse>("/api/auth/login/", {
       method: "POST",
-      body: { reg_number, password, role },
+      body: { reg_number, password, portal },
       auth: false,
     });
     setToken(res.access);
