@@ -1,5 +1,6 @@
 import { generateStaffTempPassword } from "@/lib/generateTempPassword";
 import { downloadJsonBackup, getLastBackupLabel } from "@/lib/downloadJsonBackup";
+import { exportUsersCsv } from "@/lib/exportUsersCsv";
 import { useDashboardTab } from "@/hooks/useDashboardTab";
 import { useEffect, useState, type FormEvent } from "react";
 import { ApiError } from "@/api/client";
@@ -471,6 +472,7 @@ function ContactInboxPanel() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [inboxFilter, setInboxFilter] = useState<"all" | "unread">("all");
 
   const load = () => {
     void jucsoApi
@@ -497,20 +499,41 @@ function ContactInboxPanel() {
   };
 
   const unread = messages.filter((m) => !m.is_read).length;
+  const visible = inboxFilter === "unread" ? messages.filter((m) => !m.is_read) : messages;
 
   return (
     <div className="bg-white rounded-xl shadow-card p-5">
-      <h2 className="font-display font-bold text-jucso-navy mb-4">
-        Contact Inbox ({messages.length}
-        {unread > 0 ? ` · ${unread} unread` : ""})
-      </h2>
+      <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+        <h2 className="font-display font-bold text-jucso-navy">
+          Contact Inbox ({messages.length}
+          {unread > 0 ? ` · ${unread} unread` : ""})
+        </h2>
+        <div className="flex gap-1">
+          <Button
+            size="sm"
+            variant={inboxFilter === "all" ? "navy" : "outline"}
+            onClick={() => setInboxFilter("all")}
+          >
+            All
+          </Button>
+          <Button
+            size="sm"
+            variant={inboxFilter === "unread" ? "navy" : "outline"}
+            onClick={() => setInboxFilter("unread")}
+          >
+            Unread
+          </Button>
+        </div>
+      </div>
       {loading ? (
         <p className="text-gray-400 text-sm">Loading messages…</p>
-      ) : messages.length === 0 ? (
-        <p className="text-gray-400 text-sm">No contact messages yet.</p>
+      ) : visible.length === 0 ? (
+        <p className="text-gray-400 text-sm">
+          {inboxFilter === "unread" ? "No unread messages." : "No contact messages yet."}
+        </p>
       ) : (
         <ul className="max-h-80 overflow-y-auto">
-          {messages.map((m) => (
+          {visible.map((m) => (
             <li
               key={m.id}
               className={`py-3 border-b border-gray-50 last:border-0 ${m.is_read ? "opacity-70" : "bg-indigo-50/40 -mx-2 px-2 rounded-lg"}`}
@@ -836,6 +859,8 @@ export function AdminDashboard() {
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
   const [editingClubId, setEditingClubId] = useState<string | null>(null);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [userSearch, setUserSearch] = useState("");
+  const [userRoleFilter, setUserRoleFilter] = useState("all");
 
   useEffect(() => {
     if (!apiEnabled) return;
@@ -942,16 +967,26 @@ export function AdminDashboard() {
 
   const mockUsers = Object.values(DEMO_USERS);
   const users = apiEnabled && adminUsers.length > 0 ? adminUsers : mockUsers;
-  const totalUserPages = Math.max(1, Math.ceil(users.length / USERS_PER_PAGE));
+  const filteredUsers = users.filter((u) => {
+    if (userRoleFilter !== "all" && u.role !== userRoleFilter) return false;
+    if (!userSearch.trim()) return true;
+    const q = userSearch.toLowerCase();
+    return (
+      u.reg.toLowerCase().includes(q) ||
+      u.name.toLowerCase().includes(q) ||
+      (u.ministry?.toLowerCase().includes(q) ?? false)
+    );
+  });
+  const totalUserPages = Math.max(1, Math.ceil(filteredUsers.length / USERS_PER_PAGE));
   const currentUserPage = Math.min(userPage, totalUserPages);
-  const pageUsers = users.slice(
+  const pageUsers = filteredUsers.slice(
     (currentUserPage - 1) * USERS_PER_PAGE,
     currentUserPage * USERS_PER_PAGE,
   );
 
   useEffect(() => {
     setUserPage(1);
-  }, [users.length, tab]);
+  }, [users.length, tab, userSearch, userRoleFilter]);
 
   const toggleUserActive = async (row: AdminUserRow) => {
     if (!apiEnabled) return;
@@ -1063,9 +1098,42 @@ export function AdminDashboard() {
             />
           )}
           <div className="bg-white rounded-xl shadow-card overflow-hidden">
-            <h2 className="px-5 py-4 border-b border-gray-100 font-display font-bold text-jucso-navy">
-              Registered Users ({users.length})
-            </h2>
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+              <h2 className="font-display font-bold text-jucso-navy">
+                Registered Users ({filteredUsers.length})
+              </h2>
+              {apiEnabled && adminUsers.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportUsersCsv(filteredUsers as AdminUserRow[])}
+                >
+                  Export CSV
+                </Button>
+              )}
+            </div>
+            <div className="px-5 py-3 border-b border-gray-50 flex flex-col sm:flex-row gap-2">
+              <input
+                type="search"
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                placeholder="Search by name, reg number, ministry…"
+                className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-jucso-teal"
+                aria-label="Search users"
+              />
+              <select
+                value={userRoleFilter}
+                onChange={(e) => setUserRoleFilter(e.target.value)}
+                className="text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-jucso-teal bg-white"
+                aria-label="Filter by role"
+              >
+                <option value="all">All roles</option>
+                <option value="student">Students</option>
+                <option value="minister">Ministers</option>
+                <option value="executive">Executives</option>
+                <option value="admin">Admins</option>
+              </select>
+            </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -1116,11 +1184,11 @@ export function AdminDashboard() {
               </tbody>
             </table>
           </div>
-          {users.length > USERS_PER_PAGE && (
+          {filteredUsers.length > USERS_PER_PAGE && (
             <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
               <span className="text-xs text-gray-500">
                 Showing {(currentUserPage - 1) * USERS_PER_PAGE + 1}–
-                {Math.min(currentUserPage * USERS_PER_PAGE, users.length)} of {users.length}
+                {Math.min(currentUserPage * USERS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length}
               </span>
               <div className="flex items-center gap-2">
                 <Button

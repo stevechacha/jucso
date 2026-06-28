@@ -119,6 +119,19 @@ export interface TransparencyStatsResponse {
   }>;
 }
 
+export interface PublicStatsResponse {
+  students_registered: number;
+  ministries: number;
+  resolution_rate: number;
+  active_clubs: number;
+  upcoming_events: number;
+}
+
+export interface ComplaintCategoryOption {
+  category: string;
+  ministry: string;
+}
+
 export interface MinistryOption {
   id: number;
   name: string;

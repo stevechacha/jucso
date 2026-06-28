@@ -91,6 +91,8 @@ Redeploy after changing `VITE_API_URL` (it is baked in at build time).
 | Transparency reports | ✅ Built — `/reports` + `/api/stats/transparency/` |
 | Profile settings | ✅ Built — `PATCH /api/auth/me/` |
 | Leadership directory | ✅ Built — `/api/leadership/` |
+| Public portal stats | ✅ Built — `/api/stats/public/` |
+| Complaint categories API | ✅ Built — `/api/complaints/categories/` |
 | Admin news & document upload | ✅ Documents via API + Supabase |
 | Complaint file attachments | ✅ Uploaded to Supabase |
 | Automated tests | ✅ Auth, complaints, password reset, additional features |

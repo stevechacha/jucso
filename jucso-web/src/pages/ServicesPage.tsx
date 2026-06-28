@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CAT_TO_MINISTRY } from "@/constants/mock-data";
+import { useComplaintCategories } from "@/hooks/useComplaintCategories";
 import { useApp } from "@/context/AppContext";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -18,13 +18,14 @@ const ALL_SERVICES = [
 
 export function ServicesPage() {
   const { handleLoginClick, setPage } = useApp();
+  const categories = useComplaintCategories();
   const [catForm, setCatForm] = useState("");
   const [descForm, setDescForm] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [previewed, setPreviewed] = useState(false);
 
-  const submit = () => {
+  const preview = () => {
     if (!catForm || !descForm.trim()) return;
-    setSubmitted(true);
+    setPreviewed(true);
   };
 
   return (
@@ -51,11 +52,17 @@ export function ServicesPage() {
               <Button
                 variant="navy"
                 size="sm"
-                onClick={() =>
-                  s.title === "Performance Reports" ? setPage("reports") : handleLoginClick("student")
-                }
+                onClick={() => {
+                  if (s.title === "Performance Reports") setPage("reports");
+                  else if (s.title === "Official Documents") setPage("documents");
+                  else handleLoginClick("student");
+                }}
               >
-                {s.title === "Performance Reports" ? "View Reports →" : "Get Started →"}
+                {s.title === "Performance Reports"
+                  ? "View Reports →"
+                  : s.title === "Official Documents"
+                    ? "Browse Documents →"
+                    : "Get Started →"}
               </Button>
             </article>
           ))}
@@ -70,11 +77,11 @@ export function ServicesPage() {
             <p className="text-gray-500 text-xs">See how the form works. Full functionality requires login.</p>
           </div>
 
-          {!submitted ? (
+          {!previewed ? (
             <div className="bg-jucso-slate rounded-xl p-7">
               <Select label="Complaint Category" value={catForm} onChange={(e) => setCatForm(e.target.value)}>
                 <option value="">— Select a category —</option>
-                {Object.keys(CAT_TO_MINISTRY).map((c) => (
+                {Object.keys(categories).map((c) => (
                   <option key={c} value={c}>
                     {c}
                   </option>
@@ -89,33 +96,42 @@ export function ServicesPage() {
               />
               {catForm && descForm && (
                 <p className="text-xs text-jucso-navy bg-indigo-50 rounded-lg p-3 mb-4">
-                  → This would be routed to the <strong>{CAT_TO_MINISTRY[catForm]}</strong> ministry
+                  → This would be routed to the <strong>{categories[catForm]}</strong> ministry
                 </p>
               )}
-              <Button full variant="navy" onClick={submit} disabled={!catForm || !descForm.trim()}>
-                Submit Complaint
+              <Button full variant="navy" onClick={preview} disabled={!catForm || !descForm.trim()}>
+                Preview Routing
               </Button>
             </div>
           ) : (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-8 text-center">
+            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-8 text-center">
               <div className="text-4xl mb-3" aria-hidden>
-                ✅
+                📋
               </div>
-              <h3 className="font-display font-bold text-emerald-800 text-lg mb-2">Complaint Submitted!</h3>
-              <p className="text-emerald-700 text-xs mb-5 leading-relaxed">
-                In the live system you&apos;d receive a tracking number and your complaint is routed automatically to the
-                correct minister.
+              <h3 className="font-display font-bold text-jucso-navy text-lg mb-2">Ready to file for real?</h3>
+              <p className="text-gray-600 text-xs mb-5 leading-relaxed">
+                Your complaint would route to <strong>{categories[catForm]}</strong>. Sign in to submit and receive a
+                tracking ID, or track an existing complaint.
               </p>
-              <Button
-                variant="navy"
+              <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                <Button variant="navy" onClick={() => handleLoginClick("student")}>
+                  Sign In to Submit
+                </Button>
+                <Button variant="outline" onClick={() => setPage("track")}>
+                  Track Complaint
+                </Button>
+              </div>
+              <button
+                type="button"
+                className="text-xs text-gray-500 underline mt-4"
                 onClick={() => {
-                  setSubmitted(false);
+                  setPreviewed(false);
                   setCatForm("");
                   setDescForm("");
                 }}
               >
-                Submit Another
-              </Button>
+                Try another category
+              </button>
             </div>
           )}
         </div>

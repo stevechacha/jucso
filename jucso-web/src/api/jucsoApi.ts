@@ -136,6 +136,16 @@ export const jucsoApi = {
     });
   },
 
+  getPublicStats() {
+    return apiRequest<import("@/api/types").PublicStatsResponse>("/api/stats/public/", { auth: false });
+  },
+
+  getComplaintCategories() {
+    return apiRequest<import("@/api/types").ComplaintCategoryOption[]>("/api/complaints/categories/", {
+      auth: false,
+    });
+  },
+
   getLeadership() {
     return apiRequest<import("@/types").LeadershipMember[]>("/api/leadership/", { auth: false });
   },

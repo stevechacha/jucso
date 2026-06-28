@@ -4,6 +4,7 @@ import { jucsoApi } from "@/api/jucsoApi";
 import { isApiEnabled } from "@/api/client";
 import { useApp } from "@/context/AppContext";
 import type { LeadershipMember } from "@/types";
+import type { PublicStatsResponse } from "@/api/types";
 import { Badge, newsTagVariant } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Footer } from "@/components/layout/Footer";
@@ -14,6 +15,9 @@ export function HomePage() {
   const [leaders, setLeaders] = useState<LeadershipMember[]>(
     MINISTERS.map((m) => ({ name: m.name, role: m.role, ministry: "", initials: m.initials })),
   );
+  const [homeStats, setHomeStats] = useState<[string, string][]>(() =>
+    HOME_STATS.map((row) => [row[0], row[1]]),
+  );
 
   useEffect(() => {
     if (!isApiEnabled) return;
@@ -21,6 +25,21 @@ export function HomePage() {
       .getLeadership()
       .then((data) => {
         if (data.length > 0) setLeaders(data);
+      })
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (!isApiEnabled) return;
+    void jucsoApi
+      .getPublicStats()
+      .then((stats: PublicStatsResponse) => {
+        setHomeStats([
+          [stats.students_registered.toLocaleString(), "Students Registered"],
+          [String(stats.ministries), "Active Ministries"],
+          [`${stats.resolution_rate}%`, "Complaint Resolution"],
+          [String(stats.active_clubs), "Active Clubs"],
+        ]);
       })
       .catch(console.error);
   }, []);
@@ -61,7 +80,7 @@ export function HomePage() {
       />
 
       <section className="bg-jucso-teal px-6 py-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-center" aria-label="Key statistics">
-        {HOME_STATS.map(([val, lab]) => (
+        {homeStats.map(([val, lab]) => (
           <div key={lab}>
             <div className="text-white font-display font-bold text-2xl md:text-3xl">{val}</div>
             <div className="text-white/75 text-[10px] font-semibold uppercase tracking-wide mt-1">

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDashboardTab } from "@/hooks/useDashboardTab";
+import { useComplaintCategories } from "@/hooks/useComplaintCategories";
 import { jucsoApi } from "@/api/jucsoApi";
-import { CAT_TO_MINISTRY } from "@/constants/mock-data";
 import { useApp } from "@/context/AppContext";
 import type { Complaint, Suggestion } from "@/types";
 import { Badge } from "@/components/ui/Badge";
@@ -23,6 +23,7 @@ function formatDate() {
 export function StudentDashboard() {
   const { user, complaints, setComplaints, suggestions, setSuggestions, clubs, setClubs, events, setEvents, apiEnabled, refreshPortalData, setPage } =
     useApp();
+  const categories = useComplaintCategories();
 
   if (!user) return null;
 
@@ -40,6 +41,7 @@ export function StudentDashboard() {
   const [sugTitle, setSugTitle] = useState("");
   const [sugDesc, setSugDesc] = useState("");
   const [sugSubmitted, setSugSubmitted] = useState(false);
+  const [lastSuggestionId, setLastSuggestionId] = useState<string | null>(null);
 
   const submitComplaint = async () => {
     if (!newCat || !newDesc.trim()) return;
@@ -57,7 +59,7 @@ export function StudentDashboard() {
         id: `JUC-${String(complaints.length + 1).padStart(3, "0")}`,
         category: newCat,
         description: newDesc,
-        ministry: CAT_TO_MINISTRY[newCat] ?? "Academics",
+        ministry: categories[newCat] ?? "Academics",
         status: "Pending",
         date: formatDate(),
         studentName: user.name,
@@ -81,7 +83,8 @@ export function StudentDashboard() {
   const submitSuggestion = async () => {
     if (!sugTitle.trim() || !sugDesc.trim()) return;
     if (apiEnabled) {
-      await jucsoApi.createSuggestion({ title: sugTitle, description: sugDesc });
+      const suggestion = await jucsoApi.createSuggestion({ title: sugTitle, description: sugDesc });
+      setLastSuggestionId(suggestion.id);
       await refreshPortalData();
     } else {
       const s: Suggestion = {
@@ -93,13 +96,15 @@ export function StudentDashboard() {
         status: "Received",
       };
       setSuggestions((prev) => [s, ...prev]);
+      setLastSuggestionId(s.id);
     }
     setSugSubmitted(true);
     setTimeout(() => {
       setSugSubmitted(false);
+      setLastSuggestionId(null);
       setSugTitle("");
       setSugDesc("");
-    }, 3000);
+    }, 4000);
   };
 
   const stats = [
@@ -182,7 +187,7 @@ export function StudentDashboard() {
               <>
                 <Select label="Complaint Category" value={newCat} onChange={(e) => setNewCat(e.target.value)}>
                   <option value="">— Select a category —</option>
-                  {Object.keys(CAT_TO_MINISTRY).map((c) => (
+                  {Object.keys(categories).map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>
@@ -190,7 +195,7 @@ export function StudentDashboard() {
                 </Select>
                 {newCat && (
                   <p className="text-xs text-indigo-600 bg-indigo-50 rounded p-2 mb-4">
-                    → Routed to: <strong>{CAT_TO_MINISTRY[newCat]}</strong> Ministry
+                    → Routed to: <strong>{categories[newCat]}</strong> Ministry
                   </p>
                 )}
                 <Textarea
@@ -240,6 +245,11 @@ export function StudentDashboard() {
                   💡
                 </div>
                 <div className="font-display font-bold text-emerald-800">Suggestion Received!</div>
+                {lastSuggestionId && (
+                  <p className="text-emerald-800 text-xs mt-2 font-semibold">
+                    Reference: <span className="font-mono">{lastSuggestionId}</span>
+                  </p>
+                )}
                 <p className="text-emerald-700 text-xs mt-2">JUCSO leadership will review it within 7 days.</p>
               </div>
             ) : (
