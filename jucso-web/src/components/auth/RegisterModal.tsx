@@ -60,6 +60,7 @@ export function RegisterModal({ onRegistered, onClose, onBackToLogin }: Register
         phone_number: form.phone_number.trim() || undefined,
       });
       onRegistered(user);
+      onClose();
     } catch (error) {
       setErr(error instanceof ApiError ? error.message : "Registration failed. Please try again.");
     } finally {

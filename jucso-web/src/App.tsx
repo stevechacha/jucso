@@ -129,6 +129,7 @@ export default function App() {
   const login = (nextUser: Parameters<typeof authLogin>[0]) => {
     authLogin(nextUser);
     setShowLogin(false);
+    setShowRegister(false);
     void refreshPortalData(nextUser);
   };
 

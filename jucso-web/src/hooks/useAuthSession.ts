@@ -51,6 +51,8 @@ export function useAuthSession({ onNavigate, onUnauthorized }: UseAuthSessionOpt
   const login = useCallback((nextUser: User) => {
     setUser(nextUser);
     onNavigate("dashboard");
+    syncUrlForPage("dashboard");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, [onNavigate]);
 
   return {
