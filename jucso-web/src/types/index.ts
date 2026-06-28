@@ -15,7 +15,8 @@ export type PageId =
   | "news"
   | "documents"
   | "contact"
-  | "dashboard";
+  | "dashboard"
+  | "reset-password";
 
 export interface User {
   name: string;

@@ -4,6 +4,7 @@ import { apiBaseUrl, isApiEnabled, setUnauthorizedHandler } from "@/api/client";
 import { AppProvider, useApp } from "@/context/AppContext";
 import type { PortalType } from "@/types";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { ForgotPasswordModal } from "@/components/auth/ForgotPasswordModal";
 import { RegisterModal } from "@/components/auth/RegisterModal";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { ApiStatusBanner } from "@/components/layout/ApiStatusBanner";
@@ -21,6 +22,7 @@ import { DocumentsPage } from "@/pages/DocumentsPage";
 import { HomePage } from "@/pages/HomePage";
 import { NewsPage } from "@/pages/NewsPage";
 import { ServicesPage } from "@/pages/ServicesPage";
+import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 
 function DashboardRouter() {
   const { user } = useApp();
@@ -84,6 +86,8 @@ function PageRouter() {
       return <DocumentsPage />;
     case "contact":
       return <ContactPage />;
+    case "reset-password":
+      return <ResetPasswordPage />;
     default:
       return <HomePage />;
   }
@@ -93,6 +97,7 @@ export default function App() {
   const [page, goToPage] = usePageNavigation();
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [loginPortal, setLoginPortal] = useState<PortalType>("student");
 
   const {
@@ -148,12 +153,20 @@ export default function App() {
   const openLogin = (portal: PortalType = "student") => {
     setLoginPortal(portal);
     setShowRegister(false);
+    setShowForgotPassword(false);
     setShowLogin(true);
   };
 
   const openRegister = () => {
     setShowLogin(false);
+    setShowForgotPassword(false);
     setShowRegister(true);
+  };
+
+  const openForgotPassword = () => {
+    setShowLogin(false);
+    setShowRegister(false);
+    setShowForgotPassword(true);
   };
 
   const handleLoginClick = (portal: PortalType = "student") => {
@@ -205,6 +218,13 @@ export default function App() {
             onLogin={login}
             onClose={() => setShowLogin(false)}
             onRegister={openRegister}
+            onForgotPassword={openForgotPassword}
+          />
+        )}
+        {showForgotPassword && (
+          <ForgotPasswordModal
+            onClose={() => setShowForgotPassword(false)}
+            onBackToLogin={() => openLogin("student")}
           />
         )}
         {showRegister && (

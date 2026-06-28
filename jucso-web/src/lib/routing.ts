@@ -8,6 +8,7 @@ const PAGE_PATHS: Record<PageId, string> = {
   documents: "/documents",
   contact: "/contact",
   dashboard: "/dashboard",
+  "reset-password": "/reset-password",
 };
 
 const PATH_PAGES = new Map<string, PageId>(

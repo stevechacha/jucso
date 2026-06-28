@@ -57,6 +57,23 @@ export const jucsoApi = {
     setToken(null);
   },
 
+  requestPasswordReset(data: { email?: string; reg_number?: string }) {
+    return apiRequest<{ detail: string }>("/api/auth/password-reset/", {
+      method: "POST",
+      body: data,
+      auth: false,
+    }).then((res) => res.detail);
+  },
+
+  async confirmPasswordReset(data: { uid: string; token: string; password: string }) {
+    const res = await apiRequest<{ detail: string }>("/api/auth/password-reset/confirm/", {
+      method: "POST",
+      body: data,
+      auth: false,
+    });
+    return res.detail;
+  },
+
   getMinistries() {
     return apiRequest<MinistryOption[]>("/api/admin/ministries/");
   },

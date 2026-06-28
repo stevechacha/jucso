@@ -34,9 +34,10 @@ interface LoginModalProps {
   onLogin: (user: User) => void;
   onClose: () => void;
   onRegister: () => void;
+  onForgotPassword: () => void;
 }
 
-export function LoginModal({ portal, onLogin, onClose, onRegister }: LoginModalProps) {
+export function LoginModal({ portal, onLogin, onClose, onRegister, onForgotPassword }: LoginModalProps) {
   const [idNumber, setIdNumber] = useState("");
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
@@ -167,6 +168,14 @@ export function LoginModal({ portal, onLogin, onClose, onRegister }: LoginModalP
           <Button type="submit" full variant="navy" disabled={loading}>
             {loading ? "Signing in…" : "Sign In →"}
           </Button>
+
+          <button
+            type="button"
+            onClick={onForgotPassword}
+            className="w-full mt-3 text-sm text-gray-500 font-medium py-2 hover:text-jucso-teal cursor-pointer"
+          >
+            Forgot password?
+          </button>
 
           {portal === "student" && (
             <button
