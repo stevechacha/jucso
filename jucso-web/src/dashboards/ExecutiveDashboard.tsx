@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useDashboardTab } from "@/hooks/useDashboardTab";
 import { jucsoApi, type ExecutiveStats } from "@/api/jucsoApi";
 import { useApp } from "@/context/AppContext";
+import { exportComplaintsCsv } from "@/lib/exportComplaintsCsv";
+import { Button } from "@/components/ui/Button";
+import { ConfidentialBadge } from "@/components/complaints/ConfidentialBadge";
 import { StatCard } from "@/components/ui/StatCard";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { DashboardShell } from "@/components/layout/DashboardShell";
@@ -133,7 +136,11 @@ export function ExecutiveDashboard() {
         <div className="bg-white rounded-xl shadow-card overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
             <h2 className="font-display font-bold text-jucso-navy">All Complaints ({filtered.length})</h2>
-            <select
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button size="sm" variant="outline" onClick={() => exportComplaintsCsv(filtered)}>
+                Export CSV
+              </Button>
+              <select
               value={filterMin}
               onChange={(e) => setFilterMin(e.target.value)}
               className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-jucso-teal"
@@ -146,6 +153,7 @@ export function ExecutiveDashboard() {
                 </option>
               ))}
             </select>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
@@ -166,8 +174,11 @@ export function ExecutiveDashboard() {
                 {filtered.map((c, i) => (
                   <tr key={c.id} className={`border-t border-gray-50 ${i % 2 === 1 ? "bg-gray-50/50" : ""}`}>
                     <td className="px-4 py-3 text-jucso-teal font-bold">
-                      {c.id}
-                      {c.urgent && <span className="text-red-500 ml-1">⚠</span>}
+                      <span className="inline-flex items-center gap-1 flex-wrap">
+                        {c.id}
+                        {c.urgent && <span className="text-red-500 ml-1">⚠</span>}
+                        {c.isConfidential && <ConfidentialBadge />}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{c.studentName}</td>
                     <td className="px-4 py-3 text-gray-500 max-w-[120px] truncate">{c.category}</td>

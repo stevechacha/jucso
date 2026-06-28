@@ -21,6 +21,7 @@ export interface ApiComplaint {
   student_reg: string;
   response?: string;
   urgent?: boolean;
+  is_confidential?: boolean;
   supporting_document_url?: string;
 }
 

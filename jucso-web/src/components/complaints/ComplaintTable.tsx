@@ -1,6 +1,7 @@
 import { Fragment, useState } from "react";
 import type { Complaint } from "@/types";
 import { ComplaintAttachmentLink } from "@/components/complaints/ComplaintAttachmentLink";
+import { ConfidentialBadge } from "@/components/complaints/ConfidentialBadge";
 import { StatusPill } from "@/components/ui/StatusPill";
 
 interface ComplaintTableProps {
@@ -39,12 +40,15 @@ export function ComplaintTable({ complaints, showResponse = false }: ComplaintTa
                 onClick={() => setExpanded(expanded === c.id ? null : c.id)}
               >
                 <td className="px-4 py-3 text-jucso-teal font-bold whitespace-nowrap">
-                  {c.id}
-                  {c.urgent && (
-                    <span className="ml-1 text-red-500" title="Urgent">
-                      ⚠
-                    </span>
-                  )}
+                  <span className="inline-flex items-center gap-1 flex-wrap">
+                    {c.id}
+                    {c.urgent && (
+                      <span className="text-red-500" title="Urgent">
+                        ⚠
+                      </span>
+                    )}
+                    {c.isConfidential && <ConfidentialBadge />}
+                  </span>
                 </td>
                 <td className="px-4 py-3 text-gray-700 max-w-[160px] truncate">{c.category}</td>
                 <td className="px-4 py-3 font-semibold text-jucso-navy whitespace-nowrap">

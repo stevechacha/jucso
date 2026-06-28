@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDashboardTab } from "@/hooks/useDashboardTab";
 import { jucsoApi } from "@/api/jucsoApi";
 import { useApp } from "@/context/AppContext";
 import type { ComplaintStatus } from "@/types";
 import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/FormFields";
+import { Select, Textarea } from "@/components/ui/FormFields";
 import { StatCard } from "@/components/ui/StatCard";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { ComplaintAttachmentLink } from "@/components/complaints/ComplaintAttachmentLink";
+import { ConfidentialBadge } from "@/components/complaints/ConfidentialBadge";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { SuggestionReviewPanel } from "@/components/suggestions/SuggestionReviewPanel";
 
@@ -21,6 +22,13 @@ export function MinisterDashboard() {
   const [tab, setTab] = useDashboardTab(TABS, "incoming");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [responseText, setResponseText] = useState("");
+  const [forwardMinistry, setForwardMinistry] = useState("");
+  const [ministries, setMinistries] = useState<Array<{ id: number; name: string }>>([]);
+
+  useEffect(() => {
+    if (!apiEnabled) return;
+    void jucsoApi.getMinistries().then(setMinistries).catch(console.error);
+  }, [apiEnabled]);
 
   const myComplaints = complaints.filter((c) => c.ministry === user.ministry);
   const selected = complaints.find((c) => c.id === selectedId);
@@ -36,6 +44,22 @@ export function MinisterDashboard() {
     }
     setSelectedId(null);
     setResponseText("");
+    setForwardMinistry("");
+  };
+
+  const forward = async (id: string) => {
+    if (!forwardMinistry || forwardMinistry === user.ministry) return;
+    if (apiEnabled) {
+      await jucsoApi.updateComplaint(id, { ministry: forwardMinistry });
+      await refreshPortalData();
+    } else {
+      setComplaints((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, ministry: forwardMinistry, status: "Pending" } : c)),
+      );
+    }
+    setSelectedId(null);
+    setResponseText("");
+    setForwardMinistry("");
   };
 
   const stats = [
@@ -97,8 +121,11 @@ export function MinisterDashboard() {
                       }`}
                     >
                       <td className="px-4 py-3 text-jucso-teal font-bold">
-                        {c.id}
-                        {c.urgent && <span className="text-red-500 ml-1">⚠</span>}
+                        <span className="inline-flex items-center gap-1 flex-wrap">
+                          {c.id}
+                          {c.urgent && <span className="text-red-500 ml-1">⚠</span>}
+                          {c.isConfidential && <ConfidentialBadge />}
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{c.studentName}</td>
                       <td className="px-4 py-3 text-gray-500 max-w-[160px] truncate">{c.description}</td>
@@ -115,9 +142,12 @@ export function MinisterDashboard() {
           <div className="md:col-span-2">
             {selected ? (
               <div className="bg-white rounded-xl p-5 shadow-card">
-                <div className="flex justify-between items-start mb-4">
+                <div className="flex justify-between items-start mb-4 gap-2">
                   <h3 className="font-display font-bold text-jucso-navy text-sm">Complaint {selected.id}</h3>
-                  <StatusPill status={selected.status} />
+                  <div className="flex items-center gap-2">
+                    {selected.isConfidential && <ConfidentialBadge />}
+                    <StatusPill status={selected.status} />
+                  </div>
                 </div>
                 <p className="text-xs text-gray-400 mb-1">
                   From: <span className="font-semibold text-gray-700">{selected.studentName}</span> (
@@ -143,12 +173,37 @@ export function MinisterDashboard() {
                   rows={3}
                   placeholder="Type your response to the student..."
                 />
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-2 flex-wrap mb-4">
                   <Button size="sm" variant="teal" onClick={() => respond(selected.id, "In Progress")}>
                     Mark In Progress
                   </Button>
                   <Button size="sm" variant="navy" onClick={() => respond(selected.id, "Resolved")}>
                     Mark Resolved
+                  </Button>
+                </div>
+                <div className="border-t border-gray-100 pt-4">
+                  <Select
+                    label="Forward to ministry"
+                    value={forwardMinistry}
+                    onChange={(e) => setForwardMinistry(e.target.value)}
+                  >
+                    <option value="">Select ministry…</option>
+                    {ministries
+                      .filter((m) => m.name !== user.ministry)
+                      .map((m) => (
+                        <option key={m.id} value={m.name}>
+                          {m.name}
+                        </option>
+                      ))}
+                  </Select>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-2"
+                    disabled={!forwardMinistry}
+                    onClick={() => void forward(selected.id)}
+                  >
+                    Forward complaint
                   </Button>
                 </div>
               </div>

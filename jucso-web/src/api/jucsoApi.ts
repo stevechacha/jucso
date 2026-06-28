@@ -112,7 +112,7 @@ export const jucsoApi = {
     return { message: res.detail, user: mapUser(res.user) };
   },
 
-  async updateComplaint(id: string, data: { status?: string; response?: string }) {
+  async updateComplaint(id: string, data: { status?: string; response?: string; ministry?: string }) {
     const complaint = await apiRequest<ApiComplaint>(`/api/complaints/${encodeURIComponent(id)}/`, {
       method: "PATCH",
       body: data,
@@ -257,5 +257,38 @@ export const jucsoApi = {
 
   async createNews(data: { title: string; excerpt: string; tag: string; published_at?: string }) {
     return apiRequest<NewsItem>("/api/admin/news/", { method: "POST", body: data });
+  },
+
+  deleteNews(newsId: string) {
+    const pk = parseInt(newsId.replace(/^N/i, ""), 10);
+    return apiRequest<void>(`/api/admin/news/${pk}/`, { method: "DELETE" });
+  },
+
+  deleteDocument(documentId: string) {
+    const pk = parseInt(documentId.replace(/^DOC-/i, ""), 10);
+    return apiRequest<void>(`/api/admin/documents/${pk}/`, { method: "DELETE" });
+  },
+
+  async getContactMessages() {
+    const response = await apiRequest<
+      | Array<{ id: string; name: string; email: string; subject: string; message: string; date: string }>
+      | { results: Array<{ id: string; name: string; email: string; subject: string; message: string; date: string }> }
+    >("/api/admin/contact-messages/");
+    return Array.isArray(response) ? response : response.results;
+  },
+
+  async createClub(data: { name: string; description: string; leader: string; category: string }) {
+    return apiRequest<Club>("/api/admin/clubs/", { method: "POST", body: data });
+  },
+
+  async createEvent(data: {
+    title: string;
+    description: string;
+    location: string;
+    event_date: string;
+    capacity: number;
+  }) {
+    const event = await apiRequest<ApiEvent>("/api/admin/events/", { method: "POST", body: data });
+    return mapEvent(event);
   },
 };

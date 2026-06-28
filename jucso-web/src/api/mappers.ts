@@ -12,12 +12,13 @@ export function mapUser(user: ApiUser): User {
 }
 
 export function mapComplaint(complaint: ApiComplaint): Complaint {
-  const { student_name, student_reg, supporting_document_url, ...rest } = complaint;
+  const { student_name, student_reg, supporting_document_url, is_confidential, ...rest } = complaint;
   return {
     ...rest,
     studentName: student_name,
     studentReg: student_reg,
     supportingDocumentUrl: supporting_document_url,
+    isConfidential: is_confidential ?? false,
   };
 }
 

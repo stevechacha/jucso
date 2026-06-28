@@ -37,6 +37,7 @@ export interface Complaint {
   studentReg: string;
   response?: string;
   urgent?: boolean;
+  isConfidential?: boolean;
   supportingDocumentUrl?: string;
 }
 

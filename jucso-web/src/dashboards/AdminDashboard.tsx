@@ -314,12 +314,239 @@ function AddNewsForm({ onCreated }: { onCreated: () => void }) {
   );
 }
 
+function ContactInboxPanel() {
+  const [messages, setMessages] = useState<
+    Array<{ id: string; name: string; email: string; subject: string; message: string; date: string }>
+  >([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    void jucsoApi
+      .getContactMessages()
+      .then(setMessages)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="bg-white rounded-xl shadow-card p-5">
+      <h2 className="font-display font-bold text-jucso-navy mb-4">Contact Inbox ({messages.length})</h2>
+      {loading ? (
+        <p className="text-gray-400 text-sm">Loading messages…</p>
+      ) : messages.length === 0 ? (
+        <p className="text-gray-400 text-sm">No contact messages yet.</p>
+      ) : (
+        <ul className="max-h-80 overflow-y-auto">
+          {messages.map((m) => (
+            <li key={m.id} className="py-3 border-b border-gray-50 last:border-0">
+              <div className="flex justify-between gap-2 text-xs mb-1">
+                <span className="font-semibold text-jucso-navy">{m.subject}</span>
+                <span className="text-gray-400 whitespace-nowrap">{m.date}</span>
+              </div>
+              <div className="text-[10px] text-gray-500 mb-1">
+                {m.name} · {m.email}
+              </div>
+              <p className="text-xs text-gray-600 leading-relaxed">{m.message}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function AddClubForm({ onCreated }: { onCreated: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", description: "", leader: "", category: "Academic" });
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErr("");
+    try {
+      await jucsoApi.createClub({
+        name: form.name.trim(),
+        description: form.description.trim(),
+        leader: form.leader.trim(),
+        category: form.category,
+      });
+      setForm({ name: "", description: "", leader: "", category: "Academic" });
+      onCreated();
+      setOpen(false);
+    } catch (error) {
+      setErr(error instanceof ApiError ? error.message : "Could not create club.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <Button variant="teal" size="sm" onClick={() => setOpen(true)}>
+        + Add Club
+      </Button>
+    );
+  }
+
+  return (
+    <form onSubmit={(e) => void submit(e)} className="mt-4 border border-gray-100 rounded-xl p-4 bg-jucso-slate/40">
+      <h3 className="font-display font-bold text-jucso-navy text-sm mb-3">New club</h3>
+      <Input label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+      <Input
+        label="Leader"
+        value={form.leader}
+        onChange={(e) => setForm({ ...form, leader: e.target.value })}
+        required
+      />
+      <Select label="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
+        <option value="Academic">Academic</option>
+        <option value="Sports">Sports</option>
+        <option value="Arts">Arts</option>
+        <option value="Social">Social</option>
+      </Select>
+      <Textarea
+        label="Description"
+        value={form.description}
+        onChange={(e) => setForm({ ...form, description: e.target.value })}
+        rows={2}
+        required
+      />
+      {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
+      <div className="flex gap-2">
+        <Button type="submit" variant="navy" size="sm" disabled={loading}>
+          {loading ? "Saving…" : "Create club"}
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>
+          Close
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function AddEventForm({ onCreated }: { onCreated: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    location: "",
+    event_date: "",
+    capacity: "50",
+  });
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErr("");
+    try {
+      await jucsoApi.createEvent({
+        title: form.title.trim(),
+        description: form.description.trim(),
+        location: form.location.trim(),
+        event_date: form.event_date,
+        capacity: parseInt(form.capacity, 10),
+      });
+      setForm({ title: "", description: "", location: "", event_date: "", capacity: "50" });
+      onCreated();
+      setOpen(false);
+    } catch (error) {
+      setErr(error instanceof ApiError ? error.message : "Could not create event.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <Button variant="teal" size="sm" onClick={() => setOpen(true)}>
+        + Add Event
+      </Button>
+    );
+  }
+
+  return (
+    <form onSubmit={(e) => void submit(e)} className="mt-4 border border-gray-100 rounded-xl p-4 bg-jucso-slate/40">
+      <h3 className="font-display font-bold text-jucso-navy text-sm mb-3">New event</h3>
+      <Input label="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+      <Input
+        label="Location"
+        value={form.location}
+        onChange={(e) => setForm({ ...form, location: e.target.value })}
+        required
+      />
+      <Input
+        label="Date"
+        type="date"
+        value={form.event_date}
+        onChange={(e) => setForm({ ...form, event_date: e.target.value })}
+        required
+      />
+      <Input
+        label="Capacity"
+        type="number"
+        min={1}
+        value={form.capacity}
+        onChange={(e) => setForm({ ...form, capacity: e.target.value })}
+        required
+      />
+      <Textarea
+        label="Description"
+        value={form.description}
+        onChange={(e) => setForm({ ...form, description: e.target.value })}
+        rows={2}
+        required
+      />
+      {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
+      <div className="flex gap-2">
+        <Button type="submit" variant="navy" size="sm" disabled={loading}>
+          {loading ? "Saving…" : "Create event"}
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>
+          Close
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 export function AdminDashboard() {
   const { complaints, suggestions, clubs, events, news, documents, apiEnabled, refreshPortalData } = useApp();
   const [tab, setTab] = useDashboardTab(TABS, "overview");
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [adminUsers, setAdminUsers] = useState<AdminUserRow[]>([]);
   const [userPage, setUserPage] = useState(1);
+  const [deletingNewsId, setDeletingNewsId] = useState<string | null>(null);
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+
+  const removeNews = async (id: string) => {
+    if (!window.confirm("Remove this announcement from the site?")) return;
+    setDeletingNewsId(id);
+    try {
+      await jucsoApi.deleteNews(id);
+      await refreshPortalData();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setDeletingNewsId(null);
+    }
+  };
+
+  const removeDocument = async (id: string) => {
+    if (!window.confirm("Remove this document from the site?")) return;
+    setDeletingDocId(id);
+    try {
+      await jucsoApi.deleteDocument(id);
+      await refreshPortalData();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setDeletingDocId(null);
+    }
+  };
 
   useEffect(() => {
     if (!apiEnabled) return;
@@ -556,7 +783,7 @@ export function AdminDashboard() {
               News & Announcements ({news.length})
             </h2>
             <ul>
-              {news.slice(0, 4).map((n) => (
+              {news.slice(0, 8).map((n) => (
                 <li key={n.id} className="flex items-start gap-3 py-3 border-b border-gray-50 last:border-0">
                   <div className="flex-1 min-w-0">
                     <div className="text-jucso-navy font-semibold text-xs truncate">{n.title}</div>
@@ -564,6 +791,16 @@ export function AdminDashboard() {
                       {n.tag} · {n.date}
                     </div>
                   </div>
+                  {apiEnabled && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={deletingNewsId === n.id}
+                      onClick={() => void removeNews(n.id)}
+                    >
+                      {deletingNewsId === n.id ? "…" : "Remove"}
+                    </Button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -588,8 +825,13 @@ export function AdminDashboard() {
                       {d.size} · {d.date}
                     </div>
                   </div>
-                  <Button size="sm" variant="outline">
-                    Replace
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!apiEnabled || deletingDocId === d.id}
+                    onClick={() => void removeDocument(d.id)}
+                  >
+                    {deletingDocId === d.id ? "…" : "Remove"}
                   </Button>
                 </li>
               ))}
@@ -605,6 +847,33 @@ export function AdminDashboard() {
             </div>
           </div>
         </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="bg-white rounded-xl shadow-card p-5">
+              <h2 className="font-display font-bold text-jucso-navy mb-4">Clubs ({clubs.length})</h2>
+              <ul className="mb-4 max-h-40 overflow-y-auto">
+                {clubs.slice(0, 5).map((c) => (
+                  <li key={c.id} className="py-2 border-b border-gray-50 last:border-0 text-xs">
+                    <div className="font-semibold text-jucso-navy">{c.name}</div>
+                    <div className="text-gray-400 text-[10px]">{c.category} · {c.members} members</div>
+                  </li>
+                ))}
+              </ul>
+              {apiEnabled && <AddClubForm onCreated={() => void refreshPortalData()} />}
+            </div>
+            <div className="bg-white rounded-xl shadow-card p-5">
+              <h2 className="font-display font-bold text-jucso-navy mb-4">Events ({events.length})</h2>
+              <ul className="mb-4 max-h-40 overflow-y-auto">
+                {events.slice(0, 5).map((e) => (
+                  <li key={e.id} className="py-2 border-b border-gray-50 last:border-0 text-xs">
+                    <div className="font-semibold text-jucso-navy">{e.title}</div>
+                    <div className="text-gray-400 text-[10px]">{e.date} · {e.location}</div>
+                  </li>
+                ))}
+              </ul>
+              {apiEnabled && <AddEventForm onCreated={() => void refreshPortalData()} />}
+            </div>
+            {apiEnabled && <ContactInboxPanel />}
+          </div>
         </div>
       )}
 
