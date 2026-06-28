@@ -264,6 +264,19 @@ export const jucsoApi = {
     return apiRequest<void>(`/api/admin/news/${pk}/`, { method: "DELETE" });
   },
 
+  updateNews(
+    newsId: string,
+    data: { title?: string; excerpt?: string; tag?: string; is_published?: boolean },
+  ) {
+    const pk = parseInt(newsId.replace(/^N/i, ""), 10);
+    return apiRequest<NewsItem>(`/api/admin/news/${pk}/`, { method: "PATCH", body: data });
+  },
+
+  async downloadPortalBackup() {
+    const data = await apiRequest<Record<string, unknown>>("/api/admin/backup/", { method: "POST" });
+    return data;
+  },
+
   deleteDocument(documentId: string) {
     const pk = parseInt(documentId.replace(/^DOC-/i, ""), 10);
     return apiRequest<void>(`/api/admin/documents/${pk}/`, { method: "DELETE" });
@@ -290,5 +303,9 @@ export const jucsoApi = {
   }) {
     const event = await apiRequest<ApiEvent>("/api/admin/events/", { method: "POST", body: data });
     return mapEvent(event);
+  },
+
+  getSystemStatus() {
+    return apiRequest<import("@/api/types").AdminSystemStatusResponse>("/api/admin/system-status/");
   },
 };

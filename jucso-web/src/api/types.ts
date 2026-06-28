@@ -94,6 +94,16 @@ export interface AdminOverviewResponse {
   registered_students: number;
 }
 
+export interface AdminSystemStatusResponse {
+  api: string;
+  database: string;
+  email_configured: boolean;
+  sms_configured: boolean;
+  storage_configured: boolean;
+  debug: boolean;
+  ssl_enabled: boolean;
+}
+
 export interface MinistryOption {
   id: number;
   name: string;

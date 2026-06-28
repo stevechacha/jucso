@@ -1,8 +1,10 @@
 import { generateStaffTempPassword } from "@/lib/generateTempPassword";
+import { downloadJsonBackup, getLastBackupLabel } from "@/lib/downloadJsonBackup";
 import { useDashboardTab } from "@/hooks/useDashboardTab";
 import { useEffect, useState, type FormEvent } from "react";
 import { ApiError } from "@/api/client";
 import { jucsoApi, type AdminOverview, type AdminUserRow } from "@/api/jucsoApi";
+import type { AdminSystemStatusResponse } from "@/api/types";
 import { DEMO_USERS } from "@/constants/mock-data";
 import { useApp } from "@/context/AppContext";
 import { Badge } from "@/components/ui/Badge";
@@ -11,24 +13,26 @@ import { Input, Select, Textarea } from "@/components/ui/FormFields";
 import { StatCard } from "@/components/ui/StatCard";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { SuggestionReviewPanel } from "@/components/suggestions/SuggestionReviewPanel";
+import type { NewsItem } from "@/types";
 
 const TABS = ["overview", "users", "content", "system"] as const;
 type AdminTab = (typeof TABS)[number];
 const USERS_PER_PAGE = 7;
 
-const SYSTEM_STATUS = [
-  { lab: "Web Server", val: "Running", ok: true },
-  { lab: "Database", val: "Connected", ok: true },
-  { lab: "Last Backup", val: "Jun 28, 06:00 AM", ok: true },
-  { lab: "SSL Certificate", val: "Valid (Let's Encrypt)", ok: true },
-  { lab: "Storage Used", val: "2.1 GB / 10 GB", ok: true },
+const SYSTEM_STATUS_FALLBACK = [
+  { lab: "API", val: "Unknown", ok: true },
+  { lab: "Database", val: "Unknown", ok: true },
+  { lab: "Email", val: "Unknown", ok: true },
+  { lab: "SMS", val: "Not configured", ok: true },
+  { lab: "File Storage", val: "Unknown", ok: true },
+  { lab: "SSL", val: "Unknown", ok: true },
 ] as const;
 
 const SYSTEM_TOOLS = [
-  { title: "Database Backup", desc: "Last backup: Today at 06:00 AM", action: "Run Backup Now", icon: "💾" },
-  { title: "Security Updates", desc: "All packages up to date", action: "Check for Updates", icon: "🔒" },
-  { title: "Error Logs", desc: "0 critical errors in last 24h", action: "View Logs", icon: "📝" },
-  { title: "Performance Monitor", desc: "Average page load: 1.2s", action: "View Report", icon: "⚡" },
+  { id: "backup", title: "Database Backup", action: "Run Backup Now", icon: "💾" },
+  { id: "security", title: "Security Updates", action: "Check for Updates", icon: "🔒" },
+  { id: "logs", title: "Error Logs", action: "View Logs", icon: "📝" },
+  { id: "performance", title: "Performance Monitor", action: "View Report", icon: "⚡" },
 ] as const;
 
 function roleBadgeVariant(role: string): "gold" | "teal" | "navy" | "gray" {
@@ -314,6 +318,138 @@ function AddNewsForm({ onCreated }: { onCreated: () => void }) {
   );
 }
 
+function EditNewsForm({
+  item,
+  onSaved,
+  onCancel,
+}: {
+  item: NewsItem;
+  onSaved: () => void;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState(item.title);
+  const [excerpt, setExcerpt] = useState(item.excerpt);
+  const [tag, setTag] = useState(item.tag);
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErr("");
+    try {
+      await jucsoApi.updateNews(item.id, {
+        title: title.trim(),
+        excerpt: excerpt.trim(),
+        tag,
+      });
+      onSaved();
+    } catch (error) {
+      setErr(error instanceof ApiError ? error.message : "Could not update announcement.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={(e) => void submit(e)} className="mt-3 border border-indigo-100 rounded-xl p-4 bg-indigo-50/40">
+      <h4 className="font-display font-bold text-jucso-navy text-xs mb-3">Edit {item.id}</h4>
+      <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+      <Textarea label="Summary" value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={3} required />
+      <Select label="Category" value={tag} onChange={(e) => setTag(e.target.value as NewsItem["tag"])}>
+        <option value="Announcement">Announcement</option>
+        <option value="Events">Events</option>
+        <option value="Clubs">Clubs</option>
+        <option value="Notice">Notice</option>
+      </Select>
+      {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
+      <div className="flex gap-2">
+        <Button type="submit" variant="navy" size="sm" disabled={loading}>
+          {loading ? "Saving…" : "Save changes"}
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function SystemToolsPanel({ apiEnabled }: { apiEnabled: boolean }) {
+  const [lastBackup, setLastBackup] = useState<string | null>(() => getLastBackupLabel());
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [backupMsg, setBackupMsg] = useState("");
+  const [systemStatus, setSystemStatus] = useState<AdminSystemStatusResponse | null>(null);
+
+  useEffect(() => {
+    if (!apiEnabled) return;
+    void jucsoApi.getSystemStatus().then(setSystemStatus).catch(console.error);
+  }, [apiEnabled]);
+
+  const runBackup = async () => {
+    if (!apiEnabled) return;
+    setBackupLoading(true);
+    setBackupMsg("");
+    try {
+      const data = await jucsoApi.downloadPortalBackup();
+      downloadJsonBackup(data);
+      setLastBackup(getLastBackupLabel());
+      setBackupMsg("Backup downloaded successfully.");
+    } catch (error) {
+      setBackupMsg(error instanceof ApiError ? error.message : "Backup failed.");
+    } finally {
+      setBackupLoading(false);
+    }
+  };
+
+  const toolDesc = (id: (typeof SYSTEM_TOOLS)[number]["id"]) => {
+    if (id === "backup") {
+      return lastBackup ? `Last backup: ${lastBackup}` : "No backup downloaded yet from this browser.";
+    }
+    if (id === "security") {
+      if (!systemStatus) return "Checking email, SMS, and SSL configuration…";
+      return [
+        `Email: ${systemStatus.email_configured ? "configured" : "not configured"}`,
+        `SMS: ${systemStatus.sms_configured ? "configured" : "not configured"}`,
+        `SSL: ${systemStatus.ssl_enabled ? "enabled" : "disabled"}`,
+      ].join(" · ");
+    }
+    if (id === "logs") {
+      return systemStatus?.debug
+        ? "Debug mode is on — use Railway deployment logs in production."
+        : "View application logs in your Railway deployment dashboard.";
+    }
+    return systemStatus
+      ? `API ${systemStatus.api} · Database ${systemStatus.database}`
+      : "Checking API and database connectivity…";
+  };
+
+  return (
+    <div className="space-y-4">
+      {backupMsg && <p className="text-xs text-jucso-navy bg-jucso-slate rounded-lg px-3 py-2">{backupMsg}</p>}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {SYSTEM_TOOLS.map((s) => (
+          <article key={s.id} className="bg-white rounded-xl p-5 shadow-card">
+            <div className="text-3xl mb-3" aria-hidden>
+              {s.icon}
+            </div>
+            <h3 className="font-display font-bold text-jucso-navy mb-1 text-sm">{s.title}</h3>
+            <p className="text-gray-500 text-xs mb-4">{toolDesc(s.id)}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={s.id === "backup" ? !apiEnabled || backupLoading : true}
+              onClick={s.id === "backup" ? () => void runBackup() : undefined}
+            >
+              {s.id === "backup" && backupLoading ? "Exporting…" : s.action}
+            </Button>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ContactInboxPanel() {
   const [messages, setMessages] = useState<
     Array<{ id: string; name: string; email: string; subject: string; message: string; date: string }>
@@ -521,6 +657,49 @@ export function AdminDashboard() {
   const [userPage, setUserPage] = useState(1);
   const [deletingNewsId, setDeletingNewsId] = useState<string | null>(null);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+  const [editingNewsId, setEditingNewsId] = useState<string | null>(null);
+  const [systemStatus, setSystemStatus] = useState<AdminSystemStatusResponse | null>(null);
+
+  useEffect(() => {
+    if (!apiEnabled) return;
+    void jucsoApi.getSystemStatus().then(setSystemStatus).catch(console.error);
+  }, [apiEnabled]);
+
+  const systemStatusRows = systemStatus
+    ? [
+        { lab: "API", val: systemStatus.api === "ok" ? "Running" : systemStatus.api, ok: systemStatus.api === "ok" },
+        {
+          lab: "Database",
+          val: systemStatus.database === "connected" ? "Connected" : systemStatus.database,
+          ok: systemStatus.database === "connected",
+        },
+        {
+          lab: "Email",
+          val: systemStatus.email_configured ? "Configured" : "Not configured",
+          ok: systemStatus.email_configured,
+        },
+        {
+          lab: "SMS",
+          val: systemStatus.sms_configured ? "Configured" : "Not configured",
+          ok: systemStatus.sms_configured,
+        },
+        {
+          lab: "File Storage",
+          val: systemStatus.storage_configured ? "Supabase connected" : "Not configured",
+          ok: systemStatus.storage_configured,
+        },
+        {
+          lab: "SSL",
+          val: systemStatus.ssl_enabled ? "Enabled" : "Disabled",
+          ok: systemStatus.ssl_enabled,
+        },
+        {
+          lab: "Last Backup",
+          val: getLastBackupLabel() ?? "Not downloaded in this browser",
+          ok: Boolean(getLastBackupLabel()),
+        },
+      ]
+    : [...SYSTEM_STATUS_FALLBACK];
 
   const removeNews = async (id: string) => {
     if (!window.confirm("Remove this announcement from the site?")) return;
@@ -639,7 +818,7 @@ export function AdminDashboard() {
             <div className="bg-white rounded-xl shadow-card p-5">
               <h2 className="font-display font-bold text-jucso-navy mb-4">System Status</h2>
               <ul>
-                {SYSTEM_STATUS.map((s) => (
+                {systemStatusRows.map((s) => (
                   <li
                     key={s.lab}
                     className="flex justify-between items-center py-2.5 border-b border-gray-50 last:border-0"
@@ -784,22 +963,43 @@ export function AdminDashboard() {
             </h2>
             <ul>
               {news.slice(0, 8).map((n) => (
-                <li key={n.id} className="flex items-start gap-3 py-3 border-b border-gray-50 last:border-0">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-jucso-navy font-semibold text-xs truncate">{n.title}</div>
-                    <div className="text-gray-400 text-[10px] mt-0.5">
-                      {n.tag} · {n.date}
+                <li key={n.id} className="py-3 border-b border-gray-50 last:border-0">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-jucso-navy font-semibold text-xs truncate">{n.title}</div>
+                      <div className="text-gray-400 text-[10px] mt-0.5">
+                        {n.tag} · {n.date}
+                      </div>
                     </div>
+                    {apiEnabled && (
+                      <div className="flex gap-1 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditingNewsId(editingNewsId === n.id ? null : n.id)}
+                        >
+                          {editingNewsId === n.id ? "Close" : "Edit"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={deletingNewsId === n.id}
+                          onClick={() => void removeNews(n.id)}
+                        >
+                          {deletingNewsId === n.id ? "…" : "Remove"}
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                  {apiEnabled && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={deletingNewsId === n.id}
-                      onClick={() => void removeNews(n.id)}
-                    >
-                      {deletingNewsId === n.id ? "…" : "Remove"}
-                    </Button>
+                  {editingNewsId === n.id && (
+                    <EditNewsForm
+                      item={n}
+                      onCancel={() => setEditingNewsId(null)}
+                      onSaved={() => {
+                        setEditingNewsId(null);
+                        void refreshPortalData();
+                      }}
+                    />
                   )}
                 </li>
               ))}
@@ -877,22 +1077,7 @@ export function AdminDashboard() {
         </div>
       )}
 
-      {tab === "system" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {SYSTEM_TOOLS.map((s) => (
-            <article key={s.title} className="bg-white rounded-xl p-5 shadow-card">
-              <div className="text-3xl mb-3" aria-hidden>
-                {s.icon}
-              </div>
-              <h3 className="font-display font-bold text-jucso-navy mb-1 text-sm">{s.title}</h3>
-              <p className="text-gray-500 text-xs mb-4">{s.desc}</p>
-              <Button variant="outline" size="sm">
-                {s.action}
-              </Button>
-            </article>
-          ))}
-        </div>
-      )}
+      {tab === "system" && <SystemToolsPanel apiEnabled={apiEnabled} />}
     </DashboardShell>
   );
 }
