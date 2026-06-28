@@ -1,6 +1,8 @@
 const TOKEN_KEY = "jucso_access_token";
+const REFRESH_KEY = "jucso_refresh_token";
 
 let unauthorizedHandler: (() => void) | null = null;
+let refreshPromise: Promise<string | null> | null = null;
 
 export function setUnauthorizedHandler(handler: (() => void) | null) {
   unauthorizedHandler = handler;
@@ -31,15 +33,30 @@ export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
+export function getRefreshToken(): string | null {
+  return localStorage.getItem(REFRESH_KEY);
+}
+
 export function setToken(token: string | null) {
   if (token) localStorage.setItem(TOKEN_KEY, token);
   else localStorage.removeItem(TOKEN_KEY);
+}
+
+export function setRefreshToken(token: string | null) {
+  if (token) localStorage.setItem(REFRESH_KEY, token);
+  else localStorage.removeItem(REFRESH_KEY);
+}
+
+export function clearAuthTokens() {
+  setToken(null);
+  setRefreshToken(null);
 }
 
 interface RequestOptions extends Omit<RequestInit, "body"> {
   body?: unknown;
   auth?: boolean;
   isFormData?: boolean;
+  _retry?: boolean;
 }
 
 export class ApiError extends Error {
@@ -89,6 +106,33 @@ function unwrapPaginated<T>(data: T | { results: T }): T {
   return data as T;
 }
 
+async function refreshAccessToken(): Promise<string | null> {
+  const refresh = getRefreshToken();
+  if (!refresh || !API_BASE) return null;
+
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/auth/token/refresh/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ refresh }),
+        });
+        if (!response.ok) return null;
+        const data = (await response.json()) as { access: string };
+        setToken(data.access);
+        return data.access;
+      } catch {
+        return null;
+      } finally {
+        refreshPromise = null;
+      }
+    })();
+  }
+
+  return refreshPromise;
+}
+
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   if (!API_BASE) {
     throw new ApiError("API URL is not configured", 0);
@@ -104,7 +148,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const token = useAuth ? getToken() : null;
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const response = await fetch(`${API_BASE}${path}`, {
+  let response = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers,
     body:
@@ -115,8 +159,12 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
           : JSON.stringify(options.body),
   });
 
-  if (response.status === 401 && token) {
-    setToken(null);
+  if (response.status === 401 && token && useAuth && !options._retry && !path.includes("/auth/token/refresh/")) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      return apiRequest<T>(path, { ...options, _retry: true });
+    }
+    clearAuthTokens();
     unauthorizedHandler?.();
   }
 

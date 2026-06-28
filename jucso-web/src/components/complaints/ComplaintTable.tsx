@@ -1,5 +1,6 @@
 import { Fragment, useState } from "react";
 import type { Complaint } from "@/types";
+import { ComplaintAttachmentLink } from "@/components/complaints/ComplaintAttachmentLink";
 import { StatusPill } from "@/components/ui/StatusPill";
 
 interface ComplaintTableProps {
@@ -60,6 +61,7 @@ export function ComplaintTable({ complaints, showResponse = false }: ComplaintTa
                     <div className="text-gray-700 text-xs mb-2">
                       <strong>Description:</strong> {c.description}
                     </div>
+                    <ComplaintAttachmentLink url={c.supportingDocumentUrl} className="mb-2 block" />
                     {showResponse && c.response && (
                       <div className="text-emerald-700 text-xs bg-emerald-50 rounded p-2">
                         <strong>Response:</strong> {c.response}

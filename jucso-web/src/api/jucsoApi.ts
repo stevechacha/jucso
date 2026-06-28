@@ -1,4 +1,4 @@
-import { apiRequest, getToken, setToken, ApiError } from "@/api/client";
+import { apiRequest, clearAuthTokens, getToken, setRefreshToken, setToken, ApiError } from "@/api/client";
 import { mapAdminUser, mapComplaint, mapEvent, mapSuggestion, mapUser } from "@/api/mappers";
 import type {
   AdminOverviewResponse,
@@ -33,6 +33,7 @@ export const jucsoApi = {
       auth: false,
     });
     setToken(res.access);
+    setRefreshToken(res.refresh);
     return mapUser(res.user);
   },
 
@@ -50,11 +51,12 @@ export const jucsoApi = {
       auth: false,
     });
     setToken(res.access);
+    setRefreshToken(res.refresh);
     return mapUser(res.user);
   },
 
   logout() {
-    setToken(null);
+    clearAuthTokens();
   },
 
   requestPasswordReset(data: { email?: string; reg_number?: string }) {
@@ -110,6 +112,30 @@ export const jucsoApi = {
     return { message: res.detail, user: mapUser(res.user) };
   },
 
+  async updateComplaint(id: string, data: { status?: string; response?: string }) {
+    const complaint = await apiRequest<ApiComplaint>(`/api/complaints/${encodeURIComponent(id)}/`, {
+      method: "PATCH",
+      body: data,
+    });
+    return mapComplaint(complaint);
+  },
+
+  async updateSuggestion(pk: number, data: { status: string; response?: string }) {
+    const suggestion = await apiRequest<ApiSuggestion>(`/api/suggestions/${pk}/`, {
+      method: "PATCH",
+      body: data,
+    });
+    return mapSuggestion(suggestion);
+  },
+
+  async setUserActive(regNumber: string, isActive: boolean) {
+    const user = await apiRequest<ApiUser>(`/api/admin/users/${encodeURIComponent(regNumber)}/`, {
+      method: "PATCH",
+      body: { is_active: isActive },
+    });
+    return mapAdminUser(user);
+  },
+
   async getComplaints() {
     const complaints = await apiRequest<ApiComplaint[]>("/api/complaints/");
     return complaints.map(mapComplaint);
@@ -132,14 +158,6 @@ export const jucsoApi = {
       method: "POST",
       body: form,
       isFormData: true,
-    });
-    return mapComplaint(complaint);
-  },
-
-  async updateComplaint(trackingId: string, data: { status?: Complaint["status"]; response?: string }) {
-    const complaint = await apiRequest<ApiComplaint>(`/api/complaints/${trackingId}/`, {
-      method: "PATCH",
-      body: data,
     });
     return mapComplaint(complaint);
   },

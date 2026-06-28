@@ -259,6 +259,11 @@ export function StudentDashboard() {
                     <StatusPill status={s.status} />
                   </div>
                   <p className="text-gray-500 text-xs">{s.description}</p>
+                  {s.response && (
+                    <p className="text-emerald-700 text-xs bg-emerald-50 rounded p-2 mt-2">
+                      <strong>Leadership response:</strong> {s.response}
+                    </p>
+                  )}
                   <time className="text-gray-400 text-xs mt-2 block">{s.date}</time>
                 </article>
               ))

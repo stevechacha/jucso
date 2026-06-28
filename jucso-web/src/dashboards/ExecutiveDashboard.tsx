@@ -5,12 +5,13 @@ import { useApp } from "@/context/AppContext";
 import { StatCard } from "@/components/ui/StatCard";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { SuggestionReviewPanel } from "@/components/suggestions/SuggestionReviewPanel";
 
-const TABS = ["overview", "all complaints", "ministry stats"] as const;
+const TABS = ["overview", "all complaints", "suggestions", "ministry stats"] as const;
 type ExecutiveTab = (typeof TABS)[number];
 
 export function ExecutiveDashboard() {
-  const { user, complaints, apiEnabled } = useApp();
+  const { user, complaints, suggestions, apiEnabled, refreshPortalData } = useApp();
   if (!user) return null;
 
   const [tab, setTab] = useDashboardTab(TABS, "overview");
@@ -181,6 +182,14 @@ export function ExecutiveDashboard() {
             </table>
           </div>
         </div>
+      )}
+
+      {tab === "suggestions" && (
+        <SuggestionReviewPanel
+          suggestions={suggestions}
+          apiEnabled={apiEnabled}
+          onUpdated={() => void refreshPortalData()}
+        />
       )}
 
       {tab === "ministry stats" && (

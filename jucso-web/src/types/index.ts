@@ -47,6 +47,7 @@ export interface Suggestion {
   studentName: string;
   date: string;
   status: SuggestionStatus;
+  response?: string;
 }
 
 export interface Club {

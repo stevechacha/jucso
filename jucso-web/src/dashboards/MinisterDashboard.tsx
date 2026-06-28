@@ -7,13 +7,15 @@ import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/FormFields";
 import { StatCard } from "@/components/ui/StatCard";
 import { StatusPill } from "@/components/ui/StatusPill";
+import { ComplaintAttachmentLink } from "@/components/complaints/ComplaintAttachmentLink";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { SuggestionReviewPanel } from "@/components/suggestions/SuggestionReviewPanel";
 
-const TABS = ["incoming", "resolved", "overview"] as const;
+const TABS = ["incoming", "resolved", "suggestions", "overview"] as const;
 type MinisterTab = (typeof TABS)[number];
 
 export function MinisterDashboard() {
-  const { user, complaints, setComplaints, apiEnabled, refreshPortalData } = useApp();
+  const { user, complaints, setComplaints, suggestions, apiEnabled, refreshPortalData } = useApp();
   if (!user?.ministry) return null;
 
   const [tab, setTab] = useDashboardTab(TABS, "incoming");
@@ -126,6 +128,7 @@ export function MinisterDashboard() {
                   <div className="font-semibold text-jucso-navy text-xs mb-1">{selected.category}</div>
                   <p className="text-gray-600 text-xs leading-relaxed">{selected.description}</p>
                 </div>
+                <ComplaintAttachmentLink url={selected.supportingDocumentUrl} className="mb-4" />
                 {selected.response && (
                   <div className="bg-emerald-50 rounded-lg p-3 mb-4">
                     <p className="text-emerald-700 text-xs">
@@ -156,6 +159,14 @@ export function MinisterDashboard() {
             )}
           </div>
         </div>
+      )}
+
+      {tab === "suggestions" && (
+        <SuggestionReviewPanel
+          suggestions={suggestions}
+          apiEnabled={apiEnabled}
+          onUpdated={() => void refreshPortalData()}
+        />
       )}
     </DashboardShell>
   );

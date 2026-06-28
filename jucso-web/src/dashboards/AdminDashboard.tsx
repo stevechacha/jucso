@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Input, Select, Textarea } from "@/components/ui/FormFields";
 import { StatCard } from "@/components/ui/StatCard";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { SuggestionReviewPanel } from "@/components/suggestions/SuggestionReviewPanel";
 
 const TABS = ["overview", "users", "content", "system"] as const;
 type AdminTab = (typeof TABS)[number];
@@ -343,6 +344,16 @@ export function AdminDashboard() {
     setUserPage(1);
   }, [users.length, tab]);
 
+  const toggleUserActive = async (row: AdminUserRow) => {
+    if (!apiEnabled) return;
+    try {
+      const updated = await jucsoApi.setUserActive(row.reg, !row.isActive);
+      setAdminUsers((prev) => prev.map((u) => (u.reg === updated.reg ? updated : u)));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const overviewStats = [
     {
       icon: "👥",
@@ -471,13 +482,25 @@ export function AdminDashboard() {
                     </td>
                     <td className="px-4 py-3 text-gray-500">{u.ministry ?? "—"}</td>
                     <td className="px-4 py-3">
-                      <span
-                        className={`font-semibold text-xs ${
-                          "isActive" in u && u.isActive === false ? "text-red-600" : "text-emerald-600"
-                        }`}
-                      >
-                        {"isActive" in u && u.isActive === false ? "Inactive" : "Active"}
-                      </span>
+                      {apiEnabled && "isActive" in u ? (
+                        <button
+                          type="button"
+                          onClick={() => void toggleUserActive(u as AdminUserRow)}
+                          className={`text-xs font-semibold underline cursor-pointer ${
+                            u.isActive === false ? "text-emerald-600" : "text-red-600"
+                          }`}
+                        >
+                          {u.isActive === false ? "Activate" : "Deactivate"}
+                        </button>
+                      ) : (
+                        <span
+                          className={`font-semibold text-xs ${
+                            "isActive" in u && u.isActive === false ? "text-red-600" : "text-emerald-600"
+                          }`}
+                        >
+                          {"isActive" in u && u.isActive === false ? "Inactive" : "Active"}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -518,7 +541,16 @@ export function AdminDashboard() {
       )}
 
       {tab === "content" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="space-y-5">
+          <div className="bg-white rounded-xl shadow-card p-5">
+            <h2 className="font-display font-bold text-jucso-navy mb-4">Review Suggestions</h2>
+            <SuggestionReviewPanel
+              suggestions={suggestions}
+              apiEnabled={apiEnabled}
+              onUpdated={() => void refreshPortalData()}
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="bg-white rounded-xl shadow-card p-5">
             <h2 className="font-display font-bold text-jucso-navy mb-4">
               News & Announcements ({news.length})
@@ -572,6 +604,7 @@ export function AdminDashboard() {
               )}
             </div>
           </div>
+        </div>
         </div>
       )}
 

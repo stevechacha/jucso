@@ -31,6 +31,7 @@ export interface ApiSuggestion {
   student_name: string;
   date: string;
   status: Suggestion["status"];
+  response?: string;
 }
 
 export interface ApiEvent {
