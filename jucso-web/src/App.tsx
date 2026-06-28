@@ -26,6 +26,8 @@ import { ServicesPage } from "@/pages/ServicesPage";
 import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 import { TrackComplaintPage } from "@/pages/TrackComplaintPage";
 import { TransparencyReportsPage } from "@/pages/TransparencyReportsPage";
+import { ClubsPage } from "@/pages/ClubsPage";
+import { EventsPage } from "@/pages/EventsPage";
 
 function DashboardRouter() {
   const { user } = useApp();
@@ -97,6 +99,10 @@ function PageRouter() {
       return <TrackComplaintPage />;
     case "reports":
       return <TransparencyReportsPage />;
+    case "clubs":
+      return <ClubsPage />;
+    case "events":
+      return <EventsPage />;
     case "reset-password":
       return <ResetPasswordPage />;
     default:

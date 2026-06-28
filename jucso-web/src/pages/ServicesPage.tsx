@@ -55,6 +55,8 @@ export function ServicesPage() {
                 onClick={() => {
                   if (s.title === "Performance Reports") setPage("reports");
                   else if (s.title === "Official Documents") setPage("documents");
+                  else if (s.title === "Join a Club") setPage("clubs");
+                  else if (s.title === "Event Registration") setPage("events");
                   else handleLoginClick("student");
                 }}
               >
@@ -62,7 +64,11 @@ export function ServicesPage() {
                   ? "View Reports →"
                   : s.title === "Official Documents"
                     ? "Browse Documents →"
-                    : "Get Started →"}
+                    : s.title === "Join a Club"
+                      ? "Browse Clubs →"
+                      : s.title === "Event Registration"
+                        ? "View Events →"
+                        : "Get Started →"}
               </Button>
             </article>
           ))}

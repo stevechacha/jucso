@@ -17,7 +17,7 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { SuggestionReviewPanel } from "@/components/suggestions/SuggestionReviewPanel";
 import { ProfilePanel } from "@/components/profile/ProfilePanel";
 import { ComplaintTable } from "@/components/complaints/ComplaintTable";
-import type { Club, Event, NewsItem } from "@/types";
+import type { Club, Document, Event, NewsItem } from "@/types";
 
 function eventDateToInput(dateLabel: string): string {
   const parsed = new Date(dateLabel);
@@ -500,6 +500,18 @@ function ContactInboxPanel() {
     }
   };
 
+  const markUnread = async (id: string) => {
+    setUpdatingId(id);
+    try {
+      await jucsoApi.markContactMessageRead(id, false);
+      setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, is_read: false } : m)));
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const unread = messages.filter((m) => !m.is_read).length;
   const visible = inboxFilter === "unread" ? messages.filter((m) => !m.is_read) : messages;
 
@@ -548,16 +560,65 @@ function ContactInboxPanel() {
                 {m.name} · {m.email}
               </div>
               <p className="text-xs text-gray-600 leading-relaxed mb-2">{m.message}</p>
-              {!m.is_read && (
-                <Button size="sm" variant="outline" disabled={updatingId === m.id} onClick={() => void markRead(m.id)}>
-                  {updatingId === m.id ? "…" : "Mark as read"}
-                </Button>
-              )}
+              <div className="flex gap-2">
+                {!m.is_read ? (
+                  <Button size="sm" variant="outline" disabled={updatingId === m.id} onClick={() => void markRead(m.id)}>
+                    {updatingId === m.id ? "…" : "Mark as read"}
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline" disabled={updatingId === m.id} onClick={() => void markUnread(m.id)}>
+                    {updatingId === m.id ? "…" : "Mark unread"}
+                  </Button>
+                )}
+              </div>
             </li>
           ))}
         </ul>
       )}
     </div>
+  );
+}
+
+function EditDocumentForm({
+  item,
+  onSaved,
+  onCancel,
+}: {
+  item: Document;
+  onSaved: () => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState(item.name);
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErr("");
+    try {
+      await jucsoApi.updateDocument(item.id, { name: name.trim() });
+      onSaved();
+    } catch (error) {
+      setErr(error instanceof ApiError ? error.message : "Could not update document.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={(e) => void submit(e)} className="mt-2 border border-indigo-100 rounded-lg p-3 bg-indigo-50/40">
+      <Input label="Document name" value={name} onChange={(e) => setName(e.target.value)} required />
+      {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
+      <div className="flex gap-2">
+        <Button type="submit" variant="navy" size="sm" disabled={loading}>
+          {loading ? "Saving…" : "Save"}
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </form>
   );
 }
 
@@ -856,6 +917,7 @@ export function AdminDashboard() {
   const [deletingNewsId, setDeletingNewsId] = useState<string | null>(null);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
   const [editingNewsId, setEditingNewsId] = useState<string | null>(null);
+  const [editingDocId, setEditingDocId] = useState<string | null>(null);
   const [systemStatus, setSystemStatus] = useState<AdminSystemStatusResponse | null>(null);
   const [deletingClubId, setDeletingClubId] = useState<string | null>(null);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
@@ -1308,21 +1370,44 @@ export function AdminDashboard() {
             <h2 className="font-display font-bold text-jucso-navy mb-4">Documents ({documents.length})</h2>
             <ul>
               {documents.map((d) => (
-                <li key={d.id} className="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-jucso-navy font-semibold text-xs truncate">{d.name}</div>
-                    <div className="text-gray-400 text-[10px] mt-0.5">
-                      {d.size} · {d.date}
+                <li key={d.id} className="py-3 border-b border-gray-50 last:border-0">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-jucso-navy font-semibold text-xs truncate">{d.name}</div>
+                      <div className="text-gray-400 text-[10px] mt-0.5">
+                        {d.type} · {d.size} · {d.date}
+                      </div>
                     </div>
+                    {apiEnabled && (
+                      <div className="flex gap-1 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditingDocId(editingDocId === d.id ? null : d.id)}
+                        >
+                          {editingDocId === d.id ? "Close" : "Edit"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={deletingDocId === d.id}
+                          onClick={() => void removeDocument(d.id)}
+                        >
+                          {deletingDocId === d.id ? "…" : "Remove"}
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={!apiEnabled || deletingDocId === d.id}
-                    onClick={() => void removeDocument(d.id)}
-                  >
-                    {deletingDocId === d.id ? "…" : "Remove"}
-                  </Button>
+                  {editingDocId === d.id && (
+                    <EditDocumentForm
+                      item={d}
+                      onCancel={() => setEditingDocId(null)}
+                      onSaved={() => {
+                        setEditingDocId(null);
+                        void refreshPortalData();
+                      }}
+                    />
+                  )}
                 </li>
               ))}
             </ul>

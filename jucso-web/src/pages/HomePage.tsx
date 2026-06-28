@@ -11,7 +11,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/layout/Hero";
 
 export function HomePage() {
-  const { setPage, handleLoginClick, news } = useApp();
+  const { setPage, handleLoginClick, news, events } = useApp();
   const [leaders, setLeaders] = useState<LeadershipMember[]>(
     MINISTERS.map((m) => ({ name: m.name, role: m.role, ministry: "", initials: m.initials })),
   );
@@ -158,6 +158,32 @@ export function HomePage() {
 
       <section className="page-section bg-white">
         <div className="section-container">
+          <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
+            <div>
+              <Badge variant="teal">Upcoming Events</Badge>
+              <h2 className="heading-display text-2xl md:text-3xl mt-2">What&apos;s coming up</h2>
+            </div>
+            <Button variant="outline" onClick={() => setPage("events")}>
+              All Events →
+            </Button>
+          </div>
+
+          {events.length === 0 ? (
+            <p className="text-gray-400 text-sm text-center py-8">No upcoming events published yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+              {events.slice(0, 3).map((e) => (
+                <article key={e.id} className="bg-jucso-slate rounded-xl p-5 shadow-card">
+                  <h3 className="font-display font-bold text-jucso-navy text-sm mb-2">{e.title}</h3>
+                  <p className="text-gray-500 text-xs mb-3 line-clamp-2">{e.description}</p>
+                  <div className="text-gray-400 text-[10px]">
+                    {e.date} · {e.location}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+
           <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
             <div>
               <Badge variant="teal">Latest News</Badge>

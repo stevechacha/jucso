@@ -17,6 +17,8 @@ export type PageId =
   | "contact"
   | "track"
   | "reports"
+  | "clubs"
+  | "events"
   | "dashboard"
   | "reset-password";
 

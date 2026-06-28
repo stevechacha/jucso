@@ -9,6 +9,8 @@ const PAGE_PATHS: Record<PageId, string> = {
   contact: "/contact",
   track: "/track",
   reports: "/reports",
+  clubs: "/clubs",
+  events: "/events",
   dashboard: "/dashboard",
   "reset-password": "/reset-password",
 };

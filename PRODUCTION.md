@@ -94,6 +94,8 @@ Redeploy after changing `VITE_API_URL` (it is baked in at build time).
 | Public portal stats | ✅ Built — `/api/stats/public/` |
 | Complaint categories API | ✅ Built — `/api/complaints/categories/` |
 | Transparency suggestion stats | ✅ Built — included in `/api/stats/transparency/` |
+| Public clubs & events pages | ✅ Built — `/clubs` and `/events` |
+| Admin document rename | ✅ Built — `PATCH /api/admin/documents/<pk>/` |
 | Admin news & document upload | ✅ Documents via API + Supabase |
 | Complaint file attachments | ✅ Uploaded to Supabase |
 | Automated tests | ✅ Auth, complaints, password reset, additional features |

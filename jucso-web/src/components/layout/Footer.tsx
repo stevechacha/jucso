@@ -1,10 +1,34 @@
 import { useApp } from "@/context/AppContext";
 import type { PageId } from "@/types";
 
-const FOOTER_LINKS = [
-  { head: "Navigate", links: ["home", "about", "services", "news"] as PageId[] },
-  { head: "Resources", links: ["documents", "contact"] as PageId[] },
-  { head: "Connect", links: ["dashboard"] as PageId[] },
+const FOOTER_COLUMNS: Array<{
+  head: string;
+  links: Array<{ page: PageId; label: string }>;
+}> = [
+  {
+    head: "Navigate",
+    links: [
+      { page: "home", label: "Home" },
+      { page: "about", label: "About" },
+      { page: "services", label: "Services" },
+      { page: "news", label: "News" },
+    ],
+  },
+  {
+    head: "Resources",
+    links: [
+      { page: "documents", label: "Documents" },
+      { page: "clubs", label: "Clubs" },
+      { page: "events", label: "Events" },
+      { page: "track", label: "Track Complaint" },
+      { page: "reports", label: "Transparency Reports" },
+      { page: "contact", label: "Contact" },
+    ],
+  },
+  {
+    head: "Connect",
+    links: [{ page: "dashboard", label: "Dashboard" }],
+  },
 ];
 
 export function Footer() {
@@ -20,22 +44,22 @@ export function Footer() {
           </p>
         </div>
 
-        {FOOTER_LINKS.map((col) => (
+        {FOOTER_COLUMNS.map((col) => (
           <div key={col.head}>
             <div className="text-jucso-teal text-[10px] font-bold uppercase tracking-wide mb-3">
               {col.head}
             </div>
-            {col.links.map((l) => (
+            {col.links.map((link) => (
               <button
-                key={l}
+                key={link.page + link.label}
                 type="button"
                 onClick={() => {
-                  setPage(l);
+                  setPage(link.page);
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
-                className="block text-white/45 text-xs mb-2 hover:text-white/80 capitalize transition-colors cursor-pointer text-left"
+                className="block text-white/45 text-xs mb-2 hover:text-white/80 transition-colors cursor-pointer text-left"
               >
-                {l}
+                {link.label}
               </button>
             ))}
             {col.head === "Connect" && (

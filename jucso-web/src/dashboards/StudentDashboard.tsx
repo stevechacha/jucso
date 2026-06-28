@@ -335,7 +335,7 @@ export function StudentDashboard() {
                   }
                 }}
               >
-                {c.joined ? "✓ Joined" : "Join Club"}
+                {c.joined ? "Leave club" : "Join Club"}
               </Button>
             </article>
           ))}

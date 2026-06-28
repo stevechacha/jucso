@@ -328,6 +328,22 @@ export const jucsoApi = {
     return apiRequest<void>(`/api/admin/documents/${pk}/`, { method: "DELETE" });
   },
 
+  async updateDocument(documentId: string, data: { name?: string }) {
+    const pk = parseInt(documentId.replace(/^DOC-/i, ""), 10);
+    const doc = await apiRequest<import("@/api/types").ApiDocument>(`/api/admin/documents/${pk}/`, {
+      method: "PATCH",
+      body: data,
+    });
+    return {
+      id: doc.id,
+      name: doc.name,
+      size: doc.size,
+      type: doc.type,
+      date: doc.date,
+      downloadUrl: doc.download_url,
+    };
+  },
+
   async getContactMessages() {
     const response = await apiRequest<
       | Array<{
