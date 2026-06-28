@@ -12,6 +12,7 @@ import { jucsoApi } from "@/api/jucsoApi";
 import { AppProvider, useApp } from "@/context/AppContext";
 import type { Document, NewsItem, PageId, PortalType, User } from "@/types";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { RegisterModal } from "@/components/auth/RegisterModal";
 import { ApiStatusBanner } from "@/components/layout/ApiStatusBanner";
 import { Navbar } from "@/components/layout/Navbar";
 import { AdminDashboard } from "@/dashboards/AdminDashboard";
@@ -73,6 +74,7 @@ export default function App() {
   const [page, setPage] = useState<PageId>("home");
   const [user, setUser] = useState<User | null>(null);
   const [showLogin, setShowLogin] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
   const [loginPortal, setLoginPortal] = useState<PortalType>("student");
   const [dataLoading, setDataLoading] = useState(isApiEnabled);
   const [dataError, setDataError] = useState<string | null>(null);
@@ -157,7 +159,13 @@ export default function App() {
 
   const openLogin = (portal: PortalType = "student") => {
     setLoginPortal(portal);
+    setShowRegister(false);
     setShowLogin(true);
+  };
+
+  const openRegister = () => {
+    setShowLogin(false);
+    setShowRegister(true);
   };
 
   const handleLoginClick = (portal: PortalType = "student") => {
@@ -205,6 +213,14 @@ export default function App() {
             portal={loginPortal}
             onLogin={login}
             onClose={() => setShowLogin(false)}
+            onRegister={openRegister}
+          />
+        )}
+        {showRegister && (
+          <RegisterModal
+            onRegistered={login}
+            onClose={() => setShowRegister(false)}
+            onBackToLogin={() => openLogin("student")}
           />
         )}
       </div>

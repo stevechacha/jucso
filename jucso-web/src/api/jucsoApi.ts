@@ -52,6 +52,44 @@ export const jucsoApi = {
     return mapUser(res.user);
   },
 
+  async registerStudent(data: {
+    reg_number: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    password: string;
+    phone_number?: string;
+  }) {
+    const res = await apiRequest<LoginResponse>("/api/auth/register/", {
+      method: "POST",
+      body: data,
+      auth: false,
+    });
+    setToken(res.access);
+    return mapUser(res.user);
+  },
+
+  getMinistries() {
+    return apiRequest<Array<{ id: number; name: string; slug: string }>>("/api/admin/ministries/");
+  },
+
+  async createStaff(data: {
+    reg_number: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    password: string;
+    role: "minister" | "executive";
+    ministry?: string;
+    phone_number?: string;
+  }) {
+    const user = await apiRequest<Parameters<typeof mapAdminUser>[0]>("/api/admin/staff/", {
+      method: "POST",
+      body: data,
+    });
+    return mapAdminUser(user);
+  },
+
   logout() {
     setToken(null);
   },

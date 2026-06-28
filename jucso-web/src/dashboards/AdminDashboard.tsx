@@ -1,14 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { ApiError } from "@/api/client";
 import { jucsoApi, type AdminOverview, type AdminUserRow } from "@/api/jucsoApi";
 import { DEMO_USERS } from "@/constants/mock-data";
 import { useApp } from "@/context/AppContext";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Input, Select } from "@/components/ui/FormFields";
 import { StatCard } from "@/components/ui/StatCard";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 
 const TABS = ["overview", "users", "content", "system"] as const;
 type AdminTab = (typeof TABS)[number];
+const USERS_PER_PAGE = 7;
 
 const SYSTEM_STATUS = [
   { lab: "Web Server", val: "Running", ok: true },
@@ -32,11 +35,129 @@ function roleBadgeVariant(role: string): "gold" | "teal" | "navy" | "gray" {
   return "gray";
 }
 
+function AddStaffForm({ onCreated }: { onCreated: (user: AdminUserRow) => void }) {
+  const [open, setOpen] = useState(false);
+  const [ministries, setMinistries] = useState<Array<{ id: number; name: string }>>([]);
+  const [form, setForm] = useState({
+    reg_number: "",
+    first_name: "",
+    last_name: "",
+    email: "",
+    password: "",
+    role: "minister" as "minister" | "executive",
+    ministry: "",
+    phone_number: "",
+  });
+  const [err, setErr] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    void jucsoApi.getMinistries().then(setMinistries).catch(console.error);
+  }, [open]);
+
+  const update = (field: keyof typeof form, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErr("");
+    setSuccess("");
+
+    try {
+      const user = await jucsoApi.createStaff({
+        reg_number: form.reg_number.trim(),
+        first_name: form.first_name.trim(),
+        last_name: form.last_name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        role: form.role,
+        ministry: form.role === "minister" ? form.ministry : undefined,
+        phone_number: form.phone_number.trim() || undefined,
+      });
+      onCreated(user);
+      setSuccess(`${user.name} added as ${user.role}.`);
+      setForm({
+        reg_number: "",
+        first_name: "",
+        last_name: "",
+        email: "",
+        password: "",
+        role: "minister",
+        ministry: "",
+        phone_number: "",
+      });
+    } catch (error) {
+      setErr(error instanceof ApiError ? error.message : "Could not add staff member.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <div className="bg-white rounded-xl shadow-card p-5 flex items-center justify-between gap-4">
+        <div>
+          <h2 className="font-display font-bold text-jucso-navy text-sm">Staff accounts</h2>
+          <p className="text-gray-500 text-xs mt-1">Add ministers and executives. Students register themselves.</p>
+        </div>
+        <Button variant="teal" size="sm" onClick={() => setOpen(true)}>
+          + Add Staff
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl shadow-card p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-display font-bold text-jucso-navy">Add Staff Member</h2>
+        <button type="button" onClick={() => setOpen(false)} className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer">
+          Close
+        </button>
+      </div>
+      <form onSubmit={(e) => void submit(e)}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3">
+          <Input label="PF Number" value={form.reg_number} onChange={(e) => update("reg_number", e.target.value)} placeholder="e.g. MIN/ACAD/002" required />
+          <Select label="Role" value={form.role} onChange={(e) => update("role", e.target.value)}>
+            <option value="minister">Minister</option>
+            <option value="executive">Executive</option>
+          </Select>
+          <Input label="First Name" value={form.first_name} onChange={(e) => update("first_name", e.target.value)} required />
+          <Input label="Last Name" value={form.last_name} onChange={(e) => update("last_name", e.target.value)} required />
+          <Input label="Email" type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required />
+          <Input label="Phone (optional)" value={form.phone_number} onChange={(e) => update("phone_number", e.target.value)} />
+          {form.role === "minister" && (
+            <Select label="Ministry" value={form.ministry} onChange={(e) => update("ministry", e.target.value)} required>
+              <option value="">Select ministry</option>
+              {ministries.map((m) => (
+                <option key={m.id} value={m.name}>
+                  {m.name}
+                </option>
+              ))}
+            </Select>
+          )}
+          <Input label="Temporary Password" type="password" value={form.password} onChange={(e) => update("password", e.target.value)} minLength={6} required />
+        </div>
+        {err && <p className="text-xs text-red-600 mb-3 bg-red-50 rounded-lg p-2">{err}</p>}
+        {success && <p className="text-xs text-emerald-700 mb-3 bg-emerald-50 rounded-lg p-2">{success}</p>}
+        <Button type="submit" variant="navy" size="sm" disabled={loading}>
+          {loading ? "Saving…" : "Create Staff Account"}
+        </Button>
+      </form>
+    </div>
+  );
+}
+
 export function AdminDashboard() {
   const { complaints, suggestions, clubs, events, news, documents, apiEnabled } = useApp();
   const [tab, setTab] = useState<AdminTab>("overview");
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [adminUsers, setAdminUsers] = useState<AdminUserRow[]>([]);
+  const [userPage, setUserPage] = useState(1);
 
   useEffect(() => {
     if (!apiEnabled) return;
@@ -50,6 +171,16 @@ export function AdminDashboard() {
 
   const mockUsers = Object.values(DEMO_USERS);
   const users = apiEnabled && adminUsers.length > 0 ? adminUsers : mockUsers;
+  const totalUserPages = Math.max(1, Math.ceil(users.length / USERS_PER_PAGE));
+  const currentUserPage = Math.min(userPage, totalUserPages);
+  const pageUsers = users.slice(
+    (currentUserPage - 1) * USERS_PER_PAGE,
+    currentUserPage * USERS_PER_PAGE,
+  );
+
+  useEffect(() => {
+    setUserPage(1);
+  }, [users.length, tab]);
 
   const overviewStats = [
     {
@@ -142,15 +273,23 @@ export function AdminDashboard() {
       )}
 
       {tab === "users" && (
-        <div className="bg-white rounded-xl shadow-card overflow-hidden">
-          <h2 className="px-5 py-4 border-b border-gray-100 font-display font-bold text-jucso-navy">
-            Registered Users ({users.length})
-          </h2>
+        <div className="space-y-5">
+          {apiEnabled && (
+            <AddStaffForm
+              onCreated={(user) => {
+                setAdminUsers((prev) => [user, ...prev]);
+              }}
+            />
+          )}
+          <div className="bg-white rounded-xl shadow-card overflow-hidden">
+            <h2 className="px-5 py-4 border-b border-gray-100 font-display font-bold text-jucso-navy">
+              Registered Users ({users.length})
+            </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-jucso-slate">
-                  {["Reg Number", "Name", "Role", "Ministry", "Status"].map((h) => (
+                  {["PF / Reg Number", "Name", "Role", "Ministry", "Status"].map((h) => (
                     <th
                       key={h}
                       scope="col"
@@ -162,7 +301,7 @@ export function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((u, i) => (
+                {pageUsers.map((u, i) => (
                   <tr key={u.reg} className={`border-t border-gray-50 ${i % 2 === 1 ? "bg-gray-50/50" : ""}`}>
                     <td className="px-4 py-3 text-jucso-teal font-bold">{u.reg}</td>
                     <td className="px-4 py-3 text-gray-700">{u.name}</td>
@@ -183,6 +322,36 @@ export function AdminDashboard() {
                 ))}
               </tbody>
             </table>
+          </div>
+          {users.length > USERS_PER_PAGE && (
+            <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
+              <span className="text-xs text-gray-500">
+                Showing {(currentUserPage - 1) * USERS_PER_PAGE + 1}–
+                {Math.min(currentUserPage * USERS_PER_PAGE, users.length)} of {users.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentUserPage <= 1}
+                  onClick={() => setUserPage((p) => Math.max(1, p - 1))}
+                >
+                  ← Previous
+                </Button>
+                <span className="text-xs font-semibold text-jucso-navy min-w-[4.5rem] text-center">
+                  Page {currentUserPage} / {totalUserPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentUserPage >= totalUserPages}
+                  onClick={() => setUserPage((p) => Math.min(totalUserPages, p + 1))}
+                >
+                  Next →
+                </Button>
+              </div>
+            </div>
+          )}
           </div>
         </div>
       )}
