@@ -1,0 +1,661 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  .jw{font-family:'Inter',sans-serif;background:#F4F6FA;min-height:100vh;overflow-x:hidden}
+  .dn{display:none!important}
+  button{cursor:pointer;font-family:'Inter',sans-serif;border:none;background:none}
+  input,select,textarea{font-family:'Inter',sans-serif}
+  .syne{font-family:'Syne','Inter',sans-serif;font-weight:800;letter-spacing:-0.02em}
+  nav.topnav{background:#0D1A3E;display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:54px;position:sticky;top:0;z-index:100;gap:12px}
+  .brand{display:flex;align-items:center;gap:8px;cursor:pointer}
+  .brand-dot{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#00B4C6,#1B2B6B);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:#fff;flex-shrink:0}
+  .brand-text{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:#fff;letter-spacing:.04em}
+  .brand-sub{font-size:9px;color:#00B4C6;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+  .navlinks{display:flex;align-items:center;gap:2px}
+  .navbtn{background:none;border:none;padding:5px 11px;border-radius:5px;font-size:13px;font-weight:500;color:rgba(255,255,255,0.7);transition:color .15s;border-bottom:2px solid transparent}
+  .navbtn.active{color:#00B4C6;font-weight:700;border-bottom-color:#00B4C6}
+  .login-btn{background:#F5A623;border:none;padding:7px 16px;border-radius:6px;font-size:13px;font-weight:700;color:#0D1A3E;margin-left:8px}
+  .badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:4px;border:1px solid}
+  .badge-teal{background:#00B4C618;color:#00B4C6;border-color:#00B4C640}
+  .badge-navy{background:#1B2B6B18;color:#1B2B6B;border-color:#1B2B6B40}
+  .page{display:none}
+  .page.active{display:block}
+  /* Hero */
+  .hero{background:linear-gradient(135deg,#0D1A3E 0%,#1B2B6B 55%,#1a4a6e 100%);padding:56px 24px 48px;position:relative;overflow:hidden}
+  .hero-geo{position:absolute;top:0;right:0;width:55%;height:100%;background:linear-gradient(135deg,transparent 30%,rgba(0,180,198,.1) 100%);clip-path:polygon(20% 0,100% 0,100% 100%,0% 100%)}
+  .hero-ring{position:absolute;border-radius:50%;border:1px solid rgba(0,180,198,.2)}
+  .hero-content{position:relative;z-index:1;max-width:620px}
+  .hero h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(30px,6vw,58px);color:#fff;line-height:1.08;margin:16px 0 0;letter-spacing:-.02em}
+  .hero h1 span{color:#00B4C6}
+  .hero p{font-size:15px;color:rgba(255,255,255,.72);line-height:1.7;margin:20px 0 32px;max-width:460px}
+  .hero-btns{display:flex;gap:12px;flex-wrap:wrap}
+  .btn-gold{background:#F5A623;border:none;border-radius:7px;padding:12px 28px;font-size:14px;font-weight:700;color:#0D1A3E}
+  .btn-ghost{background:transparent;border:2px solid rgba(255,255,255,.3);border-radius:7px;padding:12px 28px;font-size:14px;font-weight:600;color:#fff}
+  .btn-navy{background:#1B2B6B;border:none;border-radius:7px;padding:10px 22px;font-size:13px;font-weight:700;color:#fff}
+  .btn-outline{background:transparent;border:2px solid #1B2B6B;border-radius:7px;padding:9px 20px;font-size:13px;font-weight:700;color:#1B2B6B}
+  /* Stats strip */
+  .stats{background:#00B4C6;padding:24px 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:16px;text-align:center}
+  .stat-val{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:#fff;line-height:1}
+  .stat-lab{font-size:10px;color:rgba(255,255,255,.8);margin-top:4px;text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+  /* Section */
+  .section{padding:56px 24px}
+  .section-white{background:#fff}
+  .section-slate{background:#F4F6FA}
+  .section-navy{background:#1B2B6B}
+  .sec-head{text-align:center;margin-bottom:36px}
+  .sec-head h2{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(22px,4vw,36px);color:#1B2B6B;margin:12px 0 8px;letter-spacing:-.02em}
+  .sec-head-white h2{color:#fff}
+  .sec-p{font-size:14px;color:#6B7280;line-height:1.7;max-width:420px;margin:0 auto}
+  /* Cards */
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+  .svc-card{background:#fff;border-radius:12px;padding:24px 20px;border-left:4px solid;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+  .svc-icon{font-size:28px;margin-bottom:12px}
+  .svc-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#1B2B6B;margin-bottom:8px}
+  .svc-desc{font-size:13px;color:#6B7280;line-height:1.65}
+  /* Minister cards */
+  .min-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:18px 16px;display:flex;align-items:center;gap:12px}
+  .min-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#00B4C6,#1B2B6B);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:12px;color:#fff;flex-shrink:0;border:2px solid rgba(0,180,198,.4)}
+  .min-name{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#fff;line-height:1.3}
+  .min-role{font-size:11px;color:#00B4C6;margin-top:2px}
+  /* News */
+  .news-card{background:#F4F6FA;border-radius:12px;padding:20px 18px;cursor:pointer}
+  .news-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px}
+  .news-date{font-size:11px;color:#6B7280}
+  .news-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:#1B2B6B;margin-bottom:8px;line-height:1.35}
+  .news-excerpt{font-size:13px;color:#6B7280;line-height:1.65}
+  /* CTA */
+  .cta-section{background:linear-gradient(135deg,#00B4C6,#1B2B6B);padding:56px 24px;text-align:center}
+  .cta-section h2{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(22px,4vw,36px);color:#fff;margin-bottom:14px;letter-spacing:-.02em}
+  .cta-section p{font-size:14px;color:rgba(255,255,255,.8);max-width:460px;margin:0 auto 28px;line-height:1.7}
+  /* Dashboard */
+  .db-header{background:linear-gradient(135deg,#0D1A3E,#1B2B6B);padding:24px 24px 0}
+  .db-title-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+  .db-role-label{font-size:10px;color:#00B4C6;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+  .db-title{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff;margin-top:4px;letter-spacing:-.02em}
+  .db-logout{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:7px;padding:7px 14px;font-size:12px;font-weight:600;color:#fff}
+  .db-tabs{display:flex;gap:2px;flex-wrap:wrap}
+  .db-tab{background:transparent;border:none;border-radius:7px 7px 0 0;padding:8px 16px;font-size:12px;font-weight:700;color:rgba(255,255,255,.55);text-transform:capitalize;transition:all .15s}
+  .db-tab.active{background:#F4F6FA;color:#1B2B6B}
+  .db-body{padding:24px}
+  .stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+  .stat-card{background:#fff;border-radius:11px;padding:18px 16px;border-top:3px solid;box-shadow:0 1px 5px rgba(0,0,0,.05)}
+  .sc-icon{font-size:20px;margin-bottom:8px}
+  .sc-val{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;line-height:1}
+  .sc-label{font-size:10px;color:#6B7280;margin-top:5px;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+  /* Table */
+  .tbl-wrap{background:#fff;border-radius:13px;box-shadow:0 1px 7px rgba(0,0,0,.06);overflow:hidden}
+  .tbl-head{padding:16px 20px;border-bottom:1px solid #E5E7EB;display:flex;justify-content:space-between;align-items:center}
+  .tbl-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#1B2B6B}
+  table.ctbl{width:100%;border-collapse:collapse;font-size:12px}
+  table.ctbl th{background:#F4F6FA;padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
+  table.ctbl td{padding:12px 14px;border-top:1px solid #E5E7EB;color:#374151}
+  table.ctbl tr:nth-child(even) td{background:#F9FAFB}
+  .status-pill{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}
+  .sp-pending{background:#F9FAFB;color:#6B7280}
+  .sp-progress{background:#FFFBEB;color:#F59E0B}
+  .sp-resolved{background:#ECFDF5;color:#10B981}
+  /* Footer */
+  footer{background:#0D1A3E;padding:40px 24px 20px}
+  .ft-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:28px;margin-bottom:32px}
+  .ft-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff;margin-bottom:8px}
+  .ft-tagline{font-size:12px;color:rgba(255,255,255,.45);line-height:1.7;max-width:200px}
+  .ft-head{font-size:10px;font-weight:700;color:#00B4C6;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px}
+  .ft-link{font-size:13px;color:rgba(255,255,255,.5);display:block;margin-bottom:8px;cursor:pointer;background:none;border:none;text-align:left}
+  .ft-bottom{border-top:1px solid rgba(255,255,255,.1);padding-top:16px;font-size:11px;color:rgba(255,255,255,.3)}
+  /* Form */
+  .form-group{margin-bottom:16px}
+  .form-label{font-size:12px;font-weight:700;color:#1B2B6B;display:block;margin-bottom:6px}
+  .form-ctrl{width:100%;padding:9px 12px;border-radius:7px;border:1.5px solid #E5E7EB;font-size:13px;color:#1A1A2E;outline:none;background:#fff}
+  .form-ctrl:focus{border-color:#00B4C6;box-shadow:0 0 0 3px rgba(0,180,198,.15)}
+  .success-box{background:#ECFDF5;border:1.5px solid #10B981;border-radius:13px;padding:32px;text-align:center}
+  .about-pillar{border-radius:13px;padding:28px 22px;border-top:5px solid;background:#F4F6FA}
+  .pillar-word{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;margin-bottom:12px;letter-spacing:-.02em}
+  .pillar-desc{font-size:14px;color:#6B7280;line-height:1.7}
+  .role-select{display:flex;gap:5px;margin-bottom:16px}
+  .role-btn{flex:1;padding:6px 3px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;text-transform:capitalize;transition:all .15s;border:1.5px solid #E5E7EB;background:transparent;color:#6B7280}
+  .role-btn.active{background:#1B2B6B;border-color:#1B2B6B;color:#fff}
+  .modal-overlay{position:fixed;inset:0;background:rgba(13,26,62,.82);display:flex;align-items:center;justify-content:center;padding:16px;z-index:200}
+  .modal-box{background:#fff;border-radius:14px;width:100%;max-width:380px;padding:32px 28px}
+  .news-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px}
+  .filter-btn{background:#fff;border:1.5px solid #E5E7EB;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;color:#6B7280;cursor:pointer;transition:all .15s}
+  .filter-btn.active{background:#1B2B6B;border-color:#1B2B6B;color:#fff}
+  .contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:36px}
+  .contact-item{display:flex;gap:12px;margin-bottom:18px;align-items:flex-start}
+  .contact-icon-box{width:40px;height:40px;border-radius:9px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 2px 7px rgba(0,0,0,.07)}
+  .contact-label{font-size:10px;font-weight:700;color:#00B4C6;text-transform:uppercase;letter-spacing:.07em}
+  .contact-val{font-size:13px;color:#1A1A2E;margin-top:2px;line-height:1.5}
+</style>
+
+<div class="jw">
+
+<nav class="topnav" role="navigation">
+  <div class="brand" onclick="showPage('home')">
+    <div class="brand-dot">JU</div>
+    <div>
+      <div class="brand-text">JUCSO</div>
+      <div class="brand-sub">Jordan University College</div>
+    </div>
+  </div>
+  <div class="navlinks" id="navlinks">
+    <button class="navbtn active" data-page="home" onclick="showPage('home')">Home</button>
+    <button class="navbtn" data-page="about" onclick="showPage('about')">About</button>
+    <button class="navbtn" data-page="services" onclick="showPage('services')">Services</button>
+    <button class="navbtn" data-page="news" onclick="showPage('news')">News</button>
+    <button class="navbtn" data-page="contact" onclick="showPage('contact')">Contact</button>
+    <button class="login-btn" onclick="openLogin()">Student Login</button>
+  </div>
+</nav>
+
+<!-- ── HOME ── -->
+<div id="page-home" class="page active">
+  <div class="hero">
+    <div class="hero-geo"></div>
+    <div class="hero-ring" style="width:240px;height:240px;top:10%;right:6%;"></div>
+    <div class="hero-ring" style="width:150px;height:150px;top:22%;right:13%;"></div>
+    <div class="hero-content">
+      <span class="badge badge-teal">2026 – 2027 Administration</span>
+      <h1>Progress.<br><span>Accountability.</span><br>Leadership.</h1>
+      <p>JUCSO is Jordan University College's official student government — your voice on academics, welfare, clubs, and campus life. One platform. Every student. Every concern.</p>
+      <div class="hero-btns">
+        <button class="btn-gold" onclick="openLogin()">Access the Portal →</button>
+        <button class="btn-ghost" onclick="showPage('about')">Learn More</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div><div class="stat-val">2,400+</div><div class="stat-lab">Students Served</div></div>
+    <div><div class="stat-val">6</div><div class="stat-lab">Active Ministries</div></div>
+    <div><div class="stat-val">12</div><div class="stat-lab">Weeks to Launch</div></div>
+    <div><div class="stat-val">TZS 70K</div><div class="stat-lab">Annual Budget</div></div>
+  </div>
+
+  <div class="section section-slate">
+    <div class="sec-head">
+      <span class="badge badge-navy">What We Offer</span>
+      <h2>Your government. Your tools.</h2>
+      <p class="sec-p">From filing a complaint to joining a club, the JUCSO Digital Portal puts campus services one click away.</p>
+    </div>
+    <div class="card-grid">
+      <div class="svc-card" style="border-color:#1B2B6B">
+        <div class="svc-icon">📋</div>
+        <div class="svc-title">Submit a Complaint</div>
+        <div class="svc-desc">File a complaint under the correct ministry and track it in real time.</div>
+      </div>
+      <div class="svc-card" style="border-color:#00B4C6">
+        <div class="svc-icon">💡</div>
+        <div class="svc-title">Share an Idea</div>
+        <div class="svc-desc">Have a suggestion? JUCSO leadership will review and respond.</div>
+      </div>
+      <div class="svc-card" style="border-color:#F5A623">
+        <div class="svc-icon">🎓</div>
+        <div class="svc-title">Join a Club</div>
+        <div class="svc-desc">Browse active student clubs and sign up with one click.</div>
+      </div>
+      <div class="svc-card" style="border-color:#1B2B6B">
+        <div class="svc-icon">📅</div>
+        <div class="svc-title">Event Registration</div>
+        <div class="svc-desc">Find upcoming events and secure your spot before capacity fills.</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:28px">
+      <button class="btn-navy" onclick="showPage('services')">View All Services →</button>
+    </div>
+  </div>
+
+  <div class="section section-navy">
+    <span class="badge" style="background:rgba(0,180,198,.18);color:#00B4C6;border-color:rgba(0,180,198,.4)">Your Ministers</span>
+    <h2 class="syne" style="color:#fff;font-size:clamp(20px,3.5vw,32px);margin:12px 0 8px">Elected to serve you.</h2>
+    <p style="font-size:13px;color:rgba(255,255,255,.55);margin-bottom:24px">Each complaint routes directly to the responsible minister.</p>
+    <div class="card-grid">
+      <div class="min-card"><div class="min-avatar">AK</div><div><div class="min-name">Amani Kiprotich</div><div class="min-role">Minister of Academics</div></div></div>
+      <div class="min-card"><div class="min-avatar">FH</div><div><div class="min-name">Fatuma Hassan</div><div class="min-role">Minister of Health & Welfare</div></div></div>
+      <div class="min-card"><div class="min-avatar">BO</div><div><div class="min-name">Brian Omondi</div><div class="min-role">Minister of Finance & Loans</div></div></div>
+      <div class="min-card"><div class="min-avatar">GW</div><div><div class="min-name">Grace Wanjiru</div><div class="min-role">Minister of Social Affairs</div></div></div>
+      <div class="min-card"><div class="min-avatar">DM</div><div><div class="min-name">David Mwangi</div><div class="min-role">Minister of Sports</div></div></div>
+      <div class="min-card"><div class="min-avatar">LA</div><div><div class="min-name">Leah Achieng</div><div class="min-role">Minister of Accommodation</div></div></div>
+    </div>
+  </div>
+
+  <div class="section section-white">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:28px">
+      <div>
+        <span class="badge badge-teal">Latest News</span>
+        <h2 class="syne" style="color:#1B2B6B;font-size:clamp(20px,3.5vw,32px);margin:10px 0 0">What's happening at JUCSO</h2>
+      </div>
+      <button class="btn-outline" onclick="showPage('news')">All News →</button>
+    </div>
+    <div class="card-grid">
+      <div class="news-card">
+        <div class="news-meta"><span class="badge badge-teal">Announcement</span><span class="news-date">June 20, 2026</span></div>
+        <div class="news-title">JUCSO Digital System Officially Approved</div>
+        <div class="news-excerpt">The JUCSO leadership has approved the Digital Student Government Management System, set for launch within 12 weeks.</div>
+      </div>
+      <div class="news-card">
+        <div class="news-meta"><span class="badge badge-teal">Events</span><span class="news-date">June 15, 2026</span></div>
+        <div class="news-title">Annual Leadership Summit — Call for Delegates</div>
+        <div class="news-excerpt">All students are invited to nominate representatives for the 2026 JUCSO Leadership Summit on July 12.</div>
+      </div>
+      <div class="news-card">
+        <div class="news-meta"><span class="badge badge-teal">Clubs</span><span class="news-date">June 10, 2026</span></div>
+        <div class="news-title">New Clubs Registration Now Open</div>
+        <div class="news-excerpt">The Drama Society, Debate Club, and Entrepreneurship Hub are now accepting new members.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta-section">
+    <h2>Your complaint deserves a response.</h2>
+    <p>Stop chasing WhatsApp groups. Sign in and file your complaint in under two minutes — with a tracking number and a guaranteed response.</p>
+    <button class="btn-gold" onclick="openLogin()">File a Complaint Now →</button>
+  </div>
+
+  <footer>
+    <div class="ft-grid">
+      <div>
+        <div class="ft-logo">JUCSO</div>
+        <div class="ft-tagline">Jordan University College Student Organization. Progress. Accountability. Leadership.</div>
+        <div style="font-size:11px;color:#00B4C6;font-weight:600;margin-top:10px">2026–2027 Administration</div>
+      </div>
+      <div>
+        <div class="ft-head">Navigation</div>
+        <button class="ft-link" onclick="showPage('home')">Home</button>
+        <button class="ft-link" onclick="showPage('about')">About</button>
+        <button class="ft-link" onclick="showPage('services')">Services</button>
+        <button class="ft-link" onclick="showPage('news')">News</button>
+        <button class="ft-link" onclick="showPage('contact')">Contact</button>
+      </div>
+      <div>
+        <div class="ft-head">Services</div>
+        <div class="ft-link">Submit a Complaint</div>
+        <div class="ft-link">Share an Idea</div>
+        <div class="ft-link">Join a Club</div>
+        <div class="ft-link">Event Registration</div>
+        <div class="ft-link">Official Documents</div>
+      </div>
+      <div>
+        <div class="ft-head">Contact</div>
+        <div class="ft-link">Jordan University College</div>
+        <div class="ft-link">Morogoro, Tanzania</div>
+        <div class="ft-link">info@jucso.ac.tz</div>
+        <div class="ft-link">+255 800 000 000</div>
+      </div>
+    </div>
+    <div class="ft-bottom">© 2026 JUCSO — Jordan University College Student Organization. All rights reserved.</div>
+  </footer>
+</div>
+
+<!-- ── ABOUT ── -->
+<div id="page-about" class="page">
+  <div class="hero" style="padding:56px 24px 48px">
+    <div class="hero-geo"></div>
+    <div class="hero-content" style="max-width:100%;text-align:center;margin:0 auto">
+      <span class="badge badge-teal">About JUCSO</span>
+      <h1 style="font-size:clamp(26px,5vw,50px);margin:16px auto 16px">Leading People to Excellence</h1>
+      <p style="text-align:center;margin:0 auto 0">JUCSO is the constitutionally recognized voice of all students at Jordan University College, Tanzania. We bridge the gap between student needs and institutional action.</p>
+    </div>
+  </div>
+
+  <div class="section section-white">
+    <div class="sec-head">
+      <h2>Our Three Pillars</h2>
+      <p class="sec-p">Every decision we make is measured against these commitments.</p>
+    </div>
+    <div class="card-grid">
+      <div class="about-pillar" style="border-color:#00B4C6">
+        <div class="pillar-word" style="color:#00B4C6">Progress</div>
+        <div class="pillar-desc">We push for measurable improvements in academic quality, campus facilities, and student welfare — term by term.</div>
+      </div>
+      <div class="about-pillar" style="border-color:#F5A623">
+        <div class="pillar-word" style="color:#F5A623">Accountability</div>
+        <div class="pillar-desc">Every complaint receives a tracking number. Every minister has a resolution deadline. Every outcome is recorded.</div>
+      </div>
+      <div class="about-pillar" style="border-color:#1B2B6B">
+        <div class="pillar-word" style="color:#1B2B6B">Leadership</div>
+        <div class="pillar-desc">JUCSO nurtures the next generation of civic leaders through hands-on governance, debate, and community service.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section section-slate">
+    <div class="contact-grid">
+      <div>
+        <span class="badge badge-navy">Our Mandate</span>
+        <h3 class="syne" style="color:#1B2B6B;font-size:22px;margin:14px 0 16px">What JUCSO is responsible for</h3>
+        <div id="mandate-list"></div>
+      </div>
+      <div>
+        <span class="badge badge-teal">The Digital System</span>
+        <h3 class="syne" style="color:#1B2B6B;font-size:22px;margin:14px 0 14px">Why we're going digital</h3>
+        <p style="font-size:14px;color:#6B7280;line-height:1.75;margin-bottom:14px">Today, JUCSO runs on WhatsApp groups, paper notices, and face-to-face conversations. Messages are lost. Complaints go unanswered. There is no record.</p>
+        <p style="font-size:14px;color:#6B7280;line-height:1.75">The JUCSO Digital System — approved June 2026 — replaces every paper-based process with a single, secure, mobile-friendly website any student can use from a phone.</p>
+        <div style="margin-top:22px;background:#1B2B6B;border-radius:10px;padding:16px 20px;display:flex;gap:20px;align-items:center">
+          <div style="text-align:center"><div class="syne" style="color:#00B4C6;font-size:22px">12</div><div style="font-size:10px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em">weeks</div></div>
+          <div style="width:1px;background:rgba(255,255,255,.12);align-self:stretch"></div>
+          <div style="text-align:center"><div class="syne" style="color:#F5A623;font-size:22px">4</div><div style="font-size:10px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em">user roles</div></div>
+          <div style="width:1px;background:rgba(255,255,255,.12);align-self:stretch"></div>
+          <div style="text-align:center"><div class="syne" style="color:#fff;font-size:22px">6</div><div style="font-size:10px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em">ministries</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer>
+    <div class="ft-bottom" style="border-top:none;padding-top:0">© 2026 JUCSO — Jordan University College Student Organization</div>
+  </footer>
+</div>
+
+<!-- ── SERVICES ── -->
+<div id="page-services" class="page">
+  <div class="hero" style="padding:56px 24px 40px">
+    <div class="hero-geo"></div>
+    <div class="hero-content" style="max-width:100%;text-align:center;margin:0 auto">
+      <span class="badge badge-teal">Student Services</span>
+      <h1 style="font-size:clamp(24px,5vw,46px);margin:16px auto 14px">Everything you need in one place</h1>
+      <p style="text-align:center;margin:0 auto">Submit complaints, share ideas, register for events, and download official documents.</p>
+    </div>
+  </div>
+
+  <div class="section section-slate">
+    <div class="card-grid">
+      <div class="svc-card" style="border-color:#1B2B6B"><div class="svc-icon">📋</div><div class="svc-title">Submit a Complaint</div><div class="svc-desc">File a complaint under the correct ministry and track it in real time.</div><button class="btn-navy" style="margin-top:16px;font-size:12px;padding:8px 16px" onclick="openLogin()">Get Started →</button></div>
+      <div class="svc-card" style="border-color:#00B4C6"><div class="svc-icon">💡</div><div class="svc-title">Share an Idea</div><div class="svc-desc">Submit suggestions that could improve university life.</div><button class="btn-navy" style="margin-top:16px;font-size:12px;padding:8px 16px;background:#00B4C6" onclick="openLogin()">Get Started →</button></div>
+      <div class="svc-card" style="border-color:#F5A623"><div class="svc-icon">🎓</div><div class="svc-title">Join a Club</div><div class="svc-desc">Browse active student clubs and sign up with one click.</div><button class="btn-gold" style="margin-top:16px;font-size:12px;padding:8px 16px" onclick="openLogin()">Get Started →</button></div>
+      <div class="svc-card" style="border-color:#1B2B6B"><div class="svc-icon">📅</div><div class="svc-title">Event Registration</div><div class="svc-desc">Find upcoming events and secure your spot instantly.</div><button class="btn-navy" style="margin-top:16px;font-size:12px;padding:8px 16px" onclick="openLogin()">Get Started →</button></div>
+      <div class="svc-card" style="border-color:#00B4C6"><div class="svc-icon">📄</div><div class="svc-title">Official Documents</div><div class="svc-desc">Download the JUCSO Constitution, Election Bylaws, and meeting minutes.</div><button class="btn-navy" style="margin-top:16px;font-size:12px;padding:8px 16px;background:#00B4C6" onclick="openLogin()">Get Started →</button></div>
+      <div class="svc-card" style="border-color:#F5A623"><div class="svc-icon">📊</div><div class="svc-title">Performance Reports</div><div class="svc-desc">JUCSO publishes quarterly transparency reports by ministry.</div><button class="btn-gold" style="margin-top:16px;font-size:12px;padding:8px 16px" onclick="openLogin()">Get Started →</button></div>
+    </div>
+  </div>
+
+  <!-- Demo complaint form -->
+  <div class="section section-white">
+    <div style="max-width:580px;margin:0 auto">
+      <div style="text-align:center;margin-bottom:28px">
+        <span class="badge badge-teal">Try a Demo</span>
+        <h2 class="syne" style="color:#1B2B6B;font-size:clamp(20px,3.5vw,30px);margin:12px 0 8px">Submit a Complaint (Preview)</h2>
+        <p style="font-size:13px;color:#6B7280">See how the form works. Full functionality requires login.</p>
+      </div>
+      <div id="svc-form-box" style="background:#F4F6FA;border-radius:14px;padding:28px 24px">
+        <div class="form-group">
+          <label class="form-label">Complaint Category</label>
+          <select class="form-ctrl" id="svc-category">
+            <option value="">— Select a category —</option>
+            <option>Academic Issues</option>
+            <option>Financial / Loan Issues</option>
+            <option>Health & Welfare</option>
+            <option>Accommodation</option>
+            <option>Social Affairs</option>
+            <option>Sports & Recreation</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Describe Your Complaint</label>
+          <textarea class="form-ctrl" id="svc-desc" rows="4" placeholder="Explain the issue clearly. Include relevant dates, names, or reference numbers."></textarea>
+        </div>
+        <button onclick="submitComplaint()" style="width:100%;background:linear-gradient(135deg,#1B2B6B,#00B4C6);border:none;border-radius:8px;padding:12px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:#fff;cursor:pointer">Submit Complaint</button>
+      </div>
+      <div id="svc-success" class="success-box" style="display:none">
+        <div style="font-size:40px;margin-bottom:12px">✅</div>
+        <h3 class="syne" style="color:#065F46;font-size:20px;margin-bottom:8px">Complaint Submitted!</h3>
+        <p style="font-size:13px;color:#047857;margin-bottom:20px">In the live system you'll receive a tracking number and your complaint is routed automatically to the correct minister.</p>
+        <button class="btn-navy" onclick="resetComplaint()">Submit Another</button>
+      </div>
+    </div>
+  </div>
+  <footer><div class="ft-bottom" style="border-top:none;padding-top:0">© 2026 JUCSO</div></footer>
+</div>
+
+<!-- ── NEWS ── -->
+<div id="page-news" class="page">
+  <div class="hero" style="padding:56px 24px 40px">
+    <div class="hero-geo"></div>
+    <div class="hero-content" style="text-align:center;max-width:100%;margin:0 auto">
+      <span class="badge badge-teal">Latest News</span>
+      <h1 style="font-size:clamp(24px,5vw,44px);margin:16px auto 14px">JUCSO Notices & Announcements</h1>
+      <p style="text-align:center;margin:0 auto">Official communications from the JUCSO 2026–2027 administration.</p>
+    </div>
+  </div>
+  <div class="section section-slate">
+    <div class="news-filter">
+      <button class="filter-btn active" onclick="filterNews('All',this)">All</button>
+      <button class="filter-btn" onclick="filterNews('Announcement',this)">Announcement</button>
+      <button class="filter-btn" onclick="filterNews('Events',this)">Events</button>
+      <button class="filter-btn" onclick="filterNews('Clubs',this)">Clubs</button>
+      <button class="filter-btn" onclick="filterNews('Notice',this)">Notice</button>
+    </div>
+    <div id="news-list" style="display:flex;flex-direction:column;gap:12px"></div>
+  </div>
+  <footer><div class="ft-bottom" style="border-top:none;padding-top:0">© 2026 JUCSO</div></footer>
+</div>
+
+<!-- ── CONTACT ── -->
+<div id="page-contact" class="page">
+  <div class="hero" style="padding:56px 24px 40px">
+    <div class="hero-geo"></div>
+    <div class="hero-content" style="text-align:center;max-width:100%;margin:0 auto">
+      <span class="badge badge-teal">Get in Touch</span>
+      <h1 style="font-size:clamp(24px,5vw,44px);margin:16px auto 14px">Contact JUCSO</h1>
+      <p style="text-align:center;margin:0 auto">For general inquiries and partnership proposals. Student complaints go through the portal.</p>
+    </div>
+  </div>
+  <div class="section section-slate">
+    <div class="contact-grid">
+      <div>
+        <h3 class="syne" style="color:#1B2B6B;font-size:22px;margin-bottom:20px">Reach Us Directly</h3>
+        <div class="contact-item"><div class="contact-icon-box">📍</div><div><div class="contact-label">Address</div><div class="contact-val">Jordan University College, Morogoro, Tanzania</div></div></div>
+        <div class="contact-item"><div class="contact-icon-box">✉️</div><div><div class="contact-label">Email</div><div class="contact-val">info@jucso.ac.tz</div></div></div>
+        <div class="contact-item"><div class="contact-icon-box">📞</div><div><div class="contact-label">Phone</div><div class="contact-val">+255 800 000 000</div></div></div>
+        <div class="contact-item"><div class="contact-icon-box">🕐</div><div><div class="contact-label">Office Hours</div><div class="contact-val">Mon – Fri, 8:00 AM – 5:00 PM</div></div></div>
+      </div>
+      <div>
+        <div id="contact-form-box" style="background:#fff;border-radius:14px;padding:28px 24px;box-shadow:0 2px 10px rgba(0,0,0,.07)">
+          <h3 class="syne" style="color:#1B2B6B;font-size:20px;margin-bottom:20px">Send a Message</h3>
+          <div class="form-group"><label class="form-label">Full Name</label><input class="form-ctrl" id="ct-name" placeholder="Your full name"></div>
+          <div class="form-group"><label class="form-label">Email Address</label><input class="form-ctrl" id="ct-email" type="email" placeholder="your@email.com"></div>
+          <div class="form-group"><label class="form-label">Message</label><textarea class="form-ctrl" id="ct-msg" rows="4" placeholder="Your message here..."></textarea></div>
+          <button onclick="sendContact()" style="width:100%;background:linear-gradient(135deg,#1B2B6B,#00B4C6);border:none;border-radius:8px;padding:12px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:#fff;cursor:pointer">Send Message</button>
+        </div>
+        <div id="contact-success" class="success-box" style="display:none">
+          <div style="font-size:40px;margin-bottom:12px">✉️</div>
+          <h3 class="syne" style="color:#065F46;font-size:20px;margin-bottom:8px">Message Sent!</h3>
+          <p style="font-size:13px;color:#047857;margin-bottom:20px">We'll get back to you within 2 working days.</p>
+          <button class="btn-navy" onclick="resetContact()">Send Another</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer><div class="ft-bottom" style="border-top:none;padding-top:0">© 2026 JUCSO</div></footer>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div id="page-dashboard" class="page">
+  <div class="db-header">
+    <div class="db-title-row">
+      <div>
+        <div class="db-role-label" id="db-role-label">Student Portal</div>
+        <div class="db-title" id="db-title">Welcome back, Student</div>
+      </div>
+      <button class="db-logout" onclick="logout()">Sign Out</button>
+    </div>
+    <div class="db-tabs" id="db-tabs"></div>
+  </div>
+  <div class="db-body">
+    <div class="stat-cards" id="db-stat-cards"></div>
+    <div class="tbl-wrap">
+      <div class="tbl-head">
+        <div class="tbl-title" id="tbl-title">My Complaints</div>
+        <button id="new-complaint-btn" class="btn-navy" style="font-size:12px;padding:7px 14px;display:none" onclick="openLogin()">+ New Complaint</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="ctbl">
+          <thead><tr><th>ID</th><th>Category</th><th>Description</th><th>Ministry</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody id="tbl-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── LOGIN MODAL ── -->
+<div id="login-modal" style="display:none;position:fixed;inset:0;background:rgba(13,26,62,.82);display:none;align-items:center;justify-content:center;padding:16px;z-index:200">
+  <div style="background:#fff;border-radius:14px;width:100%;max-width:360px;padding:28px 24px">
+    <div style="text-align:center;margin-bottom:22px">
+      <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#00B4C6,#1B2B6B);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:#fff">JU</div>
+      <div class="syne" style="color:#1B2B6B;font-size:18px">JUCSO Portal Login</div>
+      <div style="font-size:12px;color:#6B7280;margin-top:4px">Sign in with your registration number</div>
+    </div>
+    <div class="role-select">
+      <button class="role-btn active" data-role="student" onclick="selectRole(this)">Student</button>
+      <button class="role-btn" data-role="minister" onclick="selectRole(this)">Minister</button>
+      <button class="role-btn" data-role="executive" onclick="selectRole(this)">Executive</button>
+      <button class="role-btn" data-role="admin" onclick="selectRole(this)">Admin</button>
+    </div>
+    <div class="form-group"><label class="form-label">Registration Number</label><input class="form-ctrl" id="login-reg" placeholder="e.g. JUC/2024/001"></div>
+    <div class="form-group"><label class="form-label">Password</label><input class="form-ctrl" type="password" id="login-pw" placeholder="Your secure password"></div>
+    <div id="login-err" style="font-size:12px;color:#DC2626;margin-bottom:10px;display:none">Please enter your registration number and password.</div>
+    <button onclick="doLogin()" style="width:100%;background:linear-gradient(135deg,#1B2B6B,#00B4C6);border:none;border-radius:8px;padding:11px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:#fff;cursor:pointer;margin-bottom:12px">Sign In</button>
+    <button onclick="closeLogin()" style="width:100%;background:#F4F6FA;border:none;border-radius:8px;padding:9px;font-size:13px;color:#6B7280;font-weight:600;cursor:pointer">Cancel</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+var NEWS=[
+  {tag:'Announcement',date:'June 20, 2026',title:'JUCSO Digital System Officially Approved',excerpt:'The JUCSO leadership has approved construction of the Digital Student Government Management System, set for launch within 12 weeks.'},
+  {tag:'Events',date:'June 15, 2026',title:'Annual Leadership Summit — Call for Delegates',excerpt:'All students are invited to nominate representatives for the 2026 JUCSO Leadership Summit in the Main Hall on July 12.'},
+  {tag:'Clubs',date:'June 10, 2026',title:'New Clubs Registration Now Open',excerpt:'The Drama Society, Debate Club, and Entrepreneurship Hub are now accepting new members. Visit the Services page to register.'},
+  {tag:'Notice',date:'June 5, 2026',title:'Examination Grievance Window: 2 Weeks Only',excerpt:'Students with academic complaints related to semester results must submit through the complaints portal before June 30, 2026.'}
+];
+
+var MANDATE=[
+  'Representing students in all college governance meetings',
+  'Receiving and resolving student complaints through defined ministries',
+  'Organizing co-curricular activities, clubs, and student events',
+  'Publishing official communications and JUCSO documents',
+  'Reporting progress transparently to the student body'
+];
+
+var COMPLAINTS=[
+  {id:'JUC-001',cat:'Academic Issues',desc:'Exam results not uploaded for Semester 2.',status:'Pending',date:'June 22, 2026',min:'Academics'},
+  {id:'JUC-002',cat:'Financial / Loan Issues',desc:'HESLB loan disbursement delayed by 3 weeks.',status:'In Progress',date:'June 20, 2026',min:'Finance'},
+  {id:'JUC-003',cat:'Accommodation',desc:'Room 14B has broken ceiling fan and leaking roof.',status:'Resolved',date:'June 15, 2026',min:'Accommodation'},
+  {id:'JUC-004',cat:'Health & Welfare',desc:'Dispensary unstaffed during afternoon hours.',status:'Pending',date:'June 18, 2026',min:'Health'}
+];
+
+var DB_CONFIG={
+  student:{label:'Student Portal',title:'Welcome back, Student',tabs:['Overview','My Complaints','Clubs & Events'],stats:[{icon:'📋',val:'4',lab:'My Complaints',color:'#1B2B6B'},{icon:'⏳',val:'2',lab:'Pending',color:'#6B7280'},{icon:'🔄',val:'1',lab:'In Progress',color:'#F59E0B'},{icon:'✅',val:'1',lab:'Resolved',color:'#10B981'}],tblTitle:'My Complaints',showNew:true},
+  minister:{label:'Minister Dashboard',title:'Welcome back, Minister',tabs:['Overview','Incoming','Resolved'],stats:[{icon:'📋',val:'12',lab:'Total Assigned',color:'#1B2B6B'},{icon:'⏳',val:'5',lab:'Pending',color:'#6B7280'},{icon:'🔄',val:'4',lab:'In Progress',color:'#F59E0B'},{icon:'✅',val:'3',lab:'Resolved',color:'#10B981'}],tblTitle:'Assigned to You',showNew:false},
+  executive:{label:'Executive Dashboard',title:'Welcome back, President',tabs:['Overview','All Complaints','Ministry Stats'],stats:[{icon:'📊',val:'87',lab:'Total Complaints',color:'#1B2B6B'},{icon:'⚡',val:'3.2d',lab:'Avg Resolution',color:'#00B4C6'},{icon:'🔓',val:'34',lab:'Open Issues',color:'#F59E0B'},{icon:'✅',val:'53',lab:'Resolved',color:'#10B981'}],tblTitle:'All Complaints',showNew:false},
+  admin:{label:'Admin Panel',title:'Welcome back, Admin',tabs:['Overview','Users','Content','Backups'],stats:[{icon:'👥',val:'2,441',lab:'Total Users',color:'#1B2B6B'},{icon:'🟢',val:'128',lab:'Active Today',color:'#00B4C6'},{icon:'⚠️',val:'7',lab:'Pending Issues',color:'#F59E0B'},{icon:'💚',val:'99%',lab:'System Health',color:'#10B981'}],tblTitle:'Recent Activity',showNew:false}
+};
+
+var currentRole='student';
+
+function showPage(p){
+  document.querySelectorAll('.page').forEach(function(el){el.classList.remove('active')});
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(function(b){b.classList.toggle('active',b.dataset.page===p)});
+  if(p==='about')buildMandate();
+  if(p==='news')renderNews('All');
+}
+
+function buildMandate(){
+  var el=document.getElementById('mandate-list');if(!el)return;
+  el.innerHTML=MANDATE.map(function(m){return'<div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start"><div style="width:18px;height:18px;border-radius:50%;background:#00B4C6;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:10px;color:#fff;font-weight:800">✓</div><p style="font-size:13px;color:#374151;line-height:1.6;margin:0">'+m+'</p></div>'}).join('');
+}
+
+function renderNews(tag){
+  var list=NEWS.filter(function(n){return tag==='All'||n.tag===tag});
+  document.getElementById('news-list').innerHTML=list.map(function(n){
+    var icons={Announcement:'📢',Events:'📅',Clubs:'🎓',Notice:'📌'};
+    return'<div style="background:#fff;border-radius:12px;padding:20px 18px;display:flex;gap:16px;align-items:flex-start;box-shadow:0 1px 5px rgba(0,0,0,.05)"><div style="width:48px;height:48px;border-radius:9px;background:rgba(0,180,198,.12);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+(icons[n.tag]||'📌')+'</div><div><div class="news-meta"><span class="badge badge-teal">'+n.tag+'</span><span class="news-date">'+n.date+'</span></div><div class="news-title">'+n.title+'</div><div class="news-excerpt">'+n.excerpt+'</div></div></div>'
+  }).join('');
+}
+
+function filterNews(tag,btn){
+  document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+  renderNews(tag);
+}
+
+function submitComplaint(){
+  var cat=document.getElementById('svc-category').value;
+  var desc=document.getElementById('svc-desc').value.trim();
+  if(!cat||!desc)return;
+  document.getElementById('svc-form-box').style.display='none';
+  document.getElementById('svc-success').style.display='block';
+}
+function resetComplaint(){
+  document.getElementById('svc-category').value='';
+  document.getElementById('svc-desc').value='';
+  document.getElementById('svc-form-box').style.display='block';
+  document.getElementById('svc-success').style.display='none';
+}
+
+function sendContact(){
+  var n=document.getElementById('ct-name').value.trim();
+  var e=document.getElementById('ct-email').value.trim();
+  var m=document.getElementById('ct-msg').value.trim();
+  if(!n||!e||!m)return;
+  document.getElementById('contact-form-box').style.display='none';
+  document.getElementById('contact-success').style.display='block';
+}
+function resetContact(){
+  ['ct-name','ct-email','ct-msg'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('contact-form-box').style.display='block';
+  document.getElementById('contact-success').style.display='none';
+}
+
+function openLogin(){
+  var m=document.getElementById('login-modal');
+  m.style.display='flex';
+}
+function closeLogin(){
+  document.getElementById('login-modal').style.display='none';
+  document.getElementById('login-err').style.display='none';
+}
+function selectRole(btn){
+  document.querySelectorAll('.role-btn').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+  currentRole=btn.dataset.role;
+}
+function doLogin(){
+  var reg=document.getElementById('login-reg').value.trim();
+  var pw=document.getElementById('login-pw').value.trim();
+  var err=document.getElementById('login-err');
+  if(!reg||!pw){err.style.display='block';return;}
+  err.style.display='none';
+  document.getElementById('login-modal').style.display='none';
+  buildDashboard(currentRole);
+  showPage('dashboard');
+}
+function logout(){showPage('home');currentRole='student';}
+
+function buildDashboard(role){
+  var cfg=DB_CONFIG[role];
+  document.getElementById('db-role-label').textContent=cfg.label;
+  document.getElementById('db-title').textContent=cfg.title;
+  document.getElementById('tbl-title').textContent=cfg.tblTitle;
+  document.getElementById('new-complaint-btn').style.display=cfg.showNew?'block':'none';
+  var tabs=document.getElementById('db-tabs');
+  tabs.innerHTML=cfg.tabs.map(function(t,i){return'<button class="db-tab'+(i===0?' active':'')+'" onclick="switchTab(this)">'+t+'</button>'}).join('');
+  var cards=document.getElementById('db-stat-cards');
+  cards.innerHTML=cfg.stats.map(function(s){return'<div class="stat-card" style="border-top-color:'+s.color+'"><div class="sc-icon">'+s.icon+'</div><div class="sc-val" style="color:'+s.color+'">'+s.val+'</div><div class="sc-label">'+s.lab+'</div></div>'}).join('');
+  var tbody=document.getElementById('tbl-body');
+  tbody.innerHTML=COMPLAINTS.map(function(c,i){
+    var sc=c.status==='Resolved'?'sp-resolved':c.status==='In Progress'?'sp-progress':'sp-pending';
+    return'<tr><td style="color:#00B4C6;font-weight:700">'+c.id+'</td><td>'+c.cat+'</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#6B7280">'+c.desc+'</td><td style="font-weight:600;color:#1B2B6B">'+c.min+'</td><td><span class="status-pill '+sc+'">'+c.status+'</span></td><td style="white-space:nowrap;color:#6B7280">'+c.date+'</td></tr>'
+  }).join('');
+}
+function switchTab(btn){
+  document.querySelectorAll('.db-tab').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+}
+
+document.addEventListener('click',function(e){
+  var modal=document.getElementById('login-modal');
+  if(e.target===modal)closeLogin();
+});
+</script>

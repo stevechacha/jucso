@@ -1,0 +1,161 @@
+import { useState } from "react";
+import { jucsoApi } from "@/api/jucsoApi";
+import { useApp } from "@/context/AppContext";
+import type { ComplaintStatus } from "@/types";
+import { Button } from "@/components/ui/Button";
+import { Textarea } from "@/components/ui/FormFields";
+import { StatCard } from "@/components/ui/StatCard";
+import { StatusPill } from "@/components/ui/StatusPill";
+import { DashboardShell } from "@/components/layout/DashboardShell";
+
+const TABS = ["incoming", "resolved", "overview"] as const;
+type MinisterTab = (typeof TABS)[number];
+
+export function MinisterDashboard() {
+  const { user, complaints, setComplaints, apiEnabled, refreshPortalData } = useApp();
+  if (!user?.ministry) return null;
+
+  const [tab, setTab] = useState<MinisterTab>("incoming");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [responseText, setResponseText] = useState("");
+
+  const myComplaints = complaints.filter((c) => c.ministry === user.ministry);
+  const selected = complaints.find((c) => c.id === selectedId);
+
+  const respond = async (id: string, status: ComplaintStatus) => {
+    if (apiEnabled) {
+      await jucsoApi.updateComplaint(id, { status, response: responseText || undefined });
+      await refreshPortalData();
+    } else {
+      setComplaints((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, status, response: responseText || c.response } : c)),
+      );
+    }
+    setSelectedId(null);
+    setResponseText("");
+  };
+
+  const stats = [
+    { icon: "📋", val: myComplaints.length, lab: "Total Assigned", color: "#1B2B6B" },
+    { icon: "⏳", val: myComplaints.filter((c) => c.status === "Pending").length, lab: "Pending", color: "#6B7280" },
+    { icon: "🔄", val: myComplaints.filter((c) => c.status === "In Progress").length, lab: "In Progress", color: "#F59E0B" },
+    { icon: "✅", val: myComplaints.filter((c) => c.status === "Resolved").length, lab: "Resolved", color: "#10B981" },
+  ];
+
+  const filtered =
+    tab === "incoming"
+      ? myComplaints.filter((c) => c.status !== "Resolved")
+      : myComplaints.filter((c) => c.status === "Resolved");
+
+  return (
+    <DashboardShell
+      label={`Minister Dashboard — ${user.ministry}`}
+      title={`Welcome back, ${user.name.split(" ")[0]}`}
+      tabs={[...TABS]}
+      activeTab={tab}
+      onTabChange={(t) => setTab(t as MinisterTab)}
+    >
+      {tab === "overview" && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {stats.map((s) => (
+            <StatCard key={s.lab} icon={s.icon} value={s.val} label={s.lab} color={s.color} />
+          ))}
+        </div>
+      )}
+
+      {(tab === "incoming" || tab === "resolved") && (
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
+          <div className="md:col-span-3 bg-white rounded-xl shadow-card overflow-hidden">
+            <h2 className="px-5 py-4 border-b border-gray-100 font-display font-extrabold text-jucso-navy">
+              {tab === "incoming" ? "Pending & In Progress" : "Resolved Cases"}
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-jucso-slate">
+                    {["ID", "Student", "Description", "Status"].map((h) => (
+                      <th
+                        key={h}
+                        scope="col"
+                        className="px-4 py-2.5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest"
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((c, i) => (
+                    <tr
+                      key={c.id}
+                      onClick={() => setSelectedId(c.id)}
+                      className={`border-t border-gray-50 cursor-pointer hover:bg-indigo-50 transition-colors ${
+                        selectedId === c.id ? "bg-indigo-50" : i % 2 === 1 ? "bg-gray-50/50" : ""
+                      }`}
+                    >
+                      <td className="px-4 py-3 text-jucso-teal font-bold">
+                        {c.id}
+                        {c.urgent && <span className="text-red-500 ml-1">⚠</span>}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{c.studentName}</td>
+                      <td className="px-4 py-3 text-gray-500 max-w-[160px] truncate">{c.description}</td>
+                      <td className="px-4 py-3">
+                        <StatusPill status={c.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="md:col-span-2">
+            {selected ? (
+              <div className="bg-white rounded-xl p-5 shadow-card">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="font-display font-extrabold text-jucso-navy text-sm">Complaint {selected.id}</h3>
+                  <StatusPill status={selected.status} />
+                </div>
+                <p className="text-xs text-gray-400 mb-1">
+                  From: <span className="font-semibold text-gray-700">{selected.studentName}</span> (
+                  {selected.studentReg})
+                </p>
+                <p className="text-xs text-gray-400 mb-3">Filed: {selected.date}</p>
+                <div className="bg-jucso-slate rounded-lg p-3 mb-4">
+                  <div className="font-semibold text-jucso-navy text-xs mb-1">{selected.category}</div>
+                  <p className="text-gray-600 text-xs leading-relaxed">{selected.description}</p>
+                </div>
+                {selected.response && (
+                  <div className="bg-emerald-50 rounded-lg p-3 mb-4">
+                    <p className="text-emerald-700 text-xs">
+                      <strong>Previous response:</strong> {selected.response}
+                    </p>
+                  </div>
+                )}
+                <Textarea
+                  label="Write Response"
+                  value={responseText}
+                  onChange={(e) => setResponseText(e.target.value)}
+                  rows={3}
+                  placeholder="Type your response to the student..."
+                />
+                <div className="flex gap-2 flex-wrap">
+                  <Button size="sm" variant="teal" onClick={() => respond(selected.id, "In Progress")}>
+                    Mark In Progress
+                  </Button>
+                  <Button size="sm" variant="navy" onClick={() => respond(selected.id, "Resolved")}>
+                    Mark Resolved
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl p-6 text-center text-gray-400 text-sm shadow-card">
+                Select a complaint to respond
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </DashboardShell>
+  );
+}
