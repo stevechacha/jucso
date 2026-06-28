@@ -1,0 +1,15 @@
+**/.venv
+**/venv
+**/node_modules
+**/__pycache__
+**/*.py[cod]
+**/.env
+**/.env.*
+!**/.env.example
+**/dist
+**/.DS_Store
+**/*.sqlite3
+**/staticfiles
+**/media
+**/tsconfig.tsbuildinfo
+jucso-web/

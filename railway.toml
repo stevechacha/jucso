@@ -1,0 +1,10 @@
+# Monorepo: this root config deploys the Django API.
+# For the React frontend, create a second Railway service with Root Directory = jucso-web
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+watchPatterns = ["jucso-api/**", "Dockerfile", "railway.toml"]
+
+[deploy]
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
