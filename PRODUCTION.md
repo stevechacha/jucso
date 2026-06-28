@@ -97,6 +97,17 @@ Redeploy after changing `VITE_API_URL` (it is baked in at build time).
 
 ## 5. Smoke test (after deploy)
 
+Run locally before release:
+
+```bash
+cd jucso-api
+python manage.py test core.tests -v 2
+```
+
+CI runs the same suite on push via `.github/workflows/api-tests.yml`.
+
+### Manual production checks
+
 1. Open `https://jucso-web-production.up.railway.app`
 2. Register a new student (new reg number + email)
 3. Land on `/dashboard` with portal navbar (no marketing links)
