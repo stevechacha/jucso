@@ -10,7 +10,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from core.auth import authenticate_portal_user, build_token_response
-from core.backup import build_portal_backup
+from core.backup import build_portal_backup, restore_portal_backup
 from core.complaint_activity import log_complaint_activity
 from core.email_verification import send_email_verification, verify_email_with_token
 from core.models import (
@@ -45,6 +45,7 @@ from core.serializers import (
     AdminClubUpdateSerializer,
     AdminContactMessageSerializer,
     AdminContactMessageUpdateSerializer,
+    AdminContactMessageReplySerializer,
     AdminDocumentCreateSerializer,
     AdminDocumentUpdateSerializer,
     AdminEventCreateSerializer,
@@ -92,6 +93,7 @@ from core.notifications import (
     notify_complaint_submitted,
     notify_complaint_update,
     notify_contact_message,
+    send_contact_reply_email,
     notify_suggestion_update,
 )
 from core.password_reset import RESET_MESSAGE, find_user_for_reset, reset_password_with_token, send_password_reset_email
@@ -975,12 +977,14 @@ class ExecutiveStatsView(views.APIView):
         now = timezone.now()
         week_start = now - timedelta(days=7)
         open_qs = complaints.exclude(status=ComplaintStatus.RESOLVED)
+        escalated_qs = open_qs.filter(is_escalated=True)
         return Response(
             {
                 "total_complaints": complaints.count(),
                 "urgent": complaints.filter(urgent=True).count(),
                 "open_issues": open_qs.count(),
                 "resolved": complaints.filter(status=ComplaintStatus.RESOLVED).count(),
+                "escalated": escalated_qs.count(),
                 "overdue": open_qs.filter(due_at__lt=now).count(),
                 "resolved_this_week": complaints.filter(
                     status=ComplaintStatus.RESOLVED,
@@ -991,6 +995,7 @@ class ExecutiveStatsView(views.APIView):
                     complaints.filter(urgent=True).exclude(status=ComplaintStatus.RESOLVED)[:10],
                     many=True,
                 ).data,
+                "escalated_issues": ComplaintSerializer(escalated_qs.order_by("-escalated_at")[:10], many=True).data,
             }
         )
 
@@ -1284,6 +1289,27 @@ class AdminContactMessageDetailView(views.APIView):
         return Response(AdminContactMessageSerializer(message).data)
 
 
+class AdminContactMessageReplyView(views.APIView):
+    permission_classes = [*AUTHENTICATED, IsAdminRole]
+
+    def post(self, request, pk: int):
+        try:
+            message = ContactMessage.objects.get(pk=pk)
+        except ContactMessage.DoesNotExist:
+            return Response({"detail": "Message not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = AdminContactMessageReplySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        reply_text = serializer.validated_data["reply"]
+        send_contact_reply_email(message, reply_text=reply_text, admin_name=request.user.display_name)
+        message.admin_reply = reply_text
+        message.replied_at = timezone.now()
+        message.replied_by = request.user
+        message.is_read = True
+        message.save(update_fields=["admin_reply", "replied_at", "replied_by", "is_read"])
+        return Response(AdminContactMessageSerializer(message).data)
+
+
 class AdminClubCreateView(views.APIView):
     permission_classes = [*AUTHENTICATED, IsAdminRole]
 
@@ -1398,6 +1424,21 @@ class AdminBackupView(views.APIView):
 
     def post(self, request):
         return Response(build_portal_backup())
+
+
+class AdminBackupRestoreView(views.APIView):
+    permission_classes = [*AUTHENTICATED, IsAdminRole]
+
+    def post(self, request):
+        data = request.data.get("data")
+        if not isinstance(data, dict):
+            return Response({"detail": "Backup data is required."}, status=status.HTTP_400_BAD_REQUEST)
+        confirm = bool(request.data.get("confirm"))
+        try:
+            summary = restore_portal_backup(data, dry_run=not confirm)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(summary)
 
 
 class AdminSystemStatusView(views.APIView):

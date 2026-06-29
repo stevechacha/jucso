@@ -561,10 +561,22 @@ class LeadershipMemberSerializer(serializers.Serializer):
 class AdminContactMessageSerializer(serializers.ModelSerializer):
     id = serializers.SerializerMethodField()
     date = serializers.SerializerMethodField()
+    replied_by_name = serializers.SerializerMethodField()
 
     class Meta:
         model = ContactMessage
-        fields = ("id", "name", "email", "subject", "message", "date", "is_read")
+        fields = (
+            "id",
+            "name",
+            "email",
+            "subject",
+            "message",
+            "date",
+            "is_read",
+            "admin_reply",
+            "replied_at",
+            "replied_by_name",
+        )
 
     def get_id(self, obj: ContactMessage) -> str:
         return f"MSG-{obj.pk:04d}"
@@ -572,9 +584,18 @@ class AdminContactMessageSerializer(serializers.ModelSerializer):
     def get_date(self, obj: ContactMessage) -> str:
         return obj.created_at.strftime("%b %d, %Y %H:%M")
 
+    def get_replied_by_name(self, obj: ContactMessage) -> str:
+        if not obj.replied_by_id:
+            return ""
+        return obj.replied_by.display_name
+
 
 class AdminContactMessageUpdateSerializer(serializers.Serializer):
     is_read = serializers.BooleanField()
+
+
+class AdminContactMessageReplySerializer(serializers.Serializer):
+    reply = serializers.CharField(min_length=1, max_length=5000, trim_whitespace=True)
 
 
 class ContactMessageSerializer(serializers.ModelSerializer):

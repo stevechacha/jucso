@@ -348,3 +348,76 @@ class PortalFeatureTests(APITestCase):
         self.client.force_authenticate(user=self.minister)
         response = self.client.post(f"/api/complaints/{complaint.tracking_id}/escalate/")
         self.assertEqual(response.status_code, 400)
+
+    def test_admin_can_reply_to_contact_message(self):
+        from unittest.mock import patch
+
+        from core.models import ContactMessage
+
+        message = ContactMessage.objects.create(
+            name="Jane Doe",
+            email="jane@example.com",
+            subject="Question",
+            message="Need help with registration.",
+        )
+        self.client.force_authenticate(user=self.admin)
+        with patch("core.views.send_contact_reply_email") as mock_send:
+            response = self.client.post(
+                f"/api/admin/contact-messages/{message.pk}/reply/",
+                {"reply": "We will assist you shortly."},
+                format="json",
+            )
+        self.assertEqual(response.status_code, 200)
+        message.refresh_from_db()
+        self.assertEqual(message.admin_reply, "We will assist you shortly.")
+        self.assertTrue(message.is_read)
+        mock_send.assert_called_once()
+
+    def test_backup_restore_dry_run(self):
+        from core.backup import build_portal_backup, restore_portal_backup
+
+        payload = build_portal_backup()
+        payload["clubs"] = [
+            {
+                "id": "CLB-999",
+                "name": "Restore Test Club",
+                "description": "Test",
+                "leader": "Leader",
+                "category": "Academic",
+                "members": 0,
+            }
+        ]
+        summary = restore_portal_backup(payload, dry_run=True)
+        self.assertTrue(summary["dry_run"])
+        self.assertEqual(summary["clubs"]["created"], 1)
+        from core.models import Club
+
+        self.assertFalse(Club.objects.filter(name="Restore Test Club").exists())
+
+    def test_executive_stats_include_escalated(self):
+        from core.models import Complaint, ComplaintCategory
+
+        ministry = Ministry.objects.get(name="Academics")
+        Complaint.objects.create(
+            tracking_id="JUC-ESC3",
+            student=self.student,
+            category=ComplaintCategory.ACADEMIC,
+            description="Escalated case",
+            ministry=ministry,
+            status="Pending",
+            is_escalated=True,
+            escalated_at=timezone.now(),
+        )
+        executive = User.objects.create_user(
+            username="exec-stats",
+            reg_number="EXEC/STAT",
+            email="exec-stats@jucso.ac.tz",
+            password="ExecPass123!",
+            role=UserRole.EXECUTIVE,
+            email_verified=True,
+        )
+        self.client.force_authenticate(user=executive)
+        response = self.client.get("/api/stats/executive/")
+        self.assertEqual(response.status_code, 200)
+        self.assertGreaterEqual(response.data["escalated"], 1)
+        self.assertGreaterEqual(len(response.data["escalated_issues"]), 1)

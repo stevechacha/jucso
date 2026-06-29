@@ -147,6 +147,34 @@ def notify_contact_message(message) -> None:
     )
 
 
+def send_contact_reply_email(message, *, reply_text: str, admin_name: str) -> None:
+    if not message.email:
+        return
+
+    subject = f"Re: {message.subject or 'Your message to JUCSO'}"
+    lines = [
+        f"Hello {message.name},",
+        "",
+        "Thank you for contacting JUCSO. Here is our reply:",
+        "",
+        reply_text,
+        "",
+        "—",
+        admin_name,
+        "JUCSO Digital Portal",
+        "",
+        "Your original message:",
+        message.message,
+    ]
+    send_mail(
+        subject,
+        "\n".join(lines),
+        settings.DEFAULT_FROM_EMAIL,
+        [message.email],
+        fail_silently=True,
+    )
+
+
 def notify_overdue_complaint(complaint: Complaint) -> None:
     from django.contrib.auth import get_user_model
 

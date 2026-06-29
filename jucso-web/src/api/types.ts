@@ -91,6 +91,7 @@ export interface ExecutiveStatsResponse {
   urgent: number;
   open_issues: number;
   resolved: number;
+  escalated?: number;
   ministry_stats: Array<{
     name: string;
     total: number;
@@ -99,6 +100,7 @@ export interface ExecutiveStatsResponse {
     rate: number;
   }>;
   urgent_issues: ApiComplaint[];
+  escalated_issues?: ApiComplaint[];
 }
 
 export interface AdminOverviewResponse {

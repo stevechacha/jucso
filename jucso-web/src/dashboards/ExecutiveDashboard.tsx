@@ -6,6 +6,7 @@ import { exportComplaintsCsv } from "@/lib/exportComplaintsCsv";
 import { exportSuggestionsCsv } from "@/lib/exportSuggestionsCsv";
 import { Button } from "@/components/ui/Button";
 import { ConfidentialBadge } from "@/components/complaints/ConfidentialBadge";
+import { EscalatedBadge } from "@/components/complaints/EscalatedBadge";
 import { StatCard } from "@/components/ui/StatCard";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { DashboardShell } from "@/components/layout/DashboardShell";
@@ -22,6 +23,7 @@ export function ExecutiveDashboard() {
   const [tab, setTab] = useDashboardTab(EXECUTIVE_TABS, DEFAULT_TAB);
   const [filterMin, setFilterMin] = useState("All");
   const [filterStatus, setFilterStatus] = useState("All");
+  const [filterEscalated, setFilterEscalated] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState<ExecutiveStats | null>(null);
 
@@ -36,6 +38,8 @@ export function ExecutiveDashboard() {
   const filtered = complaints.filter((c) => {
     if (filterMin !== "All" && c.ministry !== filterMin) return false;
     if (filterStatus !== "All" && c.status !== filterStatus) return false;
+    if (filterEscalated === "Escalated" && !c.isEscalated) return false;
+    if (filterEscalated === "Not escalated" && c.isEscalated) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -80,6 +84,12 @@ export function ExecutiveDashboard() {
       color: "#F59E0B",
     },
     {
+      icon: "⬆️",
+      val: stats?.escalated ?? complaints.filter((c) => c.isEscalated && c.status !== "Resolved").length,
+      lab: "Escalated",
+      color: "#7C3AED",
+    },
+    {
       icon: "✅",
       val: stats?.resolved ?? complaints.filter((c) => c.status === "Resolved").length,
       lab: "Resolved",
@@ -89,6 +99,9 @@ export function ExecutiveDashboard() {
 
   const urgentIssues =
     stats?.urgent_issues ?? complaints.filter((c) => c.urgent && c.status !== "Resolved");
+
+  const escalatedIssues =
+    stats?.escalated_issues ?? complaints.filter((c) => c.isEscalated && c.status !== "Resolved");
 
   const rateColor = (rate: number) => (rate > 70 ? "#10B981" : rate > 40 ? "#F59E0B" : "#EF4444");
 
@@ -103,7 +116,7 @@ export function ExecutiveDashboard() {
     >
       {tab === "tabExecutiveOverview" && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             {totalStats.map((s) => (
               <StatCard key={s.lab} icon={s.icon} value={s.val} label={s.lab} color={s.color} />
             ))}
@@ -147,6 +160,24 @@ export function ExecutiveDashboard() {
               )}
             </div>
           </div>
+          <div className="bg-white rounded-xl shadow-card p-5 mt-5">
+            <h2 className="font-display font-bold text-jucso-navy mb-4">Escalated to Executive</h2>
+            {escalatedIssues.length === 0 ? (
+              <p className="text-gray-400 text-sm text-center py-6">No escalated open complaints</p>
+            ) : (
+              escalatedIssues.map((c) => (
+                <div key={c.id} className="flex items-start gap-3 mb-3 bg-violet-50 rounded-lg p-3">
+                  <EscalatedBadge />
+                  <div>
+                    <div className="font-bold text-violet-900 text-xs">
+                      {c.id} — {c.ministry}
+                    </div>
+                    <p className="text-violet-800 text-xs mt-0.5 leading-relaxed">{c.description}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </>
       )}
 
@@ -176,6 +207,16 @@ export function ExecutiveDashboard() {
                 <option value="Pending">Pending</option>
                 <option value="In Progress">In Progress</option>
                 <option value="Resolved">Resolved</option>
+              </select>
+              <select
+                value={filterEscalated}
+                onChange={(e) => setFilterEscalated(e.target.value)}
+                className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-jucso-teal"
+                aria-label="Filter by escalation"
+              >
+                <option value="All">All escalation</option>
+                <option value="Escalated">Escalated only</option>
+                <option value="Not escalated">Not escalated</option>
               </select>
               <select
               value={filterMin}
@@ -214,6 +255,7 @@ export function ExecutiveDashboard() {
                       <span className="inline-flex items-center gap-1 flex-wrap">
                         {c.id}
                         {c.urgent && <span className="text-red-500 ml-1">⚠</span>}
+                        {c.isEscalated && <EscalatedBadge />}
                         {c.isConfidential && <ConfidentialBadge />}
                       </span>
                     </td>

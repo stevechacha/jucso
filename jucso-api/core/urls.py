@@ -58,6 +58,8 @@ urlpatterns = [
     path("admin/events/<int:pk>/", views.AdminEventDetailView.as_view(), name="admin-event-detail"),
     path("admin/events/<int:pk>/registrants/", views.AdminEventRegistrantsView.as_view(), name="admin-event-registrants"),
     path("admin/backup/", views.AdminBackupView.as_view(), name="admin-backup"),
+    path("admin/backup/restore/", views.AdminBackupRestoreView.as_view(), name="admin-backup-restore"),
+    path("admin/contact-messages/<int:pk>/reply/", views.AdminContactMessageReplyView.as_view(), name="admin-contact-message-reply"),
     path("admin/system-status/", views.AdminSystemStatusView.as_view(), name="admin-system-status"),
     path("admin/overview/", views.AdminOverviewView.as_view(), name="admin-overview"),
 ]

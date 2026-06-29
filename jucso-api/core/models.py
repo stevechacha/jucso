@@ -289,6 +289,15 @@ class ContactMessage(models.Model):
     subject = models.CharField(max_length=300, blank=True)
     message = models.TextField()
     is_read = models.BooleanField(default=False)
+    admin_reply = models.TextField(blank=True)
+    replied_at = models.DateTimeField(null=True, blank=True)
+    replied_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="contact_replies",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

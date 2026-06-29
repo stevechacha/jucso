@@ -134,7 +134,10 @@ Redeploy after changing `VITE_API_URL` (it is baked in at build time).
 | Events calendar export (.ics) | ✅ Built — Events page download link |
 | Complaint satisfaction ratings | ✅ Built — students rate resolved complaints; shown on transparency page |
 | Club/event attendee lists | ✅ Built — Admin → Content → Members / Attendees + CSV export |
-| Automated tests (API) | ✅ 80 tests in CI |
+| Executive escalated complaints filter | ✅ Built — filter + overview panel on executive dashboard |
+| Contact inbox reply | ✅ Built — Admin → Overview → reply by email |
+| Backup restore (content merge) | ✅ Built — Admin → System → upload JSON backup |
+| Automated tests (API) | ✅ 83 tests in CI |
 
 ### Production configuration still required
 

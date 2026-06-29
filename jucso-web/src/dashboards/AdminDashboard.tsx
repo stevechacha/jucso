@@ -5,7 +5,7 @@ import { exportComplaintsCsv } from "@/lib/exportComplaintsCsv";
 import { useDashboardTab } from "@/hooks/useDashboardTab";
 import { useEffect, useState, type FormEvent } from "react";
 import { ApiError } from "@/api/client";
-import { jucsoApi, type AdminOverview, type AdminUserRow } from "@/api/jucsoApi";
+import { jucsoApi, type AdminOverview, type AdminUserRow, type ContactMessageRow, type PortalBackupRestoreSummary } from "@/api/jucsoApi";
 import type { AdminSystemStatusResponse } from "@/api/types";
 import { DEMO_USERS } from "@/constants/mock-data";
 import { useApp } from "@/context/AppContext";
@@ -550,6 +550,9 @@ function SystemToolsPanel({ apiEnabled }: { apiEnabled: boolean }) {
   const [lastBackup, setLastBackup] = useState<string | null>(() => getLastBackupLabel());
   const [backupLoading, setBackupLoading] = useState(false);
   const [backupMsg, setBackupMsg] = useState("");
+  const [restoreFile, setRestoreFile] = useState<Record<string, unknown> | null>(null);
+  const [restorePreview, setRestorePreview] = useState<PortalBackupRestoreSummary | null>(null);
+  const [restoreLoading, setRestoreLoading] = useState(false);
   const [systemStatus, setSystemStatus] = useState<AdminSystemStatusResponse | null>(null);
   const [activeTool, setActiveTool] = useState<(typeof SYSTEM_TOOLS)[number]["id"] | null>(null);
 
@@ -574,6 +577,43 @@ function SystemToolsPanel({ apiEnabled }: { apiEnabled: boolean }) {
     }
   };
 
+  const onRestoreFile = async (file: File | null) => {
+    if (!file) return;
+    setRestoreLoading(true);
+    setBackupMsg("");
+    setRestorePreview(null);
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text) as Record<string, unknown>;
+      setRestoreFile(data);
+      const preview = await jucsoApi.previewPortalBackupRestore(data);
+      setRestorePreview(preview);
+      setBackupMsg("Restore preview ready. Confirm to apply content changes.");
+    } catch (error) {
+      setRestoreFile(null);
+      setRestorePreview(null);
+      setBackupMsg(error instanceof ApiError ? error.message : "Could not read backup file.");
+    } finally {
+      setRestoreLoading(false);
+    }
+  };
+
+  const confirmRestore = async () => {
+    if (!restoreFile || !apiEnabled) return;
+    setRestoreLoading(true);
+    setBackupMsg("");
+    try {
+      const result = await jucsoApi.restorePortalBackup(restoreFile);
+      setRestorePreview(result);
+      setBackupMsg("Backup restored. Clubs, events, news, and document metadata were merged.");
+      setRestoreFile(null);
+    } catch (error) {
+      setBackupMsg(error instanceof ApiError ? error.message : "Restore failed.");
+    } finally {
+      setRestoreLoading(false);
+    }
+  };
+
   const toolDesc = (id: (typeof SYSTEM_TOOLS)[number]["id"]) => {
     if (id === "backup") {
       return lastBackup ? `Last backup: ${lastBackup}` : "No backup downloaded yet from this browser.";
@@ -595,7 +635,40 @@ function SystemToolsPanel({ apiEnabled }: { apiEnabled: boolean }) {
   };
 
   const renderDetail = () => {
-    if (!systemStatus || !activeTool || activeTool === "backup") return null;
+    if (!systemStatus || !activeTool || activeTool === "backup") {
+      if (activeTool !== "backup") return null;
+      return (
+        <div className="bg-white rounded-xl p-5 shadow-card text-xs space-y-3">
+          <h3 className="font-display font-bold text-jucso-navy">Restore from backup</h3>
+          <p className="text-gray-500">
+            Upload a JSON backup to merge clubs, events, news, and document metadata. Users, complaints, and
+            suggestions are not restored.
+          </p>
+          <input
+            type="file"
+            accept="application/json,.json"
+            disabled={!apiEnabled || restoreLoading}
+            onChange={(e) => void onRestoreFile(e.target.files?.[0] ?? null)}
+            className="block text-xs"
+          />
+          {restorePreview && (
+            <div className="bg-jucso-slate rounded-lg p-3 space-y-1">
+              <p>Clubs: {restorePreview.clubs.created} new, {restorePreview.clubs.updated} updated</p>
+              <p>Events: {restorePreview.events.created} new, {restorePreview.events.updated} updated</p>
+              <p>News: {restorePreview.news.created} new, {restorePreview.news.updated} updated</p>
+              <p>Documents: {restorePreview.documents.created} new, {restorePreview.documents.updated} updated</p>
+              {restorePreview.dry_run && restoreFile && (
+                <Button size="sm" variant="navy" className="mt-2" disabled={restoreLoading} onClick={() => void confirmRestore()}>
+                  {restoreLoading ? "Restoring…" : "Confirm restore"}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (!systemStatus) return null;
 
     if (activeTool === "security") {
       return (
@@ -661,8 +734,12 @@ function SystemToolsPanel({ apiEnabled }: { apiEnabled: boolean }) {
               size="sm"
               disabled={!apiEnabled || (s.id === "backup" && backupLoading)}
               onClick={() => {
-                if (s.id === "backup") void runBackup();
-                else setActiveTool(activeTool === s.id ? null : s.id);
+                if (s.id === "backup") {
+                  setActiveTool("backup");
+                  void runBackup();
+                  return;
+                }
+                setActiveTool(activeTool === s.id ? null : s.id);
               }}
             >
               {s.id === "backup" && backupLoading ? "Exporting…" : t(s.actionKey)}
@@ -676,19 +753,11 @@ function SystemToolsPanel({ apiEnabled }: { apiEnabled: boolean }) {
 }
 
 function ContactInboxPanel() {
-  const [messages, setMessages] = useState<
-    Array<{
-      id: string;
-      name: string;
-      email: string;
-      subject: string;
-      message: string;
-      date: string;
-      is_read: boolean;
-    }>
-  >([]);
+  const [messages, setMessages] = useState<ContactMessageRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [replyingId, setReplyingId] = useState<string | null>(null);
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [inboxFilter, setInboxFilter] = useState<"all" | "unread">("all");
 
   const load = () => {
@@ -724,6 +793,25 @@ function ContactInboxPanel() {
       console.error(error);
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const sendReply = async (id: string) => {
+    const reply = replyDrafts[id]?.trim();
+    if (!reply) return;
+    setReplyingId(id);
+    try {
+      const updated = await jucsoApi.replyContactMessage(id, reply);
+      setMessages((prev) => prev.map((m) => (m.id === id ? updated : m)));
+      setReplyDrafts((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setReplyingId(null);
     }
   };
 
@@ -775,6 +863,34 @@ function ContactInboxPanel() {
                 {m.name} · {m.email}
               </div>
               <p className="text-xs text-gray-600 leading-relaxed mb-2">{m.message}</p>
+              {m.admin_reply && (
+                <div className="mb-2 rounded-lg bg-emerald-50 border border-emerald-100 p-2 text-xs">
+                  <div className="font-semibold text-emerald-800 mb-1">
+                    Replied{m.replied_by_name ? ` by ${m.replied_by_name}` : ""}
+                  </div>
+                  <p className="text-emerald-900 whitespace-pre-wrap">{m.admin_reply}</p>
+                </div>
+              )}
+              {!m.admin_reply && (
+                <div className="mb-2">
+                  <Textarea
+                    label="Reply"
+                    value={replyDrafts[m.id] ?? ""}
+                    onChange={(e) => setReplyDrafts((prev) => ({ ...prev, [m.id]: e.target.value }))}
+                    rows={3}
+                    placeholder="Type a reply to send by email…"
+                  />
+                  <Button
+                    size="sm"
+                    variant="teal"
+                    className="mt-2"
+                    disabled={replyingId === m.id || !(replyDrafts[m.id] ?? "").trim()}
+                    onClick={() => void sendReply(m.id)}
+                  >
+                    {replyingId === m.id ? "Sending…" : "Send reply"}
+                  </Button>
+                </div>
+              )}
               <div className="flex gap-2">
                 {!m.is_read ? (
                   <Button size="sm" variant="outline" disabled={updatingId === m.id} onClick={() => void markRead(m.id)}>

@@ -18,11 +18,40 @@ export interface ExecutiveStats {
   urgent: number;
   open_issues: number;
   resolved: number;
+  escalated: number;
   ministry_stats: ExecutiveStatsResponse["ministry_stats"];
   urgent_issues: Complaint[];
+  escalated_issues: Complaint[];
 }
 
 export type AdminOverview = AdminOverviewResponse;
+
+export interface ContactMessageRow {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  date: string;
+  is_read: boolean;
+  admin_reply?: string;
+  replied_at?: string | null;
+  replied_by_name?: string;
+}
+
+export interface PortalBackupRestoreSummary {
+  dry_run: boolean;
+  clubs: { created: number; updated: number };
+  events: { created: number; updated: number };
+  news: { created: number; updated: number };
+  documents: { created: number; updated: number };
+  skipped: {
+    users: number;
+    complaints: number;
+    suggestions: number;
+    contact_messages: number;
+  };
+}
 export type { AdminUserRow } from "@/api/mappers";
 
 export const jucsoApi = {
@@ -394,7 +423,9 @@ export const jucsoApi = {
     const stats = await apiRequest<ExecutiveStatsResponse>("/api/stats/executive/");
     return {
       ...stats,
+      escalated: stats.escalated ?? 0,
       urgent_issues: stats.urgent_issues.map(mapComplaint),
+      escalated_issues: (stats.escalated_issues ?? []).map(mapComplaint),
     };
   },
 
@@ -449,6 +480,20 @@ export const jucsoApi = {
     return data;
   },
 
+  previewPortalBackupRestore(data: Record<string, unknown>) {
+    return apiRequest<PortalBackupRestoreSummary>("/api/admin/backup/restore/", {
+      method: "POST",
+      body: { data, confirm: false },
+    });
+  },
+
+  restorePortalBackup(data: Record<string, unknown>) {
+    return apiRequest<PortalBackupRestoreSummary>("/api/admin/backup/restore/", {
+      method: "POST",
+      body: { data, confirm: true },
+    });
+  },
+
   deleteDocument(documentId: string) {
     const pk = parseInt(documentId.replace(/^DOC-/i, ""), 10);
     return apiRequest<void>(`/api/admin/documents/${pk}/`, { method: "DELETE" });
@@ -501,6 +546,14 @@ export const jucsoApi = {
     return apiRequest<{ id: string; is_read: boolean }>(`/api/admin/contact-messages/${pk}/`, {
       method: "PATCH",
       body: { is_read: isRead },
+    });
+  },
+
+  replyContactMessage(messageId: string, reply: string) {
+    const pk = parseInt(messageId.replace(/^MSG-/i, ""), 10);
+    return apiRequest<ContactMessageRow>(`/api/admin/contact-messages/${pk}/reply/`, {
+      method: "POST",
+      body: { reply },
     });
   },
 
