@@ -1288,6 +1288,14 @@ class AdminContactMessageDetailView(views.APIView):
         message.save(update_fields=["is_read"])
         return Response(AdminContactMessageSerializer(message).data)
 
+    def delete(self, request, pk: int):
+        try:
+            message = ContactMessage.objects.get(pk=pk)
+        except ContactMessage.DoesNotExist:
+            return Response({"detail": "Message not found."}, status=status.HTTP_404_NOT_FOUND)
+        message.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class AdminContactMessageReplyView(views.APIView):
     permission_classes = [*AUTHENTICATED, IsAdminRole]

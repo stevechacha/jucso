@@ -100,6 +100,18 @@ class RemainingFeaturesTests(TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["subject"], "Hello")
 
+    def test_admin_can_delete_contact_message(self):
+        message = ContactMessage.objects.create(
+            name="Jane Doe",
+            email="jane@example.com",
+            subject="Hello",
+            message="Need info.",
+        )
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.delete(f"/api/admin/contact-messages/{message.pk}/")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(ContactMessage.objects.filter(pk=message.pk).exists())
+
     def test_admin_can_delete_news_and_document(self):
         news = NewsItem.objects.create(
             title="Test",

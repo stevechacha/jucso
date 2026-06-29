@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { ApiError, isApiEnabled } from "@/api/client";
 import { jucsoApi } from "@/api/jucsoApi";
+import { useLanguage } from "@/context/LanguageContext";
 import type { User } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/FormFields";
@@ -12,6 +13,7 @@ interface RegisterModalProps {
 }
 
 export function RegisterModal({ onRegistered, onClose, onBackToLogin }: RegisterModalProps) {
+  const { t } = useLanguage();
   const [form, setForm] = useState({
     reg_number: "",
     first_name: "",
@@ -31,19 +33,19 @@ export function RegisterModal({ onRegistered, onClose, onBackToLogin }: Register
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!form.reg_number.trim() || !form.first_name.trim() || !form.last_name.trim()) {
-      setErr("Please fill in all required fields.");
+      setErr(t("authFillRequired"));
       return;
     }
     if (!form.email.trim() || !form.password) {
-      setErr("Email and password are required.");
+      setErr(t("authEmailPasswordRequired"));
       return;
     }
     if (form.password !== form.confirm) {
-      setErr("Passwords do not match.");
+      setErr(t("authPasswordMismatch"));
       return;
     }
     if (!isApiEnabled) {
-      setErr("Registration is only available when the API is connected.");
+      setErr(t("authRegistrationApiOnly"));
       return;
     }
 
@@ -62,7 +64,7 @@ export function RegisterModal({ onRegistered, onClose, onBackToLogin }: Register
       onRegistered(user);
       onClose();
     } catch (error) {
-      setErr(error instanceof ApiError ? error.message : "Registration failed. Please try again.");
+      setErr(error instanceof ApiError ? error.message : t("authRegistrationFailed"));
     } finally {
       setLoading(false);
     }
@@ -88,48 +90,48 @@ export function RegisterModal({ onRegistered, onClose, onBackToLogin }: Register
             JU
           </div>
           <div id="register-title" className="font-display font-bold text-lg text-jucso-navy">
-            Student Registration
+            {t("authStudentRegistration")}
           </div>
-          <div className="text-xs text-gray-400 mt-1">Create your JUCSO student account</div>
+          <div className="text-xs text-gray-400 mt-1">{t("authCreateAccountSubtitle")}</div>
         </div>
 
         <form onSubmit={(e) => void submit(e)}>
           <div className="grid grid-cols-2 gap-3">
             <Input
-              label="First Name"
+              label={t("authFirstName")}
               value={form.first_name}
               onChange={(e) => update("first_name", e.target.value)}
               required
             />
             <Input
-              label="Last Name"
+              label={t("authLastName")}
               value={form.last_name}
               onChange={(e) => update("last_name", e.target.value)}
               required
             />
           </div>
           <Input
-            label="Registration Number"
+            label={t("authRegNumber")}
             value={form.reg_number}
             onChange={(e) => update("reg_number", e.target.value)}
             placeholder="e.g. JUC/2025/042"
             required
           />
           <Input
-            label="Email"
+            label={t("authEmail")}
             type="email"
             value={form.email}
             onChange={(e) => update("email", e.target.value)}
             required
           />
           <Input
-            label="Phone (optional)"
+            label={t("authPhoneOptional")}
             value={form.phone_number}
             onChange={(e) => update("phone_number", e.target.value)}
             placeholder="+255..."
           />
           <Input
-            label="Password"
+            label={t("authPassword")}
             type="password"
             value={form.password}
             onChange={(e) => update("password", e.target.value)}
@@ -137,7 +139,7 @@ export function RegisterModal({ onRegistered, onClose, onBackToLogin }: Register
             required
           />
           <Input
-            label="Confirm Password"
+            label={t("authConfirmPassword")}
             type="password"
             value={form.confirm}
             onChange={(e) => update("confirm", e.target.value)}
@@ -152,7 +154,7 @@ export function RegisterModal({ onRegistered, onClose, onBackToLogin }: Register
           )}
 
           <Button type="submit" full variant="navy" disabled={loading}>
-            {loading ? "Creating account…" : "Create Account →"}
+            {loading ? t("authCreatingAccount") : t("authCreateAccount")}
           </Button>
         </form>
 
@@ -161,14 +163,14 @@ export function RegisterModal({ onRegistered, onClose, onBackToLogin }: Register
           onClick={onBackToLogin}
           className="w-full mt-3 text-sm text-jucso-teal font-semibold py-2 hover:underline cursor-pointer"
         >
-          Already have an account? Sign in
+          {t("authAlreadyHaveAccount")}
         </button>
         <button
           type="button"
           onClick={onClose}
           className="w-full text-sm text-gray-400 py-2 hover:text-gray-600 transition-colors cursor-pointer"
         >
-          Cancel
+          {t("cancel")}
         </button>
       </div>
     </div>

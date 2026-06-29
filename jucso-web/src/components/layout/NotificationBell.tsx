@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { jucsoApi } from "@/api/jucsoApi";
 import { isApiEnabled } from "@/api/client";
 import { useApp } from "@/context/AppContext";
+import { useLanguage } from "@/context/LanguageContext";
 import type { PortalNotification } from "@/types";
 
 export function NotificationBell() {
   const { user, apiEnabled, setPage } = useApp();
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<PortalNotification[]>([]);
   const [unread, setUnread] = useState(0);
@@ -60,7 +62,7 @@ export function NotificationBell() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="relative w-9 h-9 rounded-lg bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-all cursor-pointer"
-        aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`}
+        aria-label={unread ? `${t("notifTitle")}, ${t("notifUnread", { count: String(unread) })}` : t("notifTitle")}
       >
         🔔
         {unread > 0 && (
@@ -73,19 +75,19 @@ export function NotificationBell() {
       {open && (
         <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-auto bg-white rounded-xl shadow-xl border border-gray-100 z-50">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <h3 className="font-display font-bold text-jucso-navy text-sm">Notifications</h3>
+            <h3 className="font-display font-bold text-jucso-navy text-sm">{t("notifTitle")}</h3>
             {unread > 0 && (
               <button
                 type="button"
                 onClick={() => void markAllRead()}
                 className="text-xs text-jucso-teal font-semibold cursor-pointer hover:underline"
               >
-                Mark all read
+                {t("notifMarkAllRead")}
               </button>
             )}
           </div>
           {items.length === 0 ? (
-            <p className="text-xs text-gray-400 px-4 py-6 text-center">No notifications yet.</p>
+            <p className="text-xs text-gray-400 px-4 py-6 text-center">{t("notifEmpty")}</p>
           ) : (
             <ul>
               {items.map((item) => (

@@ -68,31 +68,31 @@ export function ExecutiveDashboard() {
     {
       icon: "📊",
       val: stats?.total_complaints ?? complaints.length,
-      lab: "Total Complaints",
+      lab: t("totalComplaints"),
       color: "#1B2B6B",
     },
     {
       icon: "⚠️",
       val: stats?.urgent ?? complaints.filter((c) => c.urgent).length,
-      lab: "Urgent",
+      lab: t("statUrgent"),
       color: "#EF4444",
     },
     {
       icon: "🔓",
       val: stats?.open_issues ?? complaints.filter((c) => c.status !== "Resolved").length,
-      lab: "Open Issues",
+      lab: t("statOpenIssues"),
       color: "#F59E0B",
     },
     {
       icon: "⬆️",
       val: stats?.escalated ?? complaints.filter((c) => c.isEscalated && c.status !== "Resolved").length,
-      lab: "Escalated",
+      lab: t("statEscalated"),
       color: "#7C3AED",
     },
     {
       icon: "✅",
       val: stats?.resolved ?? complaints.filter((c) => c.status === "Resolved").length,
-      lab: "Resolved",
+      lab: t("resolved"),
       color: "#10B981",
     },
   ];
@@ -123,7 +123,7 @@ export function ExecutiveDashboard() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="bg-white rounded-xl shadow-card p-5">
-              <h2 className="font-display font-bold text-jucso-navy mb-4">Ministry Resolution Rates</h2>
+              <h2 className="font-display font-bold text-jucso-navy mb-4">{t("execMinistryRates")}</h2>
               {miniStats.map((m) => (
                 <div key={m.name} className="mb-3">
                   <div className="flex justify-between text-xs mb-1">
@@ -142,9 +142,9 @@ export function ExecutiveDashboard() {
               ))}
             </div>
             <div className="bg-white rounded-xl shadow-card p-5">
-              <h2 className="font-display font-bold text-jucso-navy mb-4">Urgent Issues</h2>
+              <h2 className="font-display font-bold text-jucso-navy mb-4">{t("execUrgentIssues")}</h2>
               {urgentIssues.length === 0 ? (
-                <p className="text-gray-400 text-sm text-center py-6">No urgent open issues 🎉</p>
+                <p className="text-gray-400 text-sm text-center py-6">{t("execNoUrgent")}</p>
               ) : (
                 urgentIssues.map((c) => (
                     <div key={c.id} className="flex items-start gap-3 mb-3 bg-red-50 rounded-lg p-3">
@@ -161,9 +161,9 @@ export function ExecutiveDashboard() {
             </div>
           </div>
           <div className="bg-white rounded-xl shadow-card p-5 mt-5">
-            <h2 className="font-display font-bold text-jucso-navy mb-4">Escalated to Executive</h2>
+            <h2 className="font-display font-bold text-jucso-navy mb-4">{t("execEscalatedTitle")}</h2>
             {escalatedIssues.length === 0 ? (
-              <p className="text-gray-400 text-sm text-center py-6">No escalated open complaints</p>
+              <p className="text-gray-400 text-sm text-center py-6">{t("execNoEscalated")}</p>
             ) : (
               escalatedIssues.map((c) => (
                 <div key={c.id} className="flex items-start gap-3 mb-3 bg-violet-50 rounded-lg p-3">
@@ -184,10 +184,10 @@ export function ExecutiveDashboard() {
       {tab === "tabExecutiveAllComplaints" && (
         <div className="bg-white rounded-xl shadow-card overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
-            <h2 className="font-display font-bold text-jucso-navy">All Complaints ({filtered.length})</h2>
+            <h2 className="font-display font-bold text-jucso-navy">{t("execAllComplaints", { count: String(filtered.length) })}</h2>
             <div className="flex items-center gap-2 flex-wrap">
               <Button size="sm" variant="outline" onClick={() => exportComplaintsCsv(filtered)}>
-                Export CSV
+                {t("exportCsv")}
               </Button>
               <input
                 type="search"
@@ -203,10 +203,10 @@ export function ExecutiveDashboard() {
                 className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-jucso-teal"
                 aria-label="Filter by status"
               >
-                <option value="All">All statuses</option>
-                <option value="Pending">Pending</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Resolved">Resolved</option>
+                <option value="All">{t("execAllStatuses")}</option>
+                <option value="Pending">{t("statusPending")}</option>
+                <option value="In Progress">{t("statusInProgress")}</option>
+                <option value="Resolved">{t("statusResolved")}</option>
               </select>
               <select
                 value={filterEscalated}
@@ -214,9 +214,9 @@ export function ExecutiveDashboard() {
                 className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-jucso-teal"
                 aria-label="Filter by escalation"
               >
-                <option value="All">All escalation</option>
-                <option value="Escalated">Escalated only</option>
-                <option value="Not escalated">Not escalated</option>
+                <option value="All">{t("execEscalationAll")}</option>
+                <option value="Escalated">{t("execEscalationOnly")}</option>
+                <option value="Not escalated">{t("execEscalationNone")}</option>
               </select>
               <select
               value={filterMin}
@@ -224,7 +224,7 @@ export function ExecutiveDashboard() {
               className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-jucso-teal"
               aria-label="Filter by ministry"
             >
-              <option value="All">All Ministries</option>
+              <option value="All">{t("execAllMinistries")}</option>
               {ministries.map((m) => (
                 <option key={m} value={m}>
                   {m}

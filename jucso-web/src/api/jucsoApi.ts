@@ -557,6 +557,11 @@ export const jucsoApi = {
     });
   },
 
+  deleteContactMessage(messageId: string) {
+    const pk = parseInt(messageId.replace(/^MSG-/i, ""), 10);
+    return apiRequest<void>(`/api/admin/contact-messages/${pk}/`, { method: "DELETE" });
+  },
+
   async createClub(data: { name: string; description: string; leader: string; category: string }) {
     return apiRequest<Club>("/api/admin/clubs/", { method: "POST", body: data });
   },

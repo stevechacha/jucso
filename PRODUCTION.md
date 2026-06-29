@@ -123,7 +123,7 @@ Redeploy after changing `VITE_API_URL` (it is baked in at build time).
 | Public clubs & events pages | ✅ Built |
 | Admin staff edit (role/ministry) | ✅ Built |
 | Admin system panel (backup, security, cron logs, metrics) | ✅ Built |
-| Swahili / English (public + dashboards) | ✅ Built — toggle in navbar |
+| Swahili / English (public + dashboards) | ✅ Built — auth, contact, track, footer, status labels |
 | PWA / Add to Home Screen | ✅ Built |
 | Scheduled backup export | ✅ Built — cron: `export_portal_backup` via `run_daily_jobs.sh` |
 | Playwright E2E smoke tests | ✅ Built — `npm run test:e2e` |
@@ -136,8 +136,9 @@ Redeploy after changing `VITE_API_URL` (it is baked in at build time).
 | Club/event attendee lists | ✅ Built — Admin → Content → Members / Attendees + CSV export |
 | Executive escalated complaints filter | ✅ Built — filter + overview panel on executive dashboard |
 | Contact inbox reply | ✅ Built — Admin → Overview → reply by email |
+| Contact inbox delete + CSV export | ✅ Built — Admin → Overview → Contact Inbox |
 | Backup restore (content merge) | ✅ Built — Admin → System → upload JSON backup |
-| Automated tests (API) | ✅ 83 tests in CI |
+| Automated tests (API) | ✅ 84 tests in CI |
 
 ### Production configuration still required
 

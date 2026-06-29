@@ -1,82 +1,71 @@
 import { useApp } from "@/context/AppContext";
+import { useLanguage } from "@/context/LanguageContext";
+import { FOOTER_LINK_KEYS, type TranslationKey } from "@/i18n/translations";
 import type { PageId } from "@/types";
 
 const FOOTER_COLUMNS: Array<{
-  head: string;
-  links: Array<{ page: PageId; label: string }>;
+  headKey: TranslationKey;
+  links: PageId[];
 }> = [
   {
-    head: "Navigate",
-    links: [
-      { page: "home", label: "Home" },
-      { page: "about", label: "About" },
-      { page: "services", label: "Services" },
-      { page: "news", label: "News" },
-    ],
+    headKey: "footerNavigate",
+    links: ["home", "about", "services", "news"],
   },
   {
-    head: "Resources",
-    links: [
-      { page: "documents", label: "Documents" },
-      { page: "clubs", label: "Clubs" },
-      { page: "events", label: "Events" },
-      { page: "track", label: "Track Complaint" },
-      { page: "reports", label: "Transparency Reports" },
-      { page: "contact", label: "Contact" },
-    ],
+    headKey: "footerResources",
+    links: ["documents", "clubs", "events", "track", "reports", "contact"],
   },
   {
-    head: "Connect",
-    links: [{ page: "dashboard", label: "Dashboard" }],
+    headKey: "footerConnect",
+    links: ["dashboard"],
   },
 ];
 
 export function Footer() {
   const { setPage, handleLoginClick } = useApp();
+  const { t } = useLanguage();
 
   return (
     <footer className="bg-jucso-navy-dark px-6 pt-12 pb-6">
       <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
         <div className="col-span-2 md:col-span-1">
           <div className="text-white font-display font-bold text-xl mb-2">JUCSO</div>
-          <p className="text-white/40 text-xs leading-relaxed max-w-[200px]">
-            Jordan University College Student Organization — Leading People to Excellence.
-          </p>
+          <p className="text-white/40 text-xs leading-relaxed max-w-[200px]">{t("footerTagline")}</p>
         </div>
 
         {FOOTER_COLUMNS.map((col) => (
-          <div key={col.head}>
+          <div key={col.headKey}>
             <div className="text-jucso-teal text-[10px] font-bold uppercase tracking-wide mb-3">
-              {col.head}
+              {t(col.headKey)}
             </div>
-            {col.links.map((link) => (
+            {col.links.map((page) => (
               <button
-                key={link.page + link.label}
+                key={page}
                 type="button"
                 onClick={() => {
-                  setPage(link.page);
+                  setPage(page);
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 className="block text-white/45 text-xs mb-2 hover:text-white/80 transition-colors cursor-pointer text-left"
               >
-                {link.label}
+                {t(FOOTER_LINK_KEYS[page])}
               </button>
             ))}
-            {col.head === "Connect" && (
+            {col.headKey === "footerConnect" && (
               <>
                 <button
                   type="button"
                   onClick={() => handleLoginClick("student")}
                   className="block text-white/45 text-xs mb-2 hover:text-white/80 transition-colors cursor-pointer text-left"
                 >
-                  Student Portal
+                  {t("studentPortal")}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleLoginClick("staff")}
                   className="block text-white/45 text-xs mb-2 hover:text-white/80 transition-colors cursor-pointer text-left"
                 >
-                  Staff Portal
+                  {t("staffPortal")}
                 </button>
               </>
             )}
@@ -84,9 +73,7 @@ export function Footer() {
         ))}
       </div>
 
-      <div className="border-t border-white/10 pt-4 text-center text-[11px] text-white/25">
-        © 2026 JUCSO — Jordan University College Student Organization, Morogoro, Tanzania
-      </div>
+      <div className="border-t border-white/10 pt-4 text-center text-[11px] text-white/25">{t("footerCopyright")}</div>
     </footer>
   );
 }

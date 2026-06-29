@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { ApiError, isApiEnabled } from "@/api/client";
 import { jucsoApi } from "@/api/jucsoApi";
+import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/FormFields";
 
@@ -10,6 +11,7 @@ interface ForgotPasswordModalProps {
 }
 
 export function ForgotPasswordModal({ onClose, onBackToLogin }: ForgotPasswordModalProps) {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [regNumber, setRegNumber] = useState("");
   const [err, setErr] = useState("");
@@ -19,11 +21,11 @@ export function ForgotPasswordModal({ onClose, onBackToLogin }: ForgotPasswordMo
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!email.trim() && !regNumber.trim()) {
-      setErr("Enter your email or registration / PF number.");
+      setErr(t("authForgotEnterEmailOrReg"));
       return;
     }
     if (!isApiEnabled) {
-      setErr("Password reset requires a connected API.");
+      setErr(t("authForgotApiOnly"));
       return;
     }
 
@@ -38,7 +40,7 @@ export function ForgotPasswordModal({ onClose, onBackToLogin }: ForgotPasswordMo
       });
       setSuccess(message);
     } catch (error) {
-      setErr(error instanceof ApiError ? error.message : "Could not send reset instructions.");
+      setErr(error instanceof ApiError ? error.message : t("authForgotSendFailed"));
     } finally {
       setLoading(false);
     }
@@ -64,11 +66,9 @@ export function ForgotPasswordModal({ onClose, onBackToLogin }: ForgotPasswordMo
             JU
           </div>
           <div id="forgot-title" className="font-display font-bold text-lg text-jucso-navy">
-            Forgot password
+            {t("authForgotTitle")}
           </div>
-          <div className="text-xs text-gray-400 mt-1">
-            We&apos;ll email reset instructions to your registered address
-          </div>
+          <div className="text-xs text-gray-400 mt-1">{t("authForgotSubtitle")}</div>
         </div>
 
         {success ? (
@@ -77,25 +77,25 @@ export function ForgotPasswordModal({ onClose, onBackToLogin }: ForgotPasswordMo
               {success}
             </p>
             <Button variant="navy" full onClick={onBackToLogin}>
-              Back to sign in
+              {t("authBackToSignIn")}
             </Button>
           </div>
         ) : (
           <form onSubmit={(e) => void submit(e)}>
             <Input
-              label="Email"
+              label={t("authEmail")}
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               autoComplete="email"
             />
-            <p className="text-center text-xs text-gray-400 my-1">or</p>
+            <p className="text-center text-xs text-gray-400 my-1">{t("authForgotOr")}</p>
             <Input
-              label="Registration / PF number"
+              label={t("authRegOrPf")}
               value={regNumber}
               onChange={(e) => setRegNumber(e.target.value)}
-              placeholder="e.g. JUC/2024/001"
+              placeholder={t("authPlaceholderReg")}
               autoComplete="username"
             />
             {err && (
@@ -104,7 +104,7 @@ export function ForgotPasswordModal({ onClose, onBackToLogin }: ForgotPasswordMo
               </p>
             )}
             <Button type="submit" full variant="navy" disabled={loading}>
-              {loading ? "Sending…" : "Send reset link"}
+              {loading ? t("authSending") : t("authSendResetLink")}
             </Button>
           </form>
         )}
@@ -114,7 +114,7 @@ export function ForgotPasswordModal({ onClose, onBackToLogin }: ForgotPasswordMo
           onClick={onBackToLogin}
           className="w-full mt-3 text-sm text-jucso-teal font-semibold py-2 hover:underline cursor-pointer"
         >
-          Back to sign in
+          {t("authBackToSignIn")}
         </button>
       </div>
     </div>

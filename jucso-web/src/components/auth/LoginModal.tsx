@@ -2,29 +2,10 @@ import { useState, type FormEvent, type KeyboardEvent } from "react";
 import { ApiError, isApiEnabled } from "@/api/client";
 import { jucsoApi } from "@/api/jucsoApi";
 import { DEMO_USERS } from "@/constants/mock-data";
+import { useLanguage } from "@/context/LanguageContext";
 import type { PortalType, User } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/FormFields";
-
-const PORTAL_LABELS: Record<PortalType, string> = {
-  student: "Student Portal",
-  staff: "Staff Portal",
-};
-
-const PORTAL_SUBTITLES: Record<PortalType, string> = {
-  student: "Sign in with your registration number",
-  staff: "Sign in with your PF number",
-};
-
-const ID_LABELS: Record<PortalType, string> = {
-  student: "Registration Number",
-  staff: "PF Number",
-};
-
-const PLACEHOLDERS: Record<PortalType, string> = {
-  student: "e.g. JUC/2024/001",
-  staff: "e.g. MIN/ACAD/001",
-};
 
 const showDemoHints = import.meta.env.DEV;
 const STAFF_ROLES = new Set(["minister", "executive", "admin"]);
@@ -38,16 +19,18 @@ interface LoginModalProps {
 }
 
 export function LoginModal({ portal, onLogin, onClose, onRegister, onForgotPassword }: LoginModalProps) {
+  const { t } = useLanguage();
   const [idNumber, setIdNumber] = useState("");
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const idLabel = ID_LABELS[portal];
+  const idLabel = portal === "student" ? t("authRegNumber") : t("authPfNumber");
+  const idField = idLabel.toLowerCase();
 
   const login = async () => {
     if (!idNumber.trim() || !pw.trim()) {
-      setErr(`Please enter your ${idLabel.toLowerCase()} and password.`);
+      setErr(t("authEnterCredentials", { field: idField }));
       return;
     }
 
@@ -63,23 +46,23 @@ export function LoginModal({ portal, onLogin, onClose, onRegister, onForgotPassw
 
       const user = DEMO_USERS[idNumber.trim()];
       if (!user) {
-        setErr(`${idLabel} not found. Check your details and try again.`);
+        setErr(t("authAccountNotFound", { field: idLabel }));
         return;
       }
 
       if (portal === "student" && user.role !== "student") {
-        setErr("This account uses the Staff Portal.");
+        setErr(t("authWrongPortalStaff"));
         return;
       }
 
       if (portal === "staff" && !STAFF_ROLES.has(user.role)) {
-        setErr("This account uses the Student Portal.");
+        setErr(t("authWrongPortalStudent"));
         return;
       }
 
       onLogin(user);
     } catch (error) {
-      setErr(error instanceof ApiError ? error.message : "Login failed. Please try again.");
+      setErr(error instanceof ApiError ? error.message : t("authLoginFailed"));
     } finally {
       setLoading(false);
     }
@@ -114,9 +97,11 @@ export function LoginModal({ portal, onLogin, onClose, onRegister, onForgotPassw
             JU
           </div>
           <div id="login-title" className="font-display font-bold text-lg text-jucso-navy">
-            {PORTAL_LABELS[portal]}
+            {portal === "student" ? t("studentPortal") : t("staffPortal")}
           </div>
-          <div className="text-xs text-gray-400 mt-1">{PORTAL_SUBTITLES[portal]}</div>
+          <div className="text-xs text-gray-400 mt-1">
+            {portal === "student" ? t("authSignInStudentSubtitle") : t("authSignInStaffSubtitle")}
+          </div>
         </div>
 
         <form onSubmit={onSubmit}>
@@ -124,16 +109,16 @@ export function LoginModal({ portal, onLogin, onClose, onRegister, onForgotPassw
             label={idLabel}
             value={idNumber}
             onChange={(e) => setIdNumber(e.target.value)}
-            placeholder={PLACEHOLDERS[portal]}
+            placeholder={portal === "student" ? t("authPlaceholderReg") : t("authPlaceholderPf")}
             onKeyDown={onKeyDown}
             autoComplete="username"
           />
           <Input
-            label="Password"
+            label={t("authPassword")}
             type="password"
             value={pw}
             onChange={(e) => setPw(e.target.value)}
-            placeholder={showDemoHints ? (isApiEnabled ? "demo123" : "Any password (demo)") : "Your password"}
+            placeholder={showDemoHints ? (isApiEnabled ? "demo123" : "Any password (demo)") : t("authYourPassword")}
             onKeyDown={onKeyDown}
             autoComplete="current-password"
           />
@@ -166,7 +151,7 @@ export function LoginModal({ portal, onLogin, onClose, onRegister, onForgotPassw
           )}
 
           <Button type="submit" full variant="navy" disabled={loading}>
-            {loading ? "Signing in…" : "Sign In →"}
+            {loading ? t("authSigningIn") : t("authSignIn")}
           </Button>
 
           <button
@@ -174,7 +159,7 @@ export function LoginModal({ portal, onLogin, onClose, onRegister, onForgotPassw
             onClick={onForgotPassword}
             className="w-full mt-3 text-sm text-gray-500 font-medium py-2 hover:text-jucso-teal cursor-pointer"
           >
-            Forgot password?
+            {t("authForgotPassword")}
           </button>
 
           {portal === "student" && (
@@ -183,7 +168,7 @@ export function LoginModal({ portal, onLogin, onClose, onRegister, onForgotPassw
               onClick={onRegister}
               className="w-full mt-3 text-sm text-jucso-teal font-semibold py-2 hover:underline cursor-pointer"
             >
-              New student? Create an account
+              {t("authNewStudentRegister")}
             </button>
           )}
         </form>
@@ -193,7 +178,7 @@ export function LoginModal({ portal, onLogin, onClose, onRegister, onForgotPassw
           onClick={onClose}
           className="w-full mt-2 text-sm text-gray-400 py-2 hover:text-gray-600 transition-colors cursor-pointer"
         >
-          Cancel
+          {t("cancel")}
         </button>
       </div>
     </div>

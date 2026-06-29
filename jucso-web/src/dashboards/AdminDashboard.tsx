@@ -2,6 +2,7 @@ import { generateStaffTempPassword } from "@/lib/generateTempPassword";
 import { downloadJsonBackup, getLastBackupLabel } from "@/lib/downloadJsonBackup";
 import { exportUsersCsv } from "@/lib/exportUsersCsv";
 import { exportComplaintsCsv } from "@/lib/exportComplaintsCsv";
+import { exportContactInboxCsv } from "@/lib/exportContactInboxCsv";
 import { useDashboardTab } from "@/hooks/useDashboardTab";
 import { useEffect, useState, type FormEvent } from "react";
 import { ApiError } from "@/api/client";
@@ -753,6 +754,7 @@ function SystemToolsPanel({ apiEnabled }: { apiEnabled: boolean }) {
 }
 
 function ContactInboxPanel() {
+  const { t } = useLanguage();
   const [messages, setMessages] = useState<ContactMessageRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -815,6 +817,19 @@ function ContactInboxPanel() {
     }
   };
 
+  const removeMessage = async (id: string) => {
+    if (!window.confirm("Delete this message permanently?")) return;
+    setUpdatingId(id);
+    try {
+      await jucsoApi.deleteContactMessage(id);
+      setMessages((prev) => prev.filter((m) => m.id !== id));
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const unread = messages.filter((m) => !m.is_read).length;
   const visible = inboxFilter === "unread" ? messages.filter((m) => !m.is_read) : messages;
 
@@ -822,31 +837,36 @@ function ContactInboxPanel() {
     <div className="bg-white rounded-xl shadow-card p-5">
       <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
         <h2 className="font-display font-bold text-jucso-navy">
-          Contact Inbox ({messages.length}
-          {unread > 0 ? ` · ${unread} unread` : ""})
+          {t("contactInbox")} ({messages.length}
+          {unread > 0 ? ` · ${unread} ${t("contactUnread").toLowerCase()}` : ""})
         </h2>
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-wrap">
+          {messages.length > 0 && (
+            <Button size="sm" variant="outline" onClick={() => exportContactInboxCsv(messages)}>
+              {t("contactExportCsv")}
+            </Button>
+          )}
           <Button
             size="sm"
             variant={inboxFilter === "all" ? "navy" : "outline"}
             onClick={() => setInboxFilter("all")}
           >
-            All
+            {t("contactAll")}
           </Button>
           <Button
             size="sm"
             variant={inboxFilter === "unread" ? "navy" : "outline"}
             onClick={() => setInboxFilter("unread")}
           >
-            Unread
+            {t("contactUnread")}
           </Button>
         </div>
       </div>
       {loading ? (
-        <p className="text-gray-400 text-sm">Loading messages…</p>
+        <p className="text-gray-400 text-sm">{t("loadingMessages")}</p>
       ) : visible.length === 0 ? (
         <p className="text-gray-400 text-sm">
-          {inboxFilter === "unread" ? "No unread messages." : "No contact messages yet."}
+          {inboxFilter === "unread" ? t("contactNoUnread") : t("contactNoMessages")}
         </p>
       ) : (
         <ul className="max-h-80 overflow-y-auto">
@@ -866,7 +886,7 @@ function ContactInboxPanel() {
               {m.admin_reply && (
                 <div className="mb-2 rounded-lg bg-emerald-50 border border-emerald-100 p-2 text-xs">
                   <div className="font-semibold text-emerald-800 mb-1">
-                    Replied{m.replied_by_name ? ` by ${m.replied_by_name}` : ""}
+                    {m.replied_by_name ? t("contactRepliedBy", { name: m.replied_by_name }) : t("contactReply")}
                   </div>
                   <p className="text-emerald-900 whitespace-pre-wrap">{m.admin_reply}</p>
                 </div>
@@ -874,11 +894,11 @@ function ContactInboxPanel() {
               {!m.admin_reply && (
                 <div className="mb-2">
                   <Textarea
-                    label="Reply"
+                    label={t("contactReply")}
                     value={replyDrafts[m.id] ?? ""}
                     onChange={(e) => setReplyDrafts((prev) => ({ ...prev, [m.id]: e.target.value }))}
                     rows={3}
-                    placeholder="Type a reply to send by email…"
+                    placeholder={t("contactReplyPlaceholder")}
                   />
                   <Button
                     size="sm"
@@ -887,20 +907,29 @@ function ContactInboxPanel() {
                     disabled={replyingId === m.id || !(replyDrafts[m.id] ?? "").trim()}
                     onClick={() => void sendReply(m.id)}
                   >
-                    {replyingId === m.id ? "Sending…" : "Send reply"}
+                    {replyingId === m.id ? t("contactSendingReply") : t("contactSendReply")}
                   </Button>
                 </div>
               )}
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {!m.is_read ? (
                   <Button size="sm" variant="outline" disabled={updatingId === m.id} onClick={() => void markRead(m.id)}>
-                    {updatingId === m.id ? "…" : "Mark as read"}
+                    {updatingId === m.id ? "…" : t("contactMarkRead")}
                   </Button>
                 ) : (
                   <Button size="sm" variant="outline" disabled={updatingId === m.id} onClick={() => void markUnread(m.id)}>
-                    {updatingId === m.id ? "…" : "Mark unread"}
+                    {updatingId === m.id ? "…" : t("contactMarkUnread")}
                   </Button>
                 )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={updatingId === m.id}
+                  onClick={() => void removeMessage(m.id)}
+                  className="!text-red-600 !border-red-200"
+                >
+                  {t("contactDelete")}
+                </Button>
               </div>
             </li>
           ))}
