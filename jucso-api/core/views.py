@@ -617,6 +617,48 @@ class ComplaintEscalateView(views.APIView):
         return Response(ComplaintSerializer(complaint, context={"request": request}).data)
 
 
+class ComplaintDeEscalateView(views.APIView):
+    permission_classes = [*AUTHENTICATED, IsLeader]
+
+    def post(self, request, tracking_id: str):
+        if request.user.role not in (UserRole.EXECUTIVE, UserRole.ADMIN):
+            return Response({"detail": "Only executives can return escalated complaints."}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            complaint = Complaint.objects.select_related("student", "ministry").get(
+                tracking_id=tracking_id.strip().upper()
+            )
+        except Complaint.DoesNotExist:
+            return Response({"detail": "Complaint not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if complaint.status == ComplaintStatus.RESOLVED:
+            return Response({"detail": "Resolved complaints cannot be de-escalated."}, status=status.HTTP_400_BAD_REQUEST)
+        if not complaint.is_escalated:
+            return Response({"detail": "This complaint is not escalated."}, status=status.HTTP_400_BAD_REQUEST)
+
+        note = (request.data.get("note") or "").strip()
+        complaint.is_escalated = False
+        complaint.escalated_at = None
+        complaint.save(update_fields=["is_escalated", "escalated_at"])
+
+        detail = note or "Returned to ministry for handling"
+        log_complaint_activity(
+            complaint=complaint,
+            action="De-escalated",
+            detail=detail,
+            actor=request.user,
+        )
+        notify_ministry_leaders(
+            ministry_name=complaint.ministry.name,
+            title=f"Complaint {complaint.tracking_id} returned",
+            message=f"Executive returned {complaint.tracking_id} to your ministry. {detail}",
+            category=NotificationCategory.COMPLAINT,
+            link=dashboard_complaint_link(complaint.tracking_id, tab="tabMinisterIncoming"),
+        )
+
+        return Response(ComplaintSerializer(complaint, context={"request": request}).data)
+
+
 class ComplaintTrackView(views.APIView):
     permission_classes = [AllowAny]
     authentication_classes = []

@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { useDashboardTab } from "@/hooks/useDashboardTab";
 import { useComplaintHighlight } from "@/hooks/useComplaintHighlight";
+import { useComplaintDraft } from "@/hooks/useComplaintDraft";
 import { useComplaintCategories } from "@/hooks/useComplaintCategories";
 import { jucsoApi } from "@/api/jucsoApi";
 import { useApp } from "@/context/AppContext";
@@ -30,9 +31,7 @@ export function StudentDashboard() {
   const categories = useComplaintCategories();
   const { t } = useLanguage();
   const [tab, setTab] = useDashboardTab(STUDENT_TABS, DEFAULT_TAB);
-  const [newCat, setNewCat] = useState("");
-  const [newDesc, setNewDesc] = useState("");
-  const [newUrgent, setNewUrgent] = useState(false);
+  const { draft, setDraft, restored, savedAt, clearDraft, dismissRestored } = useComplaintDraft(user?.reg);
   const [supportingFile, setSupportingFile] = useState<File | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [lastTrackingId, setLastTrackingId] = useState<string | null>(null);
@@ -59,12 +58,12 @@ export function StudentDashboard() {
   const mySuggestions = suggestions.filter((s) => s.studentName === user.name);
 
   const submitComplaint = async () => {
-    if (!newCat || !newDesc.trim()) return;
+    if (!draft.category || !draft.description.trim()) return;
     if (apiEnabled) {
       const complaint = await jucsoApi.createComplaint({
-        category: newCat,
-        description: newDesc,
-        urgent: newUrgent,
+        category: draft.category,
+        description: draft.description,
+        urgent: draft.urgent,
         supportingDocument: supportingFile ?? undefined,
       });
       setLastTrackingId(complaint.id);
@@ -72,25 +71,23 @@ export function StudentDashboard() {
     } else {
       const c: Complaint = {
         id: `JUC-${String(complaints.length + 1).padStart(3, "0")}`,
-        category: newCat,
-        description: newDesc,
-        ministry: categories[newCat] ?? "Academics",
+        category: draft.category,
+        description: draft.description,
+        ministry: categories[draft.category] ?? "Academics",
         status: "Pending",
         date: formatDate(),
-        studentName: user.name,
-        studentReg: user.reg,
-        urgent: newUrgent,
+        studentName: user!.name,
+        studentReg: user!.reg,
+        urgent: draft.urgent,
       };
       setComplaints((prev) => [c, ...prev]);
       setLastTrackingId(c.id);
     }
+    clearDraft();
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
       setLastTrackingId(null);
-      setNewCat("");
-      setNewDesc("");
-      setNewUrgent(false);
       setSupportingFile(null);
     }, 3000);
   };
@@ -213,7 +210,22 @@ export function StudentDashboard() {
               </div>
             ) : (
               <>
-                <Select label="Complaint Category" value={newCat} onChange={(e) => setNewCat(e.target.value)}>
+                {restored && (
+                  <div className="mb-4 flex items-center justify-between gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-900">
+                    <span>{t("complaintDraftRestored")}</span>
+                    <button type="button" className="font-semibold underline shrink-0" onClick={dismissRestored}>
+                      {t("dismiss")}
+                    </button>
+                  </div>
+                )}
+                {savedAt && !restored && (
+                  <p className="text-[10px] text-gray-400 mb-3">{t("complaintDraftSaved")}</p>
+                )}
+                <Select
+                  label="Complaint Category"
+                  value={draft.category}
+                  onChange={(e) => setDraft({ ...draft, category: e.target.value })}
+                >
                   <option value="">— Select a category —</option>
                   {Object.keys(categories).map((c) => (
                     <option key={c} value={c}>
@@ -221,23 +233,23 @@ export function StudentDashboard() {
                     </option>
                   ))}
                 </Select>
-                {newCat && (
+                {draft.category && (
                   <p className="text-xs text-indigo-600 bg-indigo-50 rounded p-2 mb-4">
-                    → Routed to: <strong>{categories[newCat]}</strong> Ministry
+                    → Routed to: <strong>{categories[draft.category]}</strong> Ministry
                   </p>
                 )}
                 <Textarea
                   label="Describe Your Complaint"
-                  value={newDesc}
-                  onChange={(e) => setNewDesc(e.target.value)}
+                  value={draft.description}
+                  onChange={(e) => setDraft({ ...draft, description: e.target.value })}
                   rows={4}
                   placeholder="Describe the issue clearly..."
                 />
                 <label className="flex items-center gap-2 mb-4 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={newUrgent}
-                    onChange={(e) => setNewUrgent(e.target.checked)}
+                    checked={draft.urgent}
+                    onChange={(e) => setDraft({ ...draft, urgent: e.target.checked })}
                     className="rounded"
                   />
                   <span className="text-xs font-semibold text-red-600">Mark as urgent</span>
@@ -254,7 +266,7 @@ export function StudentDashboard() {
                   />
                   <span className="text-[10px] text-gray-400 mt-1 block">PDF, Word, or images — max 5 MB</span>
                 </label>
-                <Button full variant="navy" onClick={submitComplaint} disabled={!newCat || !newDesc.trim()}>
+                <Button full variant="navy" onClick={submitComplaint} disabled={!draft.category || !draft.description.trim()}>
                   Submit Complaint
                 </Button>
               </>

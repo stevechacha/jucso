@@ -135,10 +135,12 @@ Redeploy after changing `VITE_API_URL` (it is baked in at build time).
 | Complaint satisfaction ratings | ✅ Built — students rate resolved complaints; shown on transparency page |
 | Club/event attendee lists | ✅ Built — Admin → Content → Members / Attendees + CSV export |
 | Executive escalated complaints filter | ✅ Built — filter + overview panel on executive dashboard |
+| Executive de-escalate + ministry reassign | ✅ Built — Escalated Cases tab review panel |
+| Complaint form draft autosave | ✅ Built — student New Complaint tab (localStorage) |
 | Contact inbox reply | ✅ Built — Admin → Overview → reply by email |
 | Contact inbox delete + CSV export | ✅ Built — Admin → Overview → Contact Inbox |
 | Backup restore (content merge) | ✅ Built — Admin → System → upload JSON backup |
-| Automated tests (API) | ✅ 86 tests in CI |
+| Automated tests (API) | ✅ 88 tests in CI |
 
 ### Production configuration still required
 

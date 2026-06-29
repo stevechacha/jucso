@@ -481,3 +481,63 @@ class PortalFeatureTests(APITestCase):
         complaint.refresh_from_db()
         self.assertEqual(complaint.status, "In Progress")
         self.assertEqual(complaint.response, "Executive is reviewing this case.")
+
+    def test_executive_can_de_escalate_complaint(self):
+        from core.models import Complaint, ComplaintCategory, PortalNotification
+
+        ministry = Ministry.objects.get(name="Academics")
+        complaint = Complaint.objects.create(
+            tracking_id="JUC-DEES",
+            student=self.student,
+            category=ComplaintCategory.ACADEMIC,
+            description="Escalated then returned",
+            ministry=ministry,
+            status="In Progress",
+            is_escalated=True,
+            escalated_at=timezone.now(),
+        )
+        executive = User.objects.create_user(
+            username="exec-dees",
+            reg_number="EXEC/DEES",
+            email="exec-dees@jucso.ac.tz",
+            password="ExecPass123!",
+            role=UserRole.EXECUTIVE,
+            email_verified=True,
+        )
+        self.client.force_authenticate(user=executive)
+        response = self.client.post(
+            f"/api/complaints/{complaint.tracking_id}/de-escalate/",
+            {"note": "Ministry should handle this directly."},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        complaint.refresh_from_db()
+        self.assertFalse(complaint.is_escalated)
+        self.assertIsNone(complaint.escalated_at)
+        self.assertTrue(
+            PortalNotification.objects.filter(user=self.minister, category=NotificationCategory.COMPLAINT).exists()
+        )
+
+    def test_cannot_de_escalate_non_escalated_complaint(self):
+        from core.models import Complaint, ComplaintCategory
+
+        ministry = Ministry.objects.get(name="Academics")
+        complaint = Complaint.objects.create(
+            tracking_id="JUC-NODE",
+            student=self.student,
+            category=ComplaintCategory.ACADEMIC,
+            description="Not escalated",
+            ministry=ministry,
+            status="Pending",
+        )
+        executive = User.objects.create_user(
+            username="exec-node",
+            reg_number="EXEC/NODE",
+            email="exec-node@jucso.ac.tz",
+            password="ExecPass123!",
+            role=UserRole.EXECUTIVE,
+            email_verified=True,
+        )
+        self.client.force_authenticate(user=executive)
+        response = self.client.post(f"/api/complaints/{complaint.tracking_id}/de-escalate/")
+        self.assertEqual(response.status_code, 400)

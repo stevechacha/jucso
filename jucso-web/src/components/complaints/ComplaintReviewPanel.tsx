@@ -1,6 +1,6 @@
 import type { Complaint, ComplaintStatus } from "@/types";
 import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/FormFields";
+import { Select, Textarea } from "@/components/ui/FormFields";
 import { ComplaintActivityTimeline } from "@/components/complaints/ComplaintActivityTimeline";
 import { ComplaintAttachmentLink } from "@/components/complaints/ComplaintAttachmentLink";
 import { ConfidentialBadge } from "@/components/complaints/ConfidentialBadge";
@@ -14,6 +14,12 @@ interface ComplaintReviewPanelProps {
   onResponseChange: (value: string) => void;
   onRespond: (status: ComplaintStatus) => void;
   responding?: boolean;
+  ministries?: Array<{ id: number; name: string }>;
+  forwardMinistry?: string;
+  onForwardMinistryChange?: (value: string) => void;
+  onForward?: () => void;
+  onDeEscalate?: () => void;
+  deEscalating?: boolean;
 }
 
 export function ComplaintReviewPanel({
@@ -22,6 +28,12 @@ export function ComplaintReviewPanel({
   onResponseChange,
   onRespond,
   responding = false,
+  ministries = [],
+  forwardMinistry = "",
+  onForwardMinistryChange,
+  onForward,
+  onDeEscalate,
+  deEscalating = false,
 }: ComplaintReviewPanelProps) {
   const { t } = useLanguage();
 
@@ -96,7 +108,39 @@ export function ComplaintReviewPanel({
             >
               {t("execMarkResolved")}
             </Button>
+            {complaint.isEscalated && onDeEscalate && (
+              <Button size="sm" variant="outline" disabled={deEscalating} onClick={onDeEscalate}>
+                {deEscalating ? t("execDeEscalating") : t("execDeEscalate")}
+              </Button>
+            )}
           </div>
+          {ministries.length > 0 && onForwardMinistryChange && onForward && (
+            <div className="border-t border-gray-100 pt-4 mt-4">
+              <Select
+                label={t("execForwardMinistry")}
+                value={forwardMinistry}
+                onChange={(e) => onForwardMinistryChange(e.target.value)}
+              >
+                <option value="">{t("execSelectMinistry")}</option>
+                {ministries
+                  .filter((m) => m.name !== complaint.ministry)
+                  .map((m) => (
+                    <option key={m.id} value={m.name}>
+                      {m.name}
+                    </option>
+                  ))}
+              </Select>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2"
+                disabled={!forwardMinistry || responding}
+                onClick={onForward}
+              >
+                {t("execForwardComplaint")}
+              </Button>
+            </div>
+          )}
         </>
       )}
     </div>

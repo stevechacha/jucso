@@ -20,6 +20,7 @@ urlpatterns = [
     path("complaints/<str:tracking_id>/", views.ComplaintDetailView.as_view(), name="complaint-detail"),
     path("complaints/<str:tracking_id>/rate/", views.ComplaintRateView.as_view(), name="complaint-rate"),
     path("complaints/<str:tracking_id>/escalate/", views.ComplaintEscalateView.as_view(), name="complaint-escalate"),
+    path("complaints/<str:tracking_id>/de-escalate/", views.ComplaintDeEscalateView.as_view(), name="complaint-de-escalate"),
     path("suggestions/", views.SuggestionListCreateView.as_view(), name="suggestion-list"),
     path("suggestions/<int:pk>/", views.SuggestionDetailView.as_view(), name="suggestion-detail"),
     path("clubs/", views.ClubListView.as_view(), name="club-list"),

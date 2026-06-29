@@ -32,6 +32,9 @@ export function ExecutiveDashboard() {
   const [filterEscalated, setFilterEscalated] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState<ExecutiveStats | null>(null);
+  const [ministryOptions, setMinistryOptions] = useState<Array<{ id: number; name: string }>>([]);
+  const [forwardMinistry, setForwardMinistry] = useState("");
+  const [deEscalating, setDeEscalating] = useState(false);
 
   const onHighlight = useCallback(
     (complaintId: string, tabKey?: string) => {
@@ -49,6 +52,11 @@ export function ExecutiveDashboard() {
     if (!apiEnabled) return;
     void jucsoApi.getExecutiveStats().then(setStats).catch(console.error);
   }, [apiEnabled, complaints]);
+
+  useEffect(() => {
+    if (!apiEnabled) return;
+    void jucsoApi.getMinistries().then(setMinistryOptions).catch(console.error);
+  }, [apiEnabled]);
 
   const respond = async (id: string, status: ComplaintStatus) => {
     setResponding(true);
@@ -69,9 +77,46 @@ export function ExecutiveDashboard() {
     }
   };
 
+  const deEscalate = async (id: string) => {
+    if (!apiEnabled) return;
+    setDeEscalating(true);
+    try {
+      await jucsoApi.deEscalateComplaint(id, responseText || undefined);
+      await refreshPortalData();
+      setResponseText("");
+      setForwardMinistry("");
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setDeEscalating(false);
+    }
+  };
+
+  const forward = async (id: string) => {
+    if (!forwardMinistry) return;
+    setResponding(true);
+    try {
+      if (apiEnabled) {
+        await jucsoApi.updateComplaint(id, { ministry: forwardMinistry });
+        await refreshPortalData();
+      } else {
+        setComplaints((prev) =>
+          prev.map((c) =>
+            c.id === id ? { ...c, ministry: forwardMinistry, status: "Pending" as ComplaintStatus } : c,
+          ),
+        );
+      }
+      setForwardMinistry("");
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setResponding(false);
+    }
+  };
+
   if (!user) return null;
 
-  const ministries = [...new Set(complaints.map((c) => c.ministry))];
+  const ministryNames = [...new Set(complaints.map((c) => c.ministry))];
   const filtered = complaints.filter((c) => {
     if (filterMin !== "All" && c.ministry !== filterMin) return false;
     if (filterStatus !== "All" && c.status !== filterStatus) return false;
@@ -89,7 +134,7 @@ export function ExecutiveDashboard() {
 
   const miniStats =
     stats?.ministry_stats ??
-    ministries.map((m) => {
+    ministryNames.map((m) => {
       const ministryComplaints = complaints.filter((c) => c.ministry === m);
       const resolved = ministryComplaints.filter((c) => c.status === "Resolved").length;
       return {
@@ -189,7 +234,7 @@ export function ExecutiveDashboard() {
                   aria-label="Filter by ministry"
                 >
                   <option value="All">{t("execAllMinistries")}</option>
-                  {ministries.map((m) => (
+                  {ministryNames.map((m) => (
                     <option key={m} value={m}>
                       {m}
                     </option>
@@ -253,6 +298,12 @@ export function ExecutiveDashboard() {
         onResponseChange={setResponseText}
         onRespond={(status) => selected && void respond(selected.id, status)}
         responding={responding}
+        ministries={ministryOptions}
+        forwardMinistry={forwardMinistry}
+        onForwardMinistryChange={setForwardMinistry}
+        onForward={() => selected && void forward(selected.id)}
+        onDeEscalate={() => selected && void deEscalate(selected.id)}
+        deEscalating={deEscalating}
       />
     </div>
   );

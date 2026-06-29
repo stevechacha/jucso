@@ -228,6 +228,14 @@ export const jucsoApi = {
     return mapComplaint(complaint);
   },
 
+  async deEscalateComplaint(id: string, note?: string) {
+    const complaint = await apiRequest<ApiComplaint>(`/api/complaints/${encodeURIComponent(id)}/de-escalate/`, {
+      method: "POST",
+      body: note ? { note } : {},
+    });
+    return mapComplaint(complaint);
+  },
+
   async updateSuggestion(pk: number, data: { status: string; response?: string }) {
     const suggestion = await apiRequest<ApiSuggestion>(`/api/suggestions/${pk}/`, {
       method: "PATCH",
