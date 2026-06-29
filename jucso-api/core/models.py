@@ -241,6 +241,19 @@ class EventRegistration(models.Model):
         return f"{self.student.reg_number} → {self.event.title}"
 
 
+class EventWaitlist(models.Model):
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="waitlist")
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="event_waitlist")
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["joined_at"]
+        unique_together = ("event", "student")
+
+    def __str__(self) -> str:
+        return f"{self.student.reg_number} waitlist → {self.event.title}"
+
+
 class NewsTag(models.TextChoices):
     ANNOUNCEMENT = "Announcement", "Announcement"
     EVENTS = "Events", "Events"

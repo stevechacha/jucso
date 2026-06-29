@@ -62,6 +62,8 @@ export interface ApiEvent {
   registered: number;
   description: string;
   is_registered?: boolean;
+  is_waitlisted?: boolean;
+  waitlist_position?: number | null;
 }
 
 export interface ApiDocument {

@@ -14,6 +14,7 @@ from core.models import (
     Document,
     Event,
     EventRegistration,
+    EventWaitlist,
     Ministry,
     NewsItem,
     NewsTag,
@@ -400,6 +401,8 @@ class EventSerializer(serializers.ModelSerializer):
     date = serializers.SerializerMethodField()
     registered = serializers.IntegerField(source="registered_count")
     is_registered = serializers.SerializerMethodField()
+    is_waitlisted = serializers.SerializerMethodField()
+    waitlist_position = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
@@ -412,6 +415,8 @@ class EventSerializer(serializers.ModelSerializer):
             "registered",
             "description",
             "is_registered",
+            "is_waitlisted",
+            "waitlist_position",
         )
 
     def get_id(self, obj: Event) -> str:
@@ -425,6 +430,21 @@ class EventSerializer(serializers.ModelSerializer):
         if not request or not request.user.is_authenticated:
             return False
         return EventRegistration.objects.filter(event=obj, student=request.user).exists()
+
+    def get_is_waitlisted(self, obj: Event) -> bool:
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return False
+        return EventWaitlist.objects.filter(event=obj, student=request.user).exists()
+
+    def get_waitlist_position(self, obj: Event) -> int | None:
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return None
+        entry = EventWaitlist.objects.filter(event=obj, student=request.user).first()
+        if not entry:
+            return None
+        return EventWaitlist.objects.filter(event=obj, joined_at__lte=entry.joined_at).count()
 
 
 class NewsItemSerializer(serializers.ModelSerializer):
@@ -596,6 +616,10 @@ class AdminContactMessageUpdateSerializer(serializers.Serializer):
 
 class AdminContactMessageReplySerializer(serializers.Serializer):
     reply = serializers.CharField(min_length=1, max_length=5000, trim_whitespace=True)
+
+
+class AdminContactMessageBulkDeleteSerializer(serializers.Serializer):
+    ids = serializers.ListField(child=serializers.IntegerField(min_value=1), min_length=1, max_length=100)
 
 
 class ContactMessageSerializer(serializers.ModelSerializer):

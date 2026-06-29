@@ -223,3 +223,81 @@ class RemainingFeaturesTests(TestCase):
         names = {item["name"] for item in results}
         self.assertIn("Academics", names)
         self.assertIn("Health & Welfare", names)
+
+    def test_student_joins_event_waitlist_when_full(self):
+        from core.models import EventWaitlist
+
+        event = Event.objects.create(
+            title="Waitlist Gala",
+            description="Limited seats",
+            location="Hall",
+            event_date="2026-08-01",
+            capacity=1,
+            registered_count=1,
+        )
+        other = User.objects.create_user(
+            username="other-wait",
+            reg_number="JUC/2026/021",
+            email="other.wait@jucso.ac.tz",
+            password="SecurePass123!",
+            role="student",
+            email_verified=True,
+        )
+        event.registrations.create(student=other)
+        self.client.force_authenticate(user=self.student)
+        response = self.client.post(f"/api/events/{event.pk}/register/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["is_waitlisted"])
+        self.assertTrue(EventWaitlist.objects.filter(event=event, student=self.student).exists())
+
+    def test_waitlist_promoted_when_spot_opens(self):
+        from core.models import EventRegistration, EventWaitlist, PortalNotification
+
+        event = Event.objects.create(
+            title="Promote Test",
+            description="One seat",
+            location="Hall",
+            event_date="2026-08-02",
+            capacity=1,
+            registered_count=1,
+        )
+        holder = User.objects.create_user(
+            username="holder-wait",
+            reg_number="JUC/2026/022",
+            email="holder.wait@jucso.ac.tz",
+            password="SecurePass123!",
+            role="student",
+            email_verified=True,
+        )
+        EventRegistration.objects.create(event=event, student=holder)
+        EventWaitlist.objects.create(event=event, student=self.student)
+
+        self.client.force_authenticate(user=holder)
+        response = self.client.post(f"/api/events/{event.pk}/register/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(EventRegistration.objects.filter(event=event, student=self.student).exists())
+        self.assertFalse(EventWaitlist.objects.filter(event=event, student=self.student).exists())
+        self.assertTrue(PortalNotification.objects.filter(user=self.student).exists())
+
+    def test_admin_mark_all_contact_messages_read(self):
+        ContactMessage.objects.create(name="A", email="a@test.com", subject="One", message="Hi", is_read=False)
+        ContactMessage.objects.create(name="B", email="b@test.com", subject="Two", message="Hey", is_read=False)
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post("/api/admin/contact-messages/mark-all-read/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["updated"], 2)
+        self.assertEqual(ContactMessage.objects.filter(is_read=False).count(), 0)
+
+    def test_admin_bulk_delete_contact_messages(self):
+        m1 = ContactMessage.objects.create(name="A", email="a@test.com", subject="One", message="Hi")
+        m2 = ContactMessage.objects.create(name="B", email="b@test.com", subject="Two", message="Hey")
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(
+            "/api/admin/contact-messages/bulk-delete/",
+            {"ids": [m1.pk, m2.pk]},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["deleted"], 2)
+        self.assertEqual(ContactMessage.objects.count(), 0)

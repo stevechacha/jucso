@@ -26,6 +26,7 @@ from core.models import (
     Document,
     Event,
     EventRegistration,
+    EventWaitlist,
     Ministry,
     NewsItem,
     NotificationCategory,
@@ -46,6 +47,7 @@ from core.serializers import (
     AdminContactMessageSerializer,
     AdminContactMessageUpdateSerializer,
     AdminContactMessageReplySerializer,
+    AdminContactMessageBulkDeleteSerializer,
     AdminDocumentCreateSerializer,
     AdminDocumentUpdateSerializer,
     AdminEventCreateSerializer,
@@ -799,6 +801,24 @@ class EventListView(generics.ListAPIView):
         return Event.objects.filter(is_active=True).order_by("event_date")
 
 
+def _promote_event_waitlist(event: Event) -> None:
+    entry = EventWaitlist.objects.filter(event=event).order_by("joined_at").select_related("student").first()
+    if not entry:
+        return
+    student = entry.student
+    entry.delete()
+    EventRegistration.objects.create(event=event, student=student)
+    event.registered_count += 1
+    event.save(update_fields=["registered_count"])
+    notify_user(
+        student,
+        title="Event spot available",
+        message=f'A spot opened for "{event.title}". You have been registered automatically.',
+        category=NotificationCategory.EVENT,
+        link=dashboard_complaint_link(tab="tabStudentEvents"),
+    )
+
+
 class EventRegisterView(views.APIView):
     permission_classes = [*AUTHENTICATED, IsStudent]
 
@@ -810,13 +830,24 @@ class EventRegisterView(views.APIView):
             return Response({"detail": "Event not found."}, status=status.HTTP_404_NOT_FOUND)
 
         registration = EventRegistration.objects.filter(event=event, student=request.user).first()
+        waitlist = EventWaitlist.objects.filter(event=event, student=request.user).first()
         if registration:
             registration.delete()
             event.registered_count = max(0, event.registered_count - 1)
             event.save(update_fields=["registered_count"])
+            _promote_event_waitlist(event)
+        elif waitlist:
+            waitlist.delete()
+        elif event.is_full:
+            EventWaitlist.objects.create(event=event, student=request.user)
+            notify_user(
+                request.user,
+                title="Added to waitlist",
+                message=f'"{event.title}" is full. You are on the waitlist and will be registered if a spot opens.',
+                category=NotificationCategory.EVENT,
+                link=dashboard_complaint_link(tab="tabStudentEvents"),
+            )
         else:
-            if event.is_full:
-                return Response({"detail": "Event is at full capacity."}, status=status.HTTP_400_BAD_REQUEST)
             EventRegistration.objects.create(event=event, student=request.user)
             event.registered_count += 1
             event.save(update_fields=["registered_count"])
@@ -1358,6 +1389,25 @@ class AdminContactMessageReplyView(views.APIView):
         message.is_read = True
         message.save(update_fields=["admin_reply", "replied_at", "replied_by", "is_read"])
         return Response(AdminContactMessageSerializer(message).data)
+
+
+class AdminContactMessageMarkAllReadView(views.APIView):
+    permission_classes = [*AUTHENTICATED, IsAdminRole]
+
+    def post(self, request):
+        updated = ContactMessage.objects.filter(is_read=False).update(is_read=True)
+        return Response({"updated": updated})
+
+
+class AdminContactMessageBulkDeleteView(views.APIView):
+    permission_classes = [*AUTHENTICATED, IsAdminRole]
+
+    def post(self, request):
+        serializer = AdminContactMessageBulkDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ids = serializer.validated_data["ids"]
+        deleted, _ = ContactMessage.objects.filter(pk__in=ids).delete()
+        return Response({"deleted": deleted})
 
 
 class AdminClubCreateView(views.APIView):

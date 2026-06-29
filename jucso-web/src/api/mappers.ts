@@ -68,6 +68,8 @@ export function mapEvent(event: ApiEvent): Event {
   return {
     ...event,
     isRegistered: event.is_registered ?? false,
+    isWaitlisted: event.is_waitlisted ?? false,
+    waitlistPosition: event.waitlist_position ?? null,
   };
 }
 

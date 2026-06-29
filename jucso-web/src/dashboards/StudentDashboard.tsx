@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { useDashboardTab } from "@/hooks/useDashboardTab";
 import { useComplaintHighlight } from "@/hooks/useComplaintHighlight";
 import { useComplaintDraft } from "@/hooks/useComplaintDraft";
+import { useSuggestionDraft } from "@/hooks/useSuggestionDraft";
 import { useComplaintCategories } from "@/hooks/useComplaintCategories";
 import { jucsoApi } from "@/api/jucsoApi";
 import { useApp } from "@/context/AppContext";
@@ -32,12 +33,18 @@ export function StudentDashboard() {
   const { t } = useLanguage();
   const [tab, setTab] = useDashboardTab(STUDENT_TABS, DEFAULT_TAB);
   const { draft, setDraft, restored, savedAt, clearDraft, dismissRestored } = useComplaintDraft(user?.reg);
+  const {
+    draft: sugDraft,
+    setDraft: setSugDraft,
+    restored: sugRestored,
+    savedAt: sugSavedAt,
+    clearDraft: clearSugDraft,
+    dismissRestored: dismissSugRestored,
+  } = useSuggestionDraft(user?.reg);
   const [supportingFile, setSupportingFile] = useState<File | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [lastTrackingId, setLastTrackingId] = useState<string | null>(null);
 
-  const [sugTitle, setSugTitle] = useState("");
-  const [sugDesc, setSugDesc] = useState("");
   const [sugSubmitted, setSugSubmitted] = useState(false);
   const [lastSuggestionId, setLastSuggestionId] = useState<string | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
@@ -93,29 +100,31 @@ export function StudentDashboard() {
   };
 
   const submitSuggestion = async () => {
-    if (!sugTitle.trim() || !sugDesc.trim()) return;
+    if (!sugDraft.title.trim() || !sugDraft.description.trim()) return;
     if (apiEnabled) {
-      const suggestion = await jucsoApi.createSuggestion({ title: sugTitle, description: sugDesc });
+      const suggestion = await jucsoApi.createSuggestion({
+        title: sugDraft.title,
+        description: sugDraft.description,
+      });
       setLastSuggestionId(suggestion.id);
       await refreshPortalData();
     } else {
       const s: Suggestion = {
         id: `SUG-${String(suggestions.length + 1).padStart(3, "0")}`,
-        title: sugTitle,
-        description: sugDesc,
-        studentName: user.name,
+        title: sugDraft.title,
+        description: sugDraft.description,
+        studentName: user!.name,
         date: formatDate(),
         status: "Received",
       };
       setSuggestions((prev) => [s, ...prev]);
       setLastSuggestionId(s.id);
     }
+    clearSugDraft();
     setSugSubmitted(true);
     setTimeout(() => {
       setSugSubmitted(false);
       setLastSuggestionId(null);
-      setSugTitle("");
-      setSugDesc("");
     }, 4000);
   };
 
@@ -294,20 +303,36 @@ export function StudentDashboard() {
               </div>
             ) : (
               <>
+                {sugRestored && (
+                  <div className="mb-4 flex items-center justify-between gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-900">
+                    <span>{t("suggestionDraftRestored")}</span>
+                    <button type="button" className="font-semibold underline shrink-0" onClick={dismissSugRestored}>
+                      {t("dismiss")}
+                    </button>
+                  </div>
+                )}
+                {sugSavedAt && !sugRestored && (
+                  <p className="text-[10px] text-gray-400 mb-3">{t("suggestionDraftSaved")}</p>
+                )}
                 <Input
                   label="Suggestion Title"
-                  value={sugTitle}
-                  onChange={(e) => setSugTitle(e.target.value)}
+                  value={sugDraft.title}
+                  onChange={(e) => setSugDraft({ ...sugDraft, title: e.target.value })}
                   placeholder="Short, clear title"
                 />
                 <Textarea
                   label="Describe Your Idea"
-                  value={sugDesc}
-                  onChange={(e) => setSugDesc(e.target.value)}
+                  value={sugDraft.description}
+                  onChange={(e) => setSugDraft({ ...sugDraft, description: e.target.value })}
                   rows={4}
                   placeholder="Describe your suggestion in detail..."
                 />
-                <Button full variant="teal" onClick={submitSuggestion} disabled={!sugTitle.trim() || !sugDesc.trim()}>
+                <Button
+                  full
+                  variant="teal"
+                  onClick={submitSuggestion}
+                  disabled={!sugDraft.title.trim() || !sugDraft.description.trim()}
+                >
                   Submit Suggestion
                 </Button>
               </>
@@ -388,11 +413,19 @@ export function StudentDashboard() {
           {events.map((e) => {
             const pct = Math.round((e.registered / e.capacity) * 100);
             const full = pct >= 100;
+            const onWaitlist = Boolean(e.isWaitlisted);
             return (
               <article key={e.id} className="bg-white rounded-xl p-5 shadow-card">
                 <div className="flex justify-between items-start mb-3 gap-2">
                   <h3 className="font-display font-bold text-jucso-navy text-sm">{e.title}</h3>
-                  {e.isRegistered && <Badge variant="green">Registered</Badge>}
+                  <div className="flex gap-1 flex-wrap justify-end">
+                    {e.isRegistered && <Badge variant="green">{t("eventRegistered")}</Badge>}
+                    {onWaitlist && (
+                      <Badge variant="navy">
+                        {t("eventWaitlist", { position: String(e.waitlistPosition ?? "?") })}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <p className="text-gray-500 text-xs leading-relaxed mb-3">{e.description}</p>
                 <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
@@ -411,10 +444,9 @@ export function StudentDashboard() {
                   </div>
                 </div>
                 <Button
-                  variant={e.isRegistered ? "white" : full ? "outline" : "navy"}
+                  variant={e.isRegistered || onWaitlist ? "white" : full ? "outline" : "navy"}
                   size="sm"
                   full
-                  disabled={full && !e.isRegistered}
                   onClick={async () => {
                     if (apiEnabled) {
                       const updated = await jucsoApi.toggleEventRegistration(e.id);
@@ -425,8 +457,15 @@ export function StudentDashboard() {
                           ev.id === e.id
                             ? {
                                 ...ev,
-                                isRegistered: !ev.isRegistered,
-                                registered: ev.isRegistered ? ev.registered - 1 : ev.registered + 1,
+                                isRegistered: !ev.isRegistered && !ev.isWaitlisted,
+                                isWaitlisted: full && !ev.isRegistered && !ev.isWaitlisted,
+                                waitlistPosition: full && !ev.isRegistered && !ev.isWaitlisted ? 1 : null,
+                                registered:
+                                  ev.isRegistered && !ev.isWaitlisted
+                                    ? ev.registered - 1
+                                    : !full && !ev.isRegistered && !ev.isWaitlisted
+                                      ? ev.registered + 1
+                                      : ev.registered,
                               }
                             : ev,
                         ),
@@ -434,7 +473,13 @@ export function StudentDashboard() {
                     }
                   }}
                 >
-                  {e.isRegistered ? "✓ Cancel Registration" : full ? "Full" : "Register Now"}
+                  {e.isRegistered
+                    ? t("eventCancelRegistration")
+                    : onWaitlist
+                      ? t("eventLeaveWaitlist")
+                      : full
+                        ? t("eventJoinWaitlist")
+                        : t("eventRegisterNow")}
                 </Button>
               </article>
             );

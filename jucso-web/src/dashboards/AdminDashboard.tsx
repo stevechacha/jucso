@@ -761,6 +761,8 @@ function ContactInboxPanel() {
   const [replyingId, setReplyingId] = useState<string | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [inboxFilter, setInboxFilter] = useState<"all" | "unread">("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkWorking, setBulkWorking] = useState(false);
 
   const load = () => {
     void jucsoApi
@@ -823,10 +825,51 @@ function ContactInboxPanel() {
     try {
       await jucsoApi.deleteContactMessage(id);
       setMessages((prev) => prev.filter((m) => m.id !== id));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     } catch (error) {
       console.error(error);
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const markAllRead = async () => {
+    setBulkWorking(true);
+    try {
+      await jucsoApi.markAllContactMessagesRead();
+      setMessages((prev) => prev.map((m) => ({ ...m, is_read: true })));
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setBulkWorking(false);
+    }
+  };
+
+  const bulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`Delete ${selectedIds.size} message(s) permanently?`)) return;
+    setBulkWorking(true);
+    try {
+      await jucsoApi.bulkDeleteContactMessages([...selectedIds]);
+      setMessages((prev) => prev.filter((m) => !selectedIds.has(m.id)));
+      setSelectedIds(new Set());
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setBulkWorking(false);
     }
   };
 
@@ -841,6 +884,22 @@ function ContactInboxPanel() {
           {unread > 0 ? ` · ${unread} ${t("contactUnread").toLowerCase()}` : ""})
         </h2>
         <div className="flex gap-1 flex-wrap">
+          {unread > 0 && (
+            <Button size="sm" variant="outline" disabled={bulkWorking} onClick={() => void markAllRead()}>
+              {t("contactMarkAllRead")}
+            </Button>
+          )}
+          {selectedIds.size > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkWorking}
+              onClick={() => void bulkDelete()}
+              className="!text-red-600 !border-red-200"
+            >
+              {t("contactBulkDelete", { count: String(selectedIds.size) })}
+            </Button>
+          )}
           {messages.length > 0 && (
             <Button size="sm" variant="outline" onClick={() => exportContactInboxCsv(messages)}>
               {t("contactExportCsv")}
@@ -875,6 +934,15 @@ function ContactInboxPanel() {
               key={m.id}
               className={`py-3 border-b border-gray-50 last:border-0 ${m.is_read ? "opacity-70" : "bg-indigo-50/40 -mx-2 px-2 rounded-lg"}`}
             >
+              <div className="flex items-start gap-2 mb-1">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(m.id)}
+                  onChange={() => toggleSelected(m.id)}
+                  className="mt-1 rounded"
+                  aria-label={`Select message ${m.subject || m.id}`}
+                />
+                <div className="flex-1 min-w-0">
               <div className="flex justify-between gap-2 text-xs mb-1">
                 <span className="font-semibold text-jucso-navy">{m.subject || "(No subject)"}</span>
                 <span className="text-gray-400 whitespace-nowrap">{m.date}</span>
@@ -930,6 +998,8 @@ function ContactInboxPanel() {
                 >
                   {t("contactDelete")}
                 </Button>
+              </div>
+                </div>
               </div>
             </li>
           ))}

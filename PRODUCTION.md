@@ -123,7 +123,7 @@ Redeploy after changing `VITE_API_URL` (it is baked in at build time).
 | Public clubs & events pages | ✅ Built |
 | Admin staff edit (role/ministry) | ✅ Built |
 | Admin system panel (backup, security, cron logs, metrics) | ✅ Built |
-| Swahili / English (public + dashboards) | ✅ Built — auth, contact, track, footer, status labels |
+| Swahili / English (public + dashboards) | ✅ Built — home page, auth, contact, track, dashboards |
 | PWA / Add to Home Screen | ✅ Built |
 | Scheduled backup export | ✅ Built — cron: `export_portal_backup` via `run_daily_jobs.sh` |
 | Playwright E2E smoke tests | ✅ Built — `npm run test:e2e` |
@@ -137,10 +137,14 @@ Redeploy after changing `VITE_API_URL` (it is baked in at build time).
 | Executive escalated complaints filter | ✅ Built — filter + overview panel on executive dashboard |
 | Executive de-escalate + ministry reassign | ✅ Built — Escalated Cases tab review panel |
 | Complaint form draft autosave | ✅ Built — student New Complaint tab (localStorage) |
+| Suggestion form draft autosave | ✅ Built — student Suggestions tab (localStorage) |
+| Event waitlists | ✅ Built — join waitlist when full; auto-promote on cancellation |
+| Admin contact bulk actions | ✅ Built — mark all read + bulk delete selected |
+| Home page i18n | ✅ Built — hero, services, ministers, events, news, CTA |
 | Contact inbox reply | ✅ Built — Admin → Overview → reply by email |
 | Contact inbox delete + CSV export | ✅ Built — Admin → Overview → Contact Inbox |
 | Backup restore (content merge) | ✅ Built — Admin → System → upload JSON backup |
-| Automated tests (API) | ✅ 88 tests in CI |
+| Automated tests (API) | ✅ 92 tests in CI |
 
 ### Production configuration still required
 

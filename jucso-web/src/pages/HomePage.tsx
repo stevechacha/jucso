@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { HOME_STATS, MINISTERS, SERVICE_CARDS } from "@/constants/mock-data";
+import { HOME_STATS, MINISTERS } from "@/constants/mock-data";
 import { jucsoApi } from "@/api/jucsoApi";
 import { isApiEnabled } from "@/api/client";
 import { useApp } from "@/context/AppContext";
@@ -58,17 +58,17 @@ export function HomePage() {
   return (
     <div>
       <Hero
-        badge="2026 – 2027 Administration"
+        badge={t("homeHeroBadge")}
         title={
           <>
-            Progress.
+            {t("homeHeroLine1")}
             <br />
-            <span className="text-jucso-teal">Accountability.</span>
+            <span className="text-jucso-teal">{t("homeHeroLine2")}</span>
             <br />
-            Leadership.
+            {t("homeHeroLine3")}
           </>
         }
-        subtitle="JUCSO is Jordan University College's official student government — your voice on academics, welfare, clubs, and campus life."
+        subtitle={t("homeHeroSubtitle")}
         cta={
           <>
             <Button variant="gold" onClick={() => handleLoginClick("student")}>
@@ -104,32 +104,35 @@ export function HomePage() {
       <section className="page-section bg-jucso-slate">
         <div className="section-container">
           <div className="text-center mb-10">
-            <Badge variant="navy">What We Offer</Badge>
-            <h2 className="heading-display text-2xl md:text-3xl mt-3 mb-2">Your government. Your tools.</h2>
-            <p className="text-gray-500 text-sm max-w-sm mx-auto">
-              From filing a complaint to joining a club, the JUCSO Digital Portal puts campus services one click away.
-            </p>
+            <Badge variant="navy">{t("homeWhatWeOffer")}</Badge>
+            <h2 className="heading-display text-2xl md:text-3xl mt-3 mb-2">{t("homeToolsTitle")}</h2>
+            <p className="text-gray-500 text-sm max-w-sm mx-auto">{t("homeToolsSubtitle")}</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {SERVICE_CARDS.map(({ icon, title, desc, color }) => (
+            {[
+              { icon: "📋", titleKey: "homeServiceComplaintTitle" as const, descKey: "homeServiceComplaintDesc" as const, color: "#1B2B6B" },
+              { icon: "💡", titleKey: "homeServiceSuggestionTitle" as const, descKey: "homeServiceSuggestionDesc" as const, color: "#00B4C6" },
+              { icon: "🎓", titleKey: "homeServiceClubTitle" as const, descKey: "homeServiceClubDesc" as const, color: "#F5A623" },
+              { icon: "📅", titleKey: "homeServiceEventTitle" as const, descKey: "homeServiceEventDesc" as const, color: "#1B2B6B" },
+            ].map(({ icon, titleKey, descKey, color }) => (
               <article
-                key={title}
+                key={titleKey}
                 className="bg-white rounded-xl p-6 shadow-card hover:shadow-card-hover transition-all duration-200 hover:-translate-y-0.5"
                 style={{ borderLeft: `4px solid ${color}` }}
               >
                 <div className="text-3xl mb-3" aria-hidden>
                   {icon}
                 </div>
-                <h3 className="font-display font-bold text-jucso-navy mb-2 text-sm">{title}</h3>
-                <p className="text-gray-500 text-xs leading-relaxed">{desc}</p>
+                <h3 className="font-display font-bold text-jucso-navy mb-2 text-sm">{t(titleKey)}</h3>
+                <p className="text-gray-500 text-xs leading-relaxed">{t(descKey)}</p>
               </article>
             ))}
           </div>
 
           <div className="text-center mt-8">
             <Button variant="navy" onClick={() => setPage("services")}>
-              View All Services →
+              {t("homeViewAllServices")}
             </Button>
           </div>
         </div>
@@ -137,13 +140,9 @@ export function HomePage() {
 
       <section className="page-section bg-jucso-navy">
         <div className="section-container">
-          <Badge variant="teal">Your Ministers</Badge>
-          <h2 className="font-display font-bold text-2xl md:text-3xl text-white mt-3 mb-2">
-            Elected to serve you.
-          </h2>
-          <p className="text-white/50 text-sm mb-8">
-            Each complaint routes directly to the responsible minister.
-          </p>
+          <Badge variant="teal">{t("homeMinistersBadge")}</Badge>
+          <h2 className="font-display font-bold text-2xl md:text-3xl text-white mt-3 mb-2">{t("homeMinistersTitle")}</h2>
+          <p className="text-white/50 text-sm mb-8">{t("homeMinistersSubtitle")}</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {leaders.slice(0, 6).map((m) => (
@@ -171,16 +170,16 @@ export function HomePage() {
         <div className="section-container">
           <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
             <div>
-              <Badge variant="teal">Upcoming Events</Badge>
-              <h2 className="heading-display text-2xl md:text-3xl mt-2">What&apos;s coming up</h2>
+              <Badge variant="teal">{t("homeEventsBadge")}</Badge>
+              <h2 className="heading-display text-2xl md:text-3xl mt-2">{t("homeEventsTitle")}</h2>
             </div>
             <Button variant="outline" onClick={() => setPage("events")}>
-              All Events →
+              {t("homeAllEvents")}
             </Button>
           </div>
 
           {events.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-8">No upcoming events published yet.</p>
+            <p className="text-gray-400 text-sm text-center py-8">{t("homeNoEvents")}</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
               {events.slice(0, 3).map((e) => (
@@ -197,11 +196,11 @@ export function HomePage() {
 
           <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
             <div>
-              <Badge variant="teal">Latest News</Badge>
-              <h2 className="heading-display text-2xl md:text-3xl mt-2">What&apos;s happening at JUCo</h2>
+              <Badge variant="teal">{t("homeNewsBadge")}</Badge>
+              <h2 className="heading-display text-2xl md:text-3xl mt-2">{t("homeNewsTitle")}</h2>
             </div>
             <Button variant="outline" onClick={() => setPage("news")}>
-              All News →
+              {t("homeAllNews")}
             </Button>
           </div>
 
@@ -225,14 +224,10 @@ export function HomePage() {
 
       <section className="page-section bg-gradient-to-r from-jucso-teal to-jucso-navy text-center">
         <div className="section-container">
-          <h2 className="text-white font-display font-bold text-2xl md:text-4xl mb-3">
-            Ready to make your voice heard?
-          </h2>
-          <p className="text-white/75 text-sm max-w-sm mx-auto mb-7">
-            Register once. Track your complaint. See real results. JUCSO accountability starts here.
-          </p>
+          <h2 className="text-white font-display font-bold text-2xl md:text-4xl mb-3">{t("homeCtaTitle")}</h2>
+          <p className="text-white/75 text-sm max-w-sm mx-auto mb-7">{t("homeCtaSubtitle")}</p>
           <Button variant="gold" onClick={() => handleLoginClick("student")}>
-            Sign In to Student Portal →
+            {t("homeCtaButton")}
           </Button>
         </div>
       </section>

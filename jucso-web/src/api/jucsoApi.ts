@@ -570,6 +570,18 @@ export const jucsoApi = {
     return apiRequest<void>(`/api/admin/contact-messages/${pk}/`, { method: "DELETE" });
   },
 
+  markAllContactMessagesRead() {
+    return apiRequest<{ updated: number }>("/api/admin/contact-messages/mark-all-read/", { method: "POST" });
+  },
+
+  bulkDeleteContactMessages(messageIds: string[]) {
+    const ids = messageIds.map((id) => parseInt(id.replace(/^MSG-/i, ""), 10));
+    return apiRequest<{ deleted: number }>("/api/admin/contact-messages/bulk-delete/", {
+      method: "POST",
+      body: { ids },
+    });
+  },
+
   async createClub(data: { name: string; description: string; leader: string; category: string }) {
     return apiRequest<Club>("/api/admin/clubs/", { method: "POST", body: data });
   },

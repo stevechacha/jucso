@@ -106,6 +106,8 @@ export interface Event {
   registered: number;
   description: string;
   isRegistered?: boolean;
+  isWaitlisted?: boolean;
+  waitlistPosition?: number | null;
 }
 
 export interface NewsItem {
