@@ -16,6 +16,7 @@ import { ComplaintTable } from "@/components/complaints/ComplaintTable";
 import { TrackComplaintPanel } from "@/components/complaints/TrackComplaintPanel";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { EmailVerificationBanner } from "@/components/auth/EmailVerificationBanner";
+import { ElectionsPanel } from "@/components/elections/ElectionsPanel";
 import { ProfilePanel } from "@/components/profile/ProfilePanel";
 import { useLanguage } from "@/context/LanguageContext";
 import { STUDENT_TABS, type TranslationKey } from "@/i18n/translations";
@@ -486,6 +487,8 @@ export function StudentDashboard() {
           })}
         </div>
       )}
+
+      {tab === "tabStudentElections" && <ElectionsPanel apiEnabled={apiEnabled} />}
 
       {tab === "tabStudentProfile" && <ProfilePanel />}
     </DashboardShell>

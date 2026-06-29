@@ -19,7 +19,11 @@ from core.models import (
     NewsItem,
     NewsTag,
     PortalAnnouncement,
+    PortalAuditLog,
     PortalNotification,
+    Election,
+    ElectionCandidate,
+    ElectionVote,
     Suggestion,
     SuggestionStatus,
     UserRole,
@@ -709,3 +713,110 @@ class PortalNotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = PortalNotification
         fields = ("id", "title", "message", "category", "link", "is_read", "created_at")
+
+
+class PortalAuditLogSerializer(serializers.ModelSerializer):
+    timestamp = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PortalAuditLog
+        fields = ("id", "actor_name", "action", "target_type", "target_id", "detail", "timestamp")
+
+    def get_timestamp(self, obj: PortalAuditLog) -> str:
+        return obj.created_at.strftime("%b %d, %Y %H:%M")
+
+
+class ElectionCandidateSerializer(serializers.ModelSerializer):
+    id = serializers.SerializerMethodField()
+    vote_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ElectionCandidate
+        fields = ("id", "name", "position", "manifesto", "vote_count")
+
+    def get_id(self, obj: ElectionCandidate) -> str:
+        return f"CAND-{obj.pk:03d}"
+
+    def get_vote_count(self, obj: ElectionCandidate) -> int | None:
+        if not self.context.get("show_results"):
+            return None
+        return obj.votes.count()
+
+
+class ElectionSerializer(serializers.ModelSerializer):
+    id = serializers.SerializerMethodField()
+    is_open = serializers.BooleanField(read_only=True)
+    has_voted = serializers.SerializerMethodField()
+    voted_candidate_id = serializers.SerializerMethodField()
+    candidates = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Election
+        fields = (
+            "id",
+            "title",
+            "description",
+            "starts_at",
+            "ends_at",
+            "is_open",
+            "has_voted",
+            "voted_candidate_id",
+            "candidates",
+        )
+
+    def get_id(self, obj: Election) -> str:
+        return f"ELEC-{obj.pk:03d}"
+
+    def get_has_voted(self, obj: Election) -> bool:
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return False
+        return ElectionVote.objects.filter(election=obj, student=request.user).exists()
+
+    def get_voted_candidate_id(self, obj: Election) -> str | None:
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return None
+        vote = ElectionVote.objects.filter(election=obj, student=request.user).select_related("candidate").first()
+        if not vote:
+            return None
+        return f"CAND-{vote.candidate_id:03d}"
+
+    def get_candidates(self, obj: Election):
+        show_results = not obj.is_open
+        return ElectionCandidateSerializer(
+            obj.candidates.all(),
+            many=True,
+            context={**self.context, "show_results": show_results},
+        ).data
+
+
+class ElectionVoteSerializer(serializers.Serializer):
+    candidate_id = serializers.CharField()
+
+    def validate_candidate_id(self, value: str) -> int:
+        raw = value.strip().upper().replace("CAND-", "")
+        try:
+            pk = int(raw)
+        except ValueError as exc:
+            raise serializers.ValidationError("Invalid candidate id.") from exc
+        return pk
+
+
+class AdminElectionCandidateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=200)
+    position = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    manifesto = serializers.CharField(required=False, allow_blank=True)
+
+
+class AdminElectionCreateSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=200)
+    description = serializers.CharField(required=False, allow_blank=True)
+    starts_at = serializers.DateTimeField()
+    ends_at = serializers.DateTimeField()
+    candidates = AdminElectionCandidateSerializer(many=True, min_length=1)
+
+    def validate(self, attrs):
+        if attrs["ends_at"] <= attrs["starts_at"]:
+            raise serializers.ValidationError("End time must be after start time.")
+        return attrs

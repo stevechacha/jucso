@@ -556,11 +556,19 @@ function SystemToolsPanel({ apiEnabled }: { apiEnabled: boolean }) {
   const [restoreLoading, setRestoreLoading] = useState(false);
   const [systemStatus, setSystemStatus] = useState<AdminSystemStatusResponse | null>(null);
   const [activeTool, setActiveTool] = useState<(typeof SYSTEM_TOOLS)[number]["id"] | null>(null);
+  const [auditLogs, setAuditLogs] = useState<
+    Array<{ id: number; actor_name: string; action: string; target_type: string; target_id: string; detail: string; timestamp: string }>
+  >([]);
 
   useEffect(() => {
     if (!apiEnabled) return;
     void jucsoApi.getSystemStatus().then(setSystemStatus).catch(console.error);
   }, [apiEnabled]);
+
+  useEffect(() => {
+    if (!apiEnabled || activeTool !== "logs") return;
+    void jucsoApi.getAuditLogs().then(setAuditLogs).catch(console.error);
+  }, [apiEnabled, activeTool]);
 
   const runBackup = async () => {
     if (!apiEnabled) return;
@@ -687,21 +695,45 @@ function SystemToolsPanel({ apiEnabled }: { apiEnabled: boolean }) {
 
     if (activeTool === "logs") {
       return (
-        <div className="bg-white rounded-xl p-5 shadow-card text-xs">
-          <h3 className="font-display font-bold text-jucso-navy mb-3">{t("cronJobLogs")}</h3>
-          {systemStatus.cron_runs?.length ? (
-            <ul className="space-y-2">
-              {systemStatus.cron_runs.map((run) => (
-                <li key={`${run.job_name}-${run.ran_at}`} className="border-b border-gray-50 pb-2">
-                  <div className="font-semibold text-jucso-navy">{run.job_name}</div>
-                  <div className="text-gray-500">{new Date(run.ran_at).toLocaleString()}</div>
-                  <div className={run.success ? "text-emerald-700" : "text-red-600"}>{run.detail || (run.success ? "OK" : "Failed")}</div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-400">No cron runs logged yet. Configure Railway cron with `railway.cron.toml`.</p>
-          )}
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl p-5 shadow-card text-xs">
+            <h3 className="font-display font-bold text-jucso-navy mb-3">{t("cronJobLogs")}</h3>
+            {systemStatus.cron_runs?.length ? (
+              <ul className="space-y-2">
+                {systemStatus.cron_runs.map((run) => (
+                  <li key={`${run.job_name}-${run.ran_at}`} className="border-b border-gray-50 pb-2">
+                    <div className="font-semibold text-jucso-navy">{run.job_name}</div>
+                    <div className="text-gray-500">{new Date(run.ran_at).toLocaleString()}</div>
+                    <div className={run.success ? "text-emerald-700" : "text-red-600"}>
+                      {run.detail || (run.success ? "OK" : "Failed")}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-400">No cron runs logged yet. Configure Railway cron with `railway.cron.toml`.</p>
+            )}
+          </div>
+          <div className="bg-white rounded-xl p-5 shadow-card text-xs">
+            <h3 className="font-display font-bold text-jucso-navy mb-3">{t("auditLogTitle")}</h3>
+            {auditLogs.length ? (
+              <ul className="space-y-2 max-h-64 overflow-y-auto">
+                {auditLogs.map((entry) => (
+                  <li key={entry.id} className="border-b border-gray-50 pb-2">
+                    <div className="font-semibold text-jucso-navy">{entry.action}</div>
+                    <div className="text-gray-500">
+                      {entry.actor_name}
+                      {entry.target_id ? ` · ${entry.target_type} ${entry.target_id}` : ""}
+                    </div>
+                    {entry.detail && <div className="text-gray-600">{entry.detail}</div>}
+                    <div className="text-gray-400">{entry.timestamp}</div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-400">{t("auditLogEmpty")}</p>
+            )}
+          </div>
         </div>
       );
     }

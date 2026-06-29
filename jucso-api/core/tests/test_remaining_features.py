@@ -1,4 +1,7 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -301,3 +304,50 @@ class RemainingFeaturesTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["deleted"], 2)
         self.assertEqual(ContactMessage.objects.count(), 0)
+
+    def test_student_can_vote_in_open_election(self):
+        from core.models import Election, ElectionCandidate
+
+        election = Election.objects.create(
+            title="Guild President 2026",
+            description="Choose your leader",
+            starts_at=timezone.now() - timedelta(hours=1),
+            ends_at=timezone.now() + timedelta(days=1),
+        )
+        c1 = ElectionCandidate.objects.create(election=election, name="Alice", position="President")
+        ElectionCandidate.objects.create(election=election, name="Bob", position="President")
+
+        self.client.force_authenticate(user=self.student)
+        list_response = self.client.get("/api/elections/")
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        results = list_response.data["results"] if isinstance(list_response.data, dict) else list_response.data
+        self.assertEqual(len(results), 1)
+
+        vote_response = self.client.post(
+            f"/api/elections/{election.pk}/vote/",
+            {"candidate_id": f"CAND-{c1.pk:03d}"},
+            format="json",
+        )
+        self.assertEqual(vote_response.status_code, status.HTTP_200_OK)
+        self.assertTrue(vote_response.data["has_voted"])
+
+        again = self.client.post(
+            f"/api/elections/{election.pk}/vote/",
+            {"candidate_id": f"CAND-{c1.pk:03d}"},
+            format="json",
+        )
+        self.assertEqual(again.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_admin_audit_log_records_user_update(self):
+        from core.models import PortalAuditLog
+
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.patch(
+            f"/api/admin/users/{self.student.reg_number}/",
+            {"role": "student", "is_active": True},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(PortalAuditLog.objects.filter(action="User updated").exists())
+        audit_response = self.client.get("/api/admin/audit-log/")
+        self.assertEqual(audit_response.status_code, status.HTTP_200_OK)

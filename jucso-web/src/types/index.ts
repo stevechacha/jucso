@@ -110,6 +110,26 @@ export interface Event {
   waitlistPosition?: number | null;
 }
 
+export interface ElectionCandidate {
+  id: string;
+  name: string;
+  position?: string;
+  manifesto?: string;
+  voteCount?: number;
+}
+
+export interface Election {
+  id: string;
+  title: string;
+  description: string;
+  startsAt: string;
+  endsAt: string;
+  isOpen: boolean;
+  hasVoted: boolean;
+  votedCandidateId: string | null;
+  candidates: ElectionCandidate[];
+}
+
 export interface NewsItem {
   id: string;
   title: string;

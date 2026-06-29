@@ -1,28 +1,30 @@
 import { useApp } from "@/context/AppContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/Button";
 import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/layout/Hero";
 
 export function DocumentsPage() {
   const { documents } = useApp();
+  const { t } = useLanguage();
 
   return (
     <div>
       <Hero
-        badge="Official Documents"
-        title="JUCSO Resource Library"
-        subtitle="Download constitutions, bylaws, meeting minutes, and official reports."
+        badge={t("documentsPageBadge")}
+        title={t("documentsPageTitle")}
+        subtitle={t("documentsPageSubtitle")}
       />
 
       <section className="page-section bg-jucso-slate">
         <div className="max-w-3xl mx-auto px-6">
           <div className="bg-white rounded-xl shadow-card overflow-hidden">
             <header className="px-6 py-4 border-b border-gray-100">
-              <h2 className="font-display font-bold text-jucso-navy text-lg">Official Documents</h2>
-              <p className="text-gray-400 text-xs mt-0.5">All documents are official JUCSO publications</p>
+              <h2 className="font-display font-bold text-jucso-navy text-lg">{t("documentsListTitle")}</h2>
+              <p className="text-gray-400 text-xs mt-0.5">{t("documentsListSubtitle")}</p>
             </header>
             {documents.length === 0 ? (
-              <p className="px-6 py-10 text-center text-gray-400 text-sm">No documents published yet.</p>
+              <p className="px-6 py-10 text-center text-gray-400 text-sm">{t("documentsPageEmpty")}</p>
             ) : (
               <ul>
                 {documents.map((doc, i) => (
@@ -45,12 +47,12 @@ export function DocumentsPage() {
                     {doc.downloadUrl ? (
                       <a href={doc.downloadUrl} target="_blank" rel="noopener noreferrer">
                         <Button variant="outline" size="sm">
-                          Download
+                          {t("documentsDownload")}
                         </Button>
                       </a>
                     ) : (
                       <Button variant="outline" size="sm" disabled>
-                        Download
+                        {t("documentsDownload")}
                       </Button>
                     )}
                   </li>

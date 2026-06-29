@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 
 
 class UserRole(models.TextChoices):
@@ -367,3 +368,67 @@ class PortalNotification(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user.reg_number}: {self.title}"
+
+
+class PortalAuditLog(models.Model):
+    actor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="audit_actions"
+    )
+    actor_name = models.CharField(max_length=200, blank=True)
+    action = models.CharField(max_length=100)
+    target_type = models.CharField(max_length=50, blank=True)
+    target_id = models.CharField(max_length=100, blank=True)
+    detail = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.action} ({self.target_type}:{self.target_id})"
+
+
+class Election(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    is_published = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-starts_at"]
+
+    def __str__(self) -> str:
+        return self.title
+
+    @property
+    def is_open(self) -> bool:
+        now = timezone.now()
+        return self.is_published and self.starts_at <= now <= self.ends_at
+
+
+class ElectionCandidate(models.Model):
+    election = models.ForeignKey(Election, on_delete=models.CASCADE, related_name="candidates")
+    name = models.CharField(max_length=200)
+    position = models.CharField(max_length=100, blank=True)
+    manifesto = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["position", "name"]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.position or 'Candidate'})"
+
+
+class ElectionVote(models.Model):
+    election = models.ForeignKey(Election, on_delete=models.CASCADE, related_name="votes")
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="election_votes")
+    candidate = models.ForeignKey(ElectionCandidate, on_delete=models.CASCADE, related_name="votes")
+    voted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("election", "student")
+
+    def __str__(self) -> str:
+        return f"{self.student.reg_number} → {self.candidate.name}"

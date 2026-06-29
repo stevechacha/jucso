@@ -11,6 +11,7 @@ from rest_framework.response import Response
 
 from core.auth import authenticate_portal_user, build_token_response
 from core.backup import build_portal_backup, restore_portal_backup
+from core.audit import log_audit
 from core.complaint_activity import log_complaint_activity
 from core.email_verification import send_email_verification, verify_email_with_token
 from core.models import (
@@ -24,6 +25,9 @@ from core.models import (
     ContactMessage,
     CronJobLog,
     Document,
+    Election,
+    ElectionCandidate,
+    ElectionVote,
     Event,
     EventRegistration,
     EventWaitlist,
@@ -31,6 +35,7 @@ from core.models import (
     NewsItem,
     NotificationCategory,
     PortalAnnouncement,
+    PortalAuditLog,
     PortalNotification,
     Suggestion,
     SuggestionStatus,
@@ -54,6 +59,7 @@ from core.serializers import (
     AdminEventUpdateSerializer,
     AdminNewsCreateSerializer,
     AdminNewsUpdateSerializer,
+    AdminElectionCreateSerializer,
     AdminUserSerializer,
     AdminUserUpdateSerializer,
     ClubSerializer,
@@ -66,6 +72,8 @@ from core.serializers import (
     ComplaintUpdateSerializer,
     ContactMessageSerializer,
     DocumentSerializer,
+    ElectionSerializer,
+    ElectionVoteSerializer,
     EmailVerifySerializer,
     EventSerializer,
     LoginSerializer,
@@ -74,6 +82,7 @@ from core.serializers import (
     NewsItemSerializer,
     NewsDetailSerializer,
     PortalAnnouncementSerializer,
+    PortalAuditLogSerializer,
     PortalNotificationSerializer,
     AdminAnnouncementCreateSerializer,
     AdminAnnouncementUpdateSerializer,
@@ -541,6 +550,13 @@ class ComplaintDetailView(generics.RetrieveUpdateAPIView):
                 category=NotificationCategory.COMPLAINT,
                 link=dashboard_complaint_link(instance.tracking_id, tab="tabStudentMyComplaints"),
             )
+            log_audit(
+                actor=request.user,
+                action="Complaint updated",
+                target_type="complaint",
+                target_id=instance.tracking_id,
+                detail=f"Status: {instance.status}",
+            )
 
         return Response(ComplaintSerializer(instance, context={"request": request}).data)
 
@@ -615,6 +631,12 @@ class ComplaintEscalateView(views.APIView):
             actor=user,
         )
         notify_complaint_escalated(complaint, actor_name=user.display_name)
+        log_audit(
+            actor=user,
+            action="Complaint escalated",
+            target_type="complaint",
+            target_id=complaint.tracking_id,
+        )
 
         return Response(ComplaintSerializer(complaint, context={"request": request}).data)
 
@@ -656,6 +678,13 @@ class ComplaintDeEscalateView(views.APIView):
             message=f"Executive returned {complaint.tracking_id} to your ministry. {detail}",
             category=NotificationCategory.COMPLAINT,
             link=dashboard_complaint_link(complaint.tracking_id, tab="tabMinisterIncoming"),
+        )
+        log_audit(
+            actor=request.user,
+            action="Complaint de-escalated",
+            target_type="complaint",
+            target_id=complaint.tracking_id,
+            detail=detail,
         )
 
         return Response(ComplaintSerializer(complaint, context={"request": request}).data)
@@ -1228,6 +1257,13 @@ class AdminUserUpdateView(views.APIView):
             user.email = data["email"]
 
         user.save()
+        log_audit(
+            actor=request.user,
+            action="User updated",
+            target_type="user",
+            target_id=user.reg_number,
+            detail=f"role={user.role}, active={user.is_active}",
+        )
         return Response(AdminUserSerializer(user).data)
 
 
@@ -1366,6 +1402,13 @@ class AdminContactMessageDetailView(views.APIView):
             message = ContactMessage.objects.get(pk=pk)
         except ContactMessage.DoesNotExist:
             return Response({"detail": "Message not found."}, status=status.HTTP_404_NOT_FOUND)
+        log_audit(
+            actor=request.user,
+            action="Contact message deleted",
+            target_type="contact",
+            target_id=str(pk),
+            detail=message.subject,
+        )
         message.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -1407,6 +1450,12 @@ class AdminContactMessageBulkDeleteView(views.APIView):
         serializer.is_valid(raise_exception=True)
         ids = serializer.validated_data["ids"]
         deleted, _ = ContactMessage.objects.filter(pk__in=ids).delete()
+        log_audit(
+            actor=request.user,
+            action="Contact messages bulk deleted",
+            target_type="contact",
+            detail=f"{deleted} message(s)",
+        )
         return Response({"deleted": deleted})
 
 
@@ -1538,6 +1587,8 @@ class AdminBackupRestoreView(views.APIView):
             summary = restore_portal_backup(data, dry_run=not confirm)
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        if confirm:
+            log_audit(actor=request.user, action="Backup restored", target_type="system", detail="Portal content merge")
         return Response(summary)
 
 
@@ -1611,3 +1662,91 @@ class AdminOverviewView(views.APIView):
                 "registered_students": User.objects.filter(role=UserRole.STUDENT).count(),
             }
         )
+
+
+class ElectionListView(generics.ListAPIView):
+    serializer_class = ElectionSerializer
+    permission_classes = [*AUTHENTICATED]
+
+    def get_queryset(self):
+        cutoff = timezone.now() - timedelta(days=30)
+        return (
+            Election.objects.filter(is_published=True, ends_at__gte=cutoff)
+            .prefetch_related("candidates")
+            .order_by("-starts_at")
+        )
+
+
+class ElectionVoteView(views.APIView):
+    permission_classes = [*AUTHENTICATED, IsStudent]
+
+    def post(self, request, pk: int):
+        try:
+            election = Election.objects.prefetch_related("candidates").get(pk=pk, is_published=True)
+        except Election.DoesNotExist:
+            return Response({"detail": "Election not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if not election.is_open:
+            return Response({"detail": "Voting is not open for this election."}, status=status.HTTP_400_BAD_REQUEST)
+        if ElectionVote.objects.filter(election=election, student=request.user).exists():
+            return Response({"detail": "You have already voted in this election."}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = ElectionVoteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        candidate_pk = serializer.validated_data["candidate_id"]
+        try:
+            candidate = election.candidates.get(pk=candidate_pk)
+        except ElectionCandidate.DoesNotExist:
+            return Response({"detail": "Candidate not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        ElectionVote.objects.create(election=election, student=request.user, candidate=candidate)
+        log_audit(
+            actor=request.user,
+            action="Election vote cast",
+            target_type="election",
+            target_id=f"ELEC-{election.pk:03d}",
+            detail=candidate.name,
+        )
+        election.refresh_from_db()
+        return Response(ElectionSerializer(election, context={"request": request}).data)
+
+
+class AdminElectionCreateView(views.APIView):
+    permission_classes = [*AUTHENTICATED, IsAdminRole]
+
+    def post(self, request):
+        serializer = AdminElectionCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        election = Election.objects.create(
+            title=data["title"],
+            description=data.get("description", ""),
+            starts_at=data["starts_at"],
+            ends_at=data["ends_at"],
+        )
+        for candidate in data["candidates"]:
+            ElectionCandidate.objects.create(
+                election=election,
+                name=candidate["name"],
+                position=candidate.get("position", ""),
+                manifesto=candidate.get("manifesto", ""),
+            )
+        log_audit(
+            actor=request.user,
+            action="Election created",
+            target_type="election",
+            target_id=f"ELEC-{election.pk:03d}",
+            detail=election.title,
+        )
+        return Response(
+            ElectionSerializer(election, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class AdminAuditLogListView(generics.ListAPIView):
+    serializer_class = PortalAuditLogSerializer
+    permission_classes = [*AUTHENTICATED, IsAdminRole]
+
+    def get_queryset(self):
+        return PortalAuditLog.objects.all()[:200]

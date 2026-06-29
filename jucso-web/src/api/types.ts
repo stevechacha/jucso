@@ -66,6 +66,36 @@ export interface ApiEvent {
   waitlist_position?: number | null;
 }
 
+export interface ApiElectionCandidate {
+  id: string;
+  name: string;
+  position?: string;
+  manifesto?: string;
+  vote_count?: number | null;
+}
+
+export interface ApiElection {
+  id: string;
+  title: string;
+  description: string;
+  starts_at: string;
+  ends_at: string;
+  is_open: boolean;
+  has_voted?: boolean;
+  voted_candidate_id?: string | null;
+  candidates?: ApiElectionCandidate[];
+}
+
+export interface ApiAuditLog {
+  id: number;
+  actor_name: string;
+  action: string;
+  target_type: string;
+  target_id: string;
+  detail: string;
+  timestamp: string;
+}
+
 export interface ApiDocument {
   id: string;
   name: string;

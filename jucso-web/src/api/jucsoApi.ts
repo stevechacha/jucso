@@ -1,5 +1,6 @@
 import { apiRequest, clearAuthTokens, getToken, setRefreshToken, setToken, ApiError, apiBaseUrl } from "@/api/client";
 import { mapAdminUser, mapComplaint, mapEvent, mapSuggestion, mapUser } from "@/api/mappers";
+import { mapElection } from "@/api/electionMappers";
 import type {
   AdminOverviewResponse,
   ApiComplaint,
@@ -642,5 +643,27 @@ export const jucsoApi = {
   getEventRegistrants(eventId: string) {
     const pk = parseInt(eventId.replace(/^EVT-/i, ""), 10);
     return apiRequest<import("@/api/types").AttendeeListResponse>(`/api/admin/events/${pk}/registrants/`);
+  },
+
+  async getElections() {
+    const res = await apiRequest<import("@/api/types").PaginatedResponse<import("@/api/types").ApiElection>>(
+      "/api/elections/",
+    );
+    return (res.results ?? []).map(mapElection);
+  },
+
+  async voteInElection(electionPk: number, candidateId: string) {
+    const election = await apiRequest<import("@/api/types").ApiElection>(`/api/elections/${electionPk}/vote/`, {
+      method: "POST",
+      body: { candidate_id: candidateId },
+    });
+    return mapElection(election);
+  },
+
+  async getAuditLogs() {
+    const res = await apiRequest<import("@/api/types").PaginatedResponse<import("@/api/types").ApiAuditLog>>(
+      "/api/admin/audit-log/",
+    );
+    return res.results ?? [];
   },
 };

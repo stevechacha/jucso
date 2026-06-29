@@ -141,10 +141,14 @@ Redeploy after changing `VITE_API_URL` (it is baked in at build time).
 | Event waitlists | ✅ Built — join waitlist when full; auto-promote on cancellation |
 | Admin contact bulk actions | ✅ Built — mark all read + bulk delete selected |
 | Home page i18n | ✅ Built — hero, services, ministers, events, news, CTA |
+| Public pages i18n (About, Services, Events, Clubs, Documents) | ✅ Built — full EN/SW |
+| Student elections voting | ✅ Built — Elections tab + admin create API |
+| Admin audit log | ✅ Built — System → Job Logs |
+| Browser notification alerts | ✅ Built — permission + background alerts when tab hidden |
 | Contact inbox reply | ✅ Built — Admin → Overview → reply by email |
 | Contact inbox delete + CSV export | ✅ Built — Admin → Overview → Contact Inbox |
 | Backup restore (content merge) | ✅ Built — Admin → System → upload JSON backup |
-| Automated tests (API) | ✅ 92 tests in CI |
+| Automated tests (API) | ✅ 94 tests in CI |
 
 ### Production configuration still required
 

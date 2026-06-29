@@ -1,4 +1,5 @@
 import { useApp } from "@/context/AppContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Footer } from "@/components/layout/Footer";
@@ -6,19 +7,16 @@ import { Hero } from "@/components/layout/Hero";
 
 export function ClubsPage() {
   const { clubs, handleLoginClick } = useApp();
+  const { t } = useLanguage();
 
   return (
     <div>
-      <Hero
-        badge="Student Life"
-        title="Campus clubs & societies"
-        subtitle="Browse active student clubs at Jordan University College. Sign in to join with one click."
-      />
+      <Hero badge={t("clubsPageBadge")} title={t("clubsPageTitle")} subtitle={t("clubsPageSubtitle")} />
 
       <section className="page-section bg-jucso-slate">
         <div className="section-container">
           {clubs.length === 0 ? (
-            <p className="text-center text-gray-400 text-sm py-12">No clubs published yet.</p>
+            <p className="text-center text-gray-400 text-sm py-12">{t("clubsPageEmpty")}</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {clubs.map((c) => (
@@ -29,9 +27,11 @@ export function ClubsPage() {
                   </div>
                   <h3 className="font-display font-bold text-jucso-navy mb-2 text-sm flex-1">{c.name}</h3>
                   <p className="text-gray-500 text-xs leading-relaxed mb-3">{c.description}</p>
-                  <p className="text-gray-400 text-xs mb-4">Leader: {c.leader}</p>
+                  <p className="text-gray-400 text-xs mb-4">
+                    {t("clubsLeader")} {c.leader}
+                  </p>
                   <Button variant="navy" size="sm" onClick={() => handleLoginClick("student")}>
-                    Sign in to join
+                    {t("clubsSignInJoin")}
                   </Button>
                 </article>
               ))}
