@@ -26,7 +26,18 @@ export function pageToPath(page: PageId): string {
 
 export function pathToPage(pathname: string): PageId {
   const normalized = pathname.replace(/\/$/, "") || "/";
+  if (/^\/news\/[^/]+$/.test(normalized)) return "news";
   return PATH_PAGES.get(normalized) ?? "home";
+}
+
+export function getNewsIdFromPath(pathname = window.location.pathname): string | null {
+  const normalized = pathname.replace(/\/$/, "") || "/";
+  const match = normalized.match(/^\/news\/([^/]+)$/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+export function newsArticlePath(newsId: string): string {
+  return `/news/${encodeURIComponent(newsId)}`;
 }
 
 export function syncUrlForPage(page: PageId, replace = false): void {
@@ -38,4 +49,10 @@ export function syncUrlForPage(page: PageId, replace = false): void {
   } else {
     window.history.pushState({ page }, "", path);
   }
+}
+
+export function syncNewsArticleUrl(newsId: string): void {
+  const path = newsArticlePath(newsId);
+  if (window.location.pathname === path) return;
+  window.history.pushState({ page: "news", newsId }, "", path);
 }

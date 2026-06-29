@@ -4,6 +4,7 @@ import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
 import type { PageId } from "@/types";
 import { Button } from "@/components/ui/Button";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 
 function BrandMark() {
   return (
@@ -169,6 +170,7 @@ function PortalNavbar({
             Dashboard
           </button>
         )}
+        <NotificationBell />
         <div className={`${onDashboard ? "" : "ml-2 pl-3 border-l border-white/10"}`}>
           <UserMenu onSignOut={onSignOut} />
         </div>

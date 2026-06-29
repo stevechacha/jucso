@@ -105,6 +105,7 @@ export const STATUS_STYLES: Record<string, string> = {
   Received: "bg-gray-100 text-gray-600",
   "Under Review": "bg-amber-50 text-amber-600",
   Implemented: "bg-emerald-50 text-emerald-700",
+  Declined: "bg-red-50 text-red-600",
 };
 
 export const HOME_STATS = [

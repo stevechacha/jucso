@@ -14,6 +14,7 @@ from core.backup import build_portal_backup
 from core.complaint_activity import log_complaint_activity
 from core.email_verification import send_email_verification, verify_email_with_token
 from core.models import (
+    AnnouncementPriority,
     CATEGORY_TO_MINISTRY,
     Club,
     ClubMembership,
@@ -27,12 +28,17 @@ from core.models import (
     EventRegistration,
     Ministry,
     NewsItem,
+    NotificationCategory,
+    PortalAnnouncement,
+    PortalNotification,
     Suggestion,
     SuggestionStatus,
     UserRole,
 )
 from core.permissions import AUTHENTICATED, IsAdminRole, IsLeader, IsStudent, PortalAccessPermission
 from core.querysets import complaints_for_user, suggestions_for_user
+from core.ics import ics_response
+from core.portal_notifications import notify_ministry_leaders, notify_user
 from core.registry import registry_enabled
 from core.serializers import (
     AdminClubCreateSerializer,
@@ -62,6 +68,11 @@ from core.serializers import (
     LeadershipMemberSerializer,
     MinistrySerializer,
     NewsItemSerializer,
+    NewsDetailSerializer,
+    PortalAnnouncementSerializer,
+    PortalNotificationSerializer,
+    AdminAnnouncementCreateSerializer,
+    AdminAnnouncementUpdateSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     ProfileUpdateSerializer,
@@ -382,6 +393,20 @@ class ComplaintListCreateView(generics.ListCreateAPIView):
             supporting_document_path=supporting_document_path,
         )
         notify_complaint_submitted(complaint)
+        notify_user(
+            request.user,
+            title="Complaint received",
+            message=f"Your complaint {complaint.tracking_id} was submitted and routed to {complaint.ministry.name}.",
+            category=NotificationCategory.COMPLAINT,
+            link="/dashboard",
+        )
+        notify_ministry_leaders(
+            ministry_name=complaint.ministry.name,
+            title="New complaint assigned",
+            message=f"{complaint.tracking_id}: {complaint.category}",
+            category=NotificationCategory.COMPLAINT,
+            link="/dashboard",
+        )
         return Response(
             ComplaintSerializer(complaint, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
@@ -472,6 +497,13 @@ class ComplaintDetailView(generics.RetrieveUpdateAPIView):
         )
         if changed:
             notify_complaint_update(instance)
+            notify_user(
+                instance.student,
+                title="Complaint updated",
+                message=f"Your complaint {instance.tracking_id} is now {instance.status}.",
+                category=NotificationCategory.COMPLAINT,
+                link="/dashboard",
+            )
 
         return Response(ComplaintSerializer(instance, context={"request": request}).data)
 
@@ -564,6 +596,13 @@ class SuggestionDetailView(generics.RetrieveUpdateAPIView):
         instance.refresh_from_db()
         if instance.status != old_status or (instance.response or "") != old_response:
             notify_suggestion_update(instance)
+            notify_user(
+                instance.student,
+                title="Suggestion updated",
+                message=f'Your suggestion "{instance.title}" is now {instance.status}.',
+                category=NotificationCategory.SUGGESTION,
+                link="/dashboard",
+            )
         return Response(SuggestionSerializer(instance).data)
 
 
@@ -667,6 +706,123 @@ class NewsListView(generics.ListAPIView):
         if tag and tag != "All":
             qs = qs.filter(tag=tag)
         return qs
+
+
+def _parse_news_id(news_id: str) -> int:
+    cleaned = news_id.strip().upper()
+    if cleaned.startswith("N"):
+        cleaned = cleaned[1:]
+    return int(cleaned)
+
+
+class NewsDetailView(views.APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, news_id: str):
+        try:
+            pk = _parse_news_id(news_id)
+            item = NewsItem.objects.get(pk=pk, is_published=True)
+        except (ValueError, NewsItem.DoesNotExist):
+            return Response({"detail": "News item not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(NewsDetailSerializer(item).data)
+
+
+class EventsCalendarView(views.APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return ics_response()
+
+
+ANNOUNCEMENT_PRIORITY_ORDER = {
+    AnnouncementPriority.URGENT: 0,
+    AnnouncementPriority.WARNING: 1,
+    AnnouncementPriority.INFO: 2,
+}
+
+
+class ActiveAnnouncementView(views.APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        now = timezone.now()
+        announcements = PortalAnnouncement.objects.filter(is_active=True).filter(
+            Q(expires_at__isnull=True) | Q(expires_at__gt=now)
+        )
+        item = sorted(
+            announcements,
+            key=lambda row: (ANNOUNCEMENT_PRIORITY_ORDER.get(row.priority, 9), -row.starts_at.timestamp()),
+        )[:1]
+        if not item:
+            return Response(None)
+        return Response(PortalAnnouncementSerializer(item[0]).data)
+
+
+class NotificationListView(views.APIView):
+    permission_classes = [*AUTHENTICATED]
+
+    def get(self, request):
+        qs = PortalNotification.objects.filter(user=request.user).order_by("-created_at")[:50]
+        unread = PortalNotification.objects.filter(user=request.user, is_read=False).count()
+        return Response(
+            {
+                "unread_count": unread,
+                "results": PortalNotificationSerializer(qs, many=True).data,
+            }
+        )
+
+
+class NotificationMarkReadView(views.APIView):
+    permission_classes = [*AUTHENTICATED]
+
+    def post(self, request):
+        ids = request.data.get("ids")
+        qs = PortalNotification.objects.filter(user=request.user, is_read=False)
+        if ids:
+            qs = qs.filter(pk__in=ids)
+        updated = qs.update(is_read=True)
+        remaining = PortalNotification.objects.filter(user=request.user, is_read=False).count()
+        return Response({"marked": updated, "unread_count": remaining})
+
+
+class AdminAnnouncementListCreateView(views.APIView):
+    permission_classes = [*AUTHENTICATED, IsAdminRole]
+
+    def get(self, request):
+        items = PortalAnnouncement.objects.order_by("-starts_at")[:20]
+        return Response(PortalAnnouncementSerializer(items, many=True).data)
+
+    def post(self, request):
+        serializer = AdminAnnouncementCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        item = PortalAnnouncement.objects.create(**serializer.validated_data)
+        return Response(PortalAnnouncementSerializer(item).data, status=status.HTTP_201_CREATED)
+
+
+class AdminAnnouncementDetailView(views.APIView):
+    permission_classes = [*AUTHENTICATED, IsAdminRole]
+
+    def patch(self, request, pk: int):
+        try:
+            item = PortalAnnouncement.objects.get(pk=pk)
+        except PortalAnnouncement.DoesNotExist:
+            return Response({"detail": "Announcement not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = AdminAnnouncementUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        for field, value in serializer.validated_data.items():
+            setattr(item, field, value)
+        item.save()
+        return Response(PortalAnnouncementSerializer(item).data)
+
+    def delete(self, request, pk: int):
+        try:
+            item = PortalAnnouncement.objects.get(pk=pk)
+        except PortalAnnouncement.DoesNotExist:
+            return Response({"detail": "Announcement not found."}, status=status.HTTP_404_NOT_FOUND)
+        item.is_active = False
+        item.save(update_fields=["is_active"])
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class DocumentListView(generics.ListAPIView):
@@ -821,7 +977,9 @@ class TransparencyStatsView(views.APIView):
         total_suggestions = all_suggestions.count()
         implemented_suggestions = all_suggestions.filter(status=SuggestionStatus.IMPLEMENTED).count()
         now = timezone.now()
-        open_suggestions = all_suggestions.exclude(status=SuggestionStatus.IMPLEMENTED)
+        open_suggestions = all_suggestions.exclude(
+            status__in=[SuggestionStatus.IMPLEMENTED, SuggestionStatus.DECLINED]
+        )
         return Response(
             {
                 "total_complaints": total,
@@ -929,6 +1087,7 @@ class AdminNewsCreateView(views.APIView):
         item = NewsItem.objects.create(
             title=data["title"],
             excerpt=data["excerpt"],
+            body=data.get("body", ""),
             tag=data["tag"],
             published_at=data.get("published_at") or timezone.localdate(),
             is_published=True,
@@ -1126,7 +1285,9 @@ class AdminSystemStatusView(views.APIView):
 
         now = timezone.now()
         open_complaints = Complaint.objects.exclude(status=ComplaintStatus.RESOLVED)
-        open_suggestions = Suggestion.objects.exclude(status=SuggestionStatus.IMPLEMENTED)
+        open_suggestions = Suggestion.objects.exclude(
+            status__in=[SuggestionStatus.IMPLEMENTED, SuggestionStatus.DECLINED]
+        )
 
         return Response(
             {

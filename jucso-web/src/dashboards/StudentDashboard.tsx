@@ -303,6 +303,13 @@ export function StudentDashboard() {
                       <strong>Leadership response:</strong> {s.response}
                     </p>
                   )}
+                  {s.status !== "Implemented" && s.status !== "Declined" && s.isOverdue ? (
+                    <p className="text-xs font-semibold text-red-600 mt-2">
+                      {t("overdue")} — {t("slaDue", { date: s.dueAt ?? "" })}
+                    </p>
+                  ) : s.dueAt && s.status !== "Implemented" && s.status !== "Declined" ? (
+                    <p className="text-xs text-gray-500 mt-2">{t("slaDue", { date: s.dueAt })}</p>
+                  ) : null}
                   <time className="text-gray-400 text-xs mt-2 block">{s.date}</time>
                 </article>
               ))

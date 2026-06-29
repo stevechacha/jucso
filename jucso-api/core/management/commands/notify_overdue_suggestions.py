@@ -14,7 +14,7 @@ class Command(BaseCommand):
         overdue = Suggestion.objects.filter(
             due_at__lt=now,
             sla_notified_at__isnull=True,
-        ).exclude(status=SuggestionStatus.IMPLEMENTED).select_related("student")
+        ).exclude(status__in=[SuggestionStatus.IMPLEMENTED, SuggestionStatus.DECLINED]).select_related("student")
 
         count = 0
         for suggestion in overdue:

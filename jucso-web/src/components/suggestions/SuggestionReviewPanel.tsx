@@ -7,7 +7,7 @@ import { Select, Textarea } from "@/components/ui/FormFields";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { useLanguage } from "@/context/LanguageContext";
 
-const STATUSES: SuggestionStatus[] = ["Received", "Under Review", "Implemented"];
+const STATUSES: SuggestionStatus[] = ["Received", "Under Review", "Implemented", "Declined"];
 
 function suggestionPk(id: string): number {
   return parseInt(id.replace(/^SUG-/, ""), 10);
@@ -28,7 +28,7 @@ export function SuggestionReviewPanel({ suggestions, onUpdated, apiEnabled }: Su
   const [err, setErr] = useState("");
 
   const selected = suggestions.find((s) => s.id === selectedId);
-  const pending = suggestions.filter((s) => s.status !== "Implemented");
+  const pending = suggestions.filter((s) => s.status !== "Implemented" && s.status !== "Declined");
 
   const openSuggestion = (s: Suggestion) => {
     setSelectedId(s.id);

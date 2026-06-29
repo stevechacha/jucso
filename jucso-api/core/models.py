@@ -130,6 +130,7 @@ class SuggestionStatus(models.TextChoices):
     RECEIVED = "Received", "Received"
     UNDER_REVIEW = "Under Review", "Under Review"
     IMPLEMENTED = "Implemented", "Implemented"
+    DECLINED = "Declined", "Declined"
 
 
 class Suggestion(models.Model):
@@ -154,7 +155,7 @@ class Suggestion(models.Model):
     def is_overdue(self) -> bool:
         from django.utils import timezone
 
-        if self.status == SuggestionStatus.IMPLEMENTED or not self.due_at:
+        if self.status in (SuggestionStatus.IMPLEMENTED, SuggestionStatus.DECLINED) or not self.due_at:
             return False
         return timezone.now() > self.due_at
 
@@ -244,12 +245,17 @@ class NewsTag(models.TextChoices):
 class NewsItem(models.Model):
     title = models.CharField(max_length=300)
     excerpt = models.TextField()
+    body = models.TextField(blank=True)
     tag = models.CharField(max_length=20, choices=NewsTag.choices)
     published_at = models.DateField()
     is_published = models.BooleanField(default=True)
 
     class Meta:
         ordering = ["-published_at"]
+
+    @property
+    def content(self) -> str:
+        return self.body.strip() or self.excerpt
 
     def __str__(self) -> str:
         return self.title
@@ -284,3 +290,52 @@ class ContactMessage(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name}: {self.subject or 'No subject'}"
+
+
+class AnnouncementPriority(models.TextChoices):
+    INFO = "info", "Info"
+    WARNING = "warning", "Warning"
+    URGENT = "urgent", "Urgent"
+
+
+class PortalAnnouncement(models.Model):
+    message = models.TextField()
+    link_label = models.CharField(max_length=100, blank=True)
+    link_url = models.URLField(blank=True)
+    priority = models.CharField(
+        max_length=20,
+        choices=AnnouncementPriority.choices,
+        default=AnnouncementPriority.INFO,
+    )
+    is_active = models.BooleanField(default=True)
+    starts_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-starts_at"]
+
+    def __str__(self) -> str:
+        return self.message[:60]
+
+
+class NotificationCategory(models.TextChoices):
+    COMPLAINT = "complaint", "Complaint"
+    SUGGESTION = "suggestion", "Suggestion"
+    EVENT = "event", "Event"
+    SYSTEM = "system", "System"
+
+
+class PortalNotification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="portal_notifications")
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    category = models.CharField(max_length=20, choices=NotificationCategory.choices, default=NotificationCategory.SYSTEM)
+    link = models.CharField(max_length=300, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.user.reg_number}: {self.title}"

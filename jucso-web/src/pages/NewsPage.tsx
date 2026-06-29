@@ -3,6 +3,7 @@ import { useApp } from "@/context/AppContext";
 import { Badge, newsTagVariant } from "@/components/ui/Badge";
 import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/layout/Hero";
+import { syncNewsArticleUrl } from "@/lib/routing";
 import type { NewsTag } from "@/types";
 
 const TAGS: Array<NewsTag | "All"> = ["All", "Announcement", "Events", "Clubs", "Notice"];
@@ -53,7 +54,19 @@ export function NewsPage() {
               filtered.map((n) => (
               <article
                 key={n.id}
-                className="bg-white rounded-xl p-5 flex gap-4 items-start shadow-card hover:shadow-card-hover transition-shadow"
+                className="bg-white rounded-xl p-5 flex gap-4 items-start shadow-card hover:shadow-card-hover transition-shadow cursor-pointer"
+                onClick={() => {
+                  syncNewsArticleUrl(n.id);
+                  window.dispatchEvent(new PopStateEvent("popstate"));
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    syncNewsArticleUrl(n.id);
+                    window.dispatchEvent(new PopStateEvent("popstate"));
+                  }
+                }}
+                role="button"
+                tabIndex={0}
               >
                 <div
                   className="w-12 h-12 rounded-xl bg-cyan-50 flex items-center justify-center text-xl shrink-0"
@@ -67,7 +80,8 @@ export function NewsPage() {
                     <time className="text-gray-400 text-xs">{n.date}</time>
                   </div>
                   <h3 className="font-display font-bold text-jucso-navy text-sm mb-1">{n.title}</h3>
-                  <p className="text-gray-500 text-xs leading-relaxed">{n.excerpt}</p>
+                  <p className="text-gray-500 text-xs leading-relaxed line-clamp-2">{n.excerpt}</p>
+                  <span className="inline-block mt-2 text-xs font-semibold text-jucso-teal">Read more →</span>
                 </div>
               </article>
               ))

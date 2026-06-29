@@ -1,4 +1,4 @@
-import { apiRequest, clearAuthTokens, getToken, setRefreshToken, setToken, ApiError } from "@/api/client";
+import { apiRequest, clearAuthTokens, getToken, setRefreshToken, setToken, ApiError, apiBaseUrl } from "@/api/client";
 import { mapAdminUser, mapComplaint, mapEvent, mapSuggestion, mapUser } from "@/api/mappers";
 import type {
   AdminOverviewResponse,
@@ -11,7 +11,7 @@ import type {
   LoginResponse,
   MinistryOption,
 } from "@/api/types";
-import type { Club, Complaint, NewsItem, PortalType } from "@/types";
+import type { Club, Complaint, NewsDetail, NewsItem, PortalAnnouncement, PortalNotification, PortalType } from "@/types";
 
 export interface ExecutiveStats {
   total_complaints: number;
@@ -304,6 +304,61 @@ export const jucsoApi = {
     return apiRequest<NewsItem[]>(`/api/news/${query}`, { auth: false });
   },
 
+  getNewsDetail(newsId: string) {
+    return apiRequest<NewsDetail>(`/api/news/${encodeURIComponent(newsId)}/`, { auth: false });
+  },
+
+  getActiveAnnouncement() {
+    return apiRequest<PortalAnnouncement | null>("/api/announcement/", { auth: false });
+  },
+
+  getNotifications() {
+    return apiRequest<{ unread_count: number; results: PortalNotification[] }>("/api/notifications/");
+  },
+
+  markNotificationsRead(ids?: number[]) {
+    return apiRequest<{ marked: number; unread_count: number }>("/api/notifications/mark-read/", {
+      method: "POST",
+      body: ids ? { ids } : {},
+    });
+  },
+
+  eventsCalendarUrl() {
+    return `${apiBaseUrl}/api/events/calendar.ics`;
+  },
+
+  getAnnouncements() {
+    return apiRequest<PortalAnnouncement[]>("/api/admin/announcements/");
+  },
+
+  createAnnouncement(data: {
+    message: string;
+    link_label?: string;
+    link_url?: string;
+    priority?: PortalAnnouncement["priority"];
+    expires_at?: string;
+  }) {
+    return apiRequest<PortalAnnouncement>("/api/admin/announcements/", { method: "POST", body: data });
+  },
+
+  updateAnnouncement(
+    id: number,
+    data: Partial<{
+      message: string;
+      link_label: string;
+      link_url: string;
+      priority: PortalAnnouncement["priority"];
+      is_active: boolean;
+      expires_at: string | null;
+    }>,
+  ) {
+    return apiRequest<PortalAnnouncement>(`/api/admin/announcements/${id}/`, { method: "PATCH", body: data });
+  },
+
+  deactivateAnnouncement(id: number) {
+    return apiRequest<void>(`/api/admin/announcements/${id}/`, { method: "DELETE" });
+  },
+
   async getDocuments() {
     const docs = await apiRequest<ApiDocument[]>("/api/documents/", { auth: false });
     return docs.map((doc) => ({
@@ -357,7 +412,7 @@ export const jucsoApi = {
     };
   },
 
-  async createNews(data: { title: string; excerpt: string; tag: string; published_at?: string }) {
+  async createNews(data: { title: string; excerpt: string; body?: string; tag: string; published_at?: string }) {
     return apiRequest<NewsItem>("/api/admin/news/", { method: "POST", body: data });
   },
 
@@ -368,7 +423,7 @@ export const jucsoApi = {
 
   updateNews(
     newsId: string,
-    data: { title?: string; excerpt?: string; tag?: string; is_published?: boolean },
+    data: { title?: string; excerpt?: string; body?: string; tag?: string; is_published?: boolean },
   ) {
     const pk = parseInt(newsId.replace(/^N/i, ""), 10);
     return apiRequest<NewsItem>(`/api/admin/news/${pk}/`, { method: "PATCH", body: data });

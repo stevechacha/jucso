@@ -1,4 +1,6 @@
 import { useApp } from "@/context/AppContext";
+import { jucsoApi } from "@/api/jucsoApi";
+import { isApiEnabled } from "@/api/client";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Footer } from "@/components/layout/Footer";
@@ -17,6 +19,17 @@ export function EventsPage() {
 
       <section className="page-section bg-jucso-slate">
         <div className="section-container">
+          {isApiEnabled && events.length > 0 && (
+            <div className="flex justify-end mb-4">
+              <a
+                href={jucsoApi.eventsCalendarUrl()}
+                download="jucso-events.ics"
+                className="inline-flex items-center gap-2 text-xs font-semibold text-jucso-teal hover:underline"
+              >
+                📅 Download calendar (.ics)
+              </a>
+            </div>
+          )}
           {events.length === 0 ? (
             <p className="text-center text-gray-400 text-sm py-12">No upcoming events yet.</p>
           ) : (

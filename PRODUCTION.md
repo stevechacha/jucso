@@ -126,7 +126,11 @@ Redeploy after changing `VITE_API_URL` (it is baked in at build time).
 | Scheduled backup export | ✅ Built — cron: `export_portal_backup` via `run_daily_jobs.sh` |
 | Playwright E2E smoke tests | ✅ Built — `npm run test:e2e` |
 | Rate limiting + optional Sentry | ✅ Built |
-| Automated tests (API) | ✅ 60+ tests in CI |
+| Site-wide announcement banner | ✅ Built — Admin → System |
+| In-app notification center | ✅ Built — bell icon when signed in |
+| News article detail pages | ✅ Built — `/news/N01` |
+| Events calendar export (.ics) | ✅ Built — Events page download link |
+| Automated tests (API) | ✅ 69 tests in CI |
 
 ### Production configuration still required
 

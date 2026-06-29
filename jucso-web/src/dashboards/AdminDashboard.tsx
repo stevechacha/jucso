@@ -345,6 +345,7 @@ function AddNewsForm({ onCreated }: { onCreated: () => void }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
+  const [body, setBody] = useState("");
   const [tag, setTag] = useState("Announcement");
   const [err, setErr] = useState("");
   const [success, setSuccess] = useState("");
@@ -356,10 +357,11 @@ function AddNewsForm({ onCreated }: { onCreated: () => void }) {
     setErr("");
     setSuccess("");
     try {
-      await jucsoApi.createNews({ title: title.trim(), excerpt: excerpt.trim(), tag });
+      await jucsoApi.createNews({ title: title.trim(), excerpt: excerpt.trim(), body: body.trim(), tag });
       setSuccess(`Published “${title.trim()}”.`);
       setTitle("");
       setExcerpt("");
+      setBody("");
       setTag("Announcement");
       onCreated();
     } catch (error) {
@@ -382,7 +384,8 @@ function AddNewsForm({ onCreated }: { onCreated: () => void }) {
       <h3 className="font-display font-bold text-jucso-navy text-sm mb-3">New announcement</h3>
       <form onSubmit={(e) => void submit(e)}>
         <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-        <Textarea label="Summary" value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={3} required />
+        <Textarea label="Summary" value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={2} required />
+        <Textarea label="Full article (optional)" value={body} onChange={(e) => setBody(e.target.value)} rows={5} />
         <Select label="Category" value={tag} onChange={(e) => setTag(e.target.value)}>
           <option value="Announcement">Announcement</option>
           <option value="Events">Events</option>
@@ -415,6 +418,7 @@ function EditNewsForm({
 }) {
   const [title, setTitle] = useState(item.title);
   const [excerpt, setExcerpt] = useState(item.excerpt);
+  const [body, setBody] = useState("");
   const [tag, setTag] = useState(item.tag);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
@@ -427,6 +431,7 @@ function EditNewsForm({
       await jucsoApi.updateNews(item.id, {
         title: title.trim(),
         excerpt: excerpt.trim(),
+        ...(body.trim() ? { body: body.trim() } : {}),
         tag,
       });
       onSaved();
@@ -441,7 +446,14 @@ function EditNewsForm({
     <form onSubmit={(e) => void submit(e)} className="mt-3 border border-indigo-100 rounded-xl p-4 bg-indigo-50/40">
       <h4 className="font-display font-bold text-jucso-navy text-xs mb-3">Edit {item.id}</h4>
       <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-      <Textarea label="Summary" value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={3} required />
+      <Textarea label="Summary" value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={2} required />
+      <Textarea
+        label="Full article (optional)"
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        rows={5}
+        placeholder="Leave blank to keep existing full text"
+      />
       <Select label="Category" value={tag} onChange={(e) => setTag(e.target.value as NewsItem["tag"])}>
         <option value="Announcement">Announcement</option>
         <option value="Events">Events</option>
@@ -458,6 +470,77 @@ function EditNewsForm({
         </Button>
       </div>
     </form>
+  );
+}
+
+function SiteAnnouncementPanel({ apiEnabled }: { apiEnabled: boolean }) {
+  const [items, setItems] = useState<import("@/types").PortalAnnouncement[]>([]);
+  const [message, setMessage] = useState("");
+  const [priority, setPriority] = useState<import("@/types").AnnouncementPriority>("info");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+
+  const load = () => {
+    if (!apiEnabled) return;
+    void jucsoApi.getAnnouncements().then(setItems).catch(console.error);
+  };
+
+  useEffect(() => {
+    load();
+  }, [apiEnabled]);
+
+  const publish = async () => {
+    if (!message.trim()) return;
+    setLoading(true);
+    setErr("");
+    try {
+      await jucsoApi.createAnnouncement({ message: message.trim(), priority });
+      setMessage("");
+      load();
+    } catch (error) {
+      setErr(error instanceof ApiError ? error.message : "Could not publish site banner.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deactivate = async (id: number) => {
+    await jucsoApi.deactivateAnnouncement(id);
+    load();
+  };
+
+  return (
+    <div className="bg-white rounded-xl p-5 shadow-card">
+      <h3 className="font-display font-bold text-jucso-navy text-sm mb-1">Site-wide banner</h3>
+      <p className="text-xs text-gray-500 mb-4">Urgent notices appear at the top of every public page.</p>
+      <Textarea label="Message" value={message} onChange={(e) => setMessage(e.target.value)} rows={2} />
+      <Select label="Priority" value={priority} onChange={(e) => setPriority(e.target.value as typeof priority)}>
+        <option value="info">Info</option>
+        <option value="warning">Warning</option>
+        <option value="urgent">Urgent</option>
+      </Select>
+      {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
+      <Button variant="navy" size="sm" disabled={!apiEnabled || loading || !message.trim()} onClick={() => void publish()}>
+        {loading ? "Publishing…" : "Publish banner"}
+      </Button>
+      {items.length > 0 && (
+        <ul className="mt-4 space-y-2 text-xs">
+          {items.map((item) => (
+            <li key={item.id} className="flex justify-between gap-3 border border-gray-100 rounded-lg p-3">
+              <div>
+                <span className="font-semibold capitalize text-jucso-navy">{item.priority}</span>
+                <p className="text-gray-600 mt-0.5">{item.message}</p>
+              </div>
+              {item.is_active !== false && (
+                <Button variant="outline" size="sm" onClick={() => void deactivate(item.id)}>
+                  Hide
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -562,6 +645,7 @@ function SystemToolsPanel({ apiEnabled }: { apiEnabled: boolean }) {
 
   return (
     <div className="space-y-4">
+      <SiteAnnouncementPanel apiEnabled={apiEnabled} />
       {backupMsg && <p className="text-xs text-jucso-navy bg-jucso-slate rounded-lg px-3 py-2">{backupMsg}</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {SYSTEM_TOOLS.map((s) => (

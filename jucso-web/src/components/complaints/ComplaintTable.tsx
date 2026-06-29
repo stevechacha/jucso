@@ -1,8 +1,10 @@
 import { Fragment, useState } from "react";
 import type { Complaint } from "@/types";
+import { ComplaintActivityTimeline } from "@/components/complaints/ComplaintActivityTimeline";
 import { ComplaintAttachmentLink } from "@/components/complaints/ComplaintAttachmentLink";
 import { ConfidentialBadge } from "@/components/complaints/ConfidentialBadge";
 import { StatusPill } from "@/components/ui/StatusPill";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface ComplaintTableProps {
   complaints: Complaint[];
@@ -10,6 +12,7 @@ interface ComplaintTableProps {
 }
 
 export function ComplaintTable({ complaints, showResponse = false }: ComplaintTableProps) {
+  const { t } = useLanguage();
   const [expanded, setExpanded] = useState<string | null>(null);
 
   if (complaints.length === 0) {
@@ -66,13 +69,25 @@ export function ComplaintTable({ complaints, showResponse = false }: ComplaintTa
                       <strong>Description:</strong> {c.description}
                     </div>
                     <ComplaintAttachmentLink url={c.supportingDocumentUrl} className="mb-2 block" />
+                    {c.status !== "Resolved" && c.isOverdue ? (
+                      <p className="text-xs font-semibold text-red-600 mb-2">
+                        {t("overdue")} — {t("slaDue", { date: c.dueAt ?? "" })}
+                      </p>
+                    ) : c.dueAt && c.status !== "Resolved" ? (
+                      <p className="text-xs text-gray-500 mb-2">{t("slaDue", { date: c.dueAt })}</p>
+                    ) : null}
+                    {c.activity?.length ? (
+                      <div className="mb-3">
+                        <ComplaintActivityTimeline activity={c.activity} compact />
+                      </div>
+                    ) : null}
                     {showResponse && c.response && (
                       <div className="text-emerald-700 text-xs bg-emerald-50 rounded p-2">
                         <strong>Response:</strong> {c.response}
                       </div>
                     )}
                     {showResponse && !c.response && (
-                      <div className="text-gray-400 text-xs italic">No response yet.</div>
+                      <div className="text-gray-400 text-xs italic">{t("noResponseYet")}</div>
                     )}
                   </td>
                 </tr>

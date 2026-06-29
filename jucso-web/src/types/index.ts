@@ -5,7 +5,7 @@ export const PORTALS = ["student", "staff"] as const;
 export type PortalType = (typeof PORTALS)[number];
 
 export type ComplaintStatus = "Pending" | "In Progress" | "Resolved";
-export type SuggestionStatus = "Received" | "Under Review" | "Implemented";
+export type SuggestionStatus = "Received" | "Under Review" | "Implemented" | "Declined";
 export type NewsTag = "Announcement" | "Events" | "Clubs" | "Notice";
 
 export type PageId =
@@ -110,6 +110,31 @@ export interface NewsItem {
   excerpt: string;
   date: string;
   tag: NewsTag;
+}
+
+export interface NewsDetail extends NewsItem {
+  body: string;
+}
+
+export type AnnouncementPriority = "info" | "warning" | "urgent";
+
+export interface PortalAnnouncement {
+  id: number;
+  message: string;
+  link_label?: string;
+  link_url?: string;
+  priority: AnnouncementPriority;
+  is_active?: boolean;
+}
+
+export interface PortalNotification {
+  id: number;
+  title: string;
+  message: string;
+  category: "complaint" | "suggestion" | "event" | "system";
+  link?: string;
+  is_read: boolean;
+  created_at: string;
 }
 
 export interface Document {

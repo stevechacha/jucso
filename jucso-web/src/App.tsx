@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { PUBLIC_PAGES } from "@/constants/mock-data";
 import { apiBaseUrl, isApiEnabled, setUnauthorizedHandler } from "@/api/client";
+import { jucsoApi } from "@/api/jucsoApi";
 import { AppProvider, useApp } from "@/context/AppContext";
 import { LanguageProvider } from "@/context/LanguageContext";
-import type { PortalType } from "@/types";
+import type { PortalAnnouncement, PortalType } from "@/types";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { ForgotPasswordModal } from "@/components/auth/ForgotPasswordModal";
 import { RegisterModal } from "@/components/auth/RegisterModal";
 import { ForcePasswordChangeScreen } from "@/components/auth/ForcePasswordChangeScreen";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { ApiStatusBanner } from "@/components/layout/ApiStatusBanner";
+import { AnnouncementBanner } from "@/components/layout/AnnouncementBanner";
 import { Navbar } from "@/components/layout/Navbar";
 import { AdminDashboard } from "@/dashboards/AdminDashboard";
 import { ExecutiveDashboard } from "@/dashboards/ExecutiveDashboard";
@@ -18,11 +20,13 @@ import { StudentDashboard } from "@/dashboards/StudentDashboard";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { usePageNavigation } from "@/hooks/usePageNavigation";
 import { usePortalData } from "@/hooks/usePortalData";
+import { getNewsIdFromPath } from "@/lib/routing";
 import { AboutPage } from "@/pages/AboutPage";
 import { ContactPage } from "@/pages/ContactPage";
 import { DocumentsPage } from "@/pages/DocumentsPage";
 import { HomePage } from "@/pages/HomePage";
 import { NewsPage } from "@/pages/NewsPage";
+import { NewsDetailPage } from "@/pages/NewsDetailPage";
 import { ServicesPage } from "@/pages/ServicesPage";
 import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 import { TrackComplaintPage } from "@/pages/TrackComplaintPage";
@@ -91,8 +95,10 @@ function PageRouter() {
       return <AboutPage />;
     case "services":
       return <ServicesPage />;
-    case "news":
-      return <NewsPage />;
+    case "news": {
+      const newsId = getNewsIdFromPath();
+      return newsId ? <NewsDetailPage newsId={newsId} /> : <NewsPage />;
+    }
     case "documents":
       return <DocumentsPage />;
     case "contact":
@@ -120,6 +126,8 @@ export default function App() {
   const [showRegister, setShowRegister] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [loginPortal, setLoginPortal] = useState<PortalType>("student");
+  const [announcement, setAnnouncement] = useState<PortalAnnouncement | null>(null);
+  const [announcementDismissed, setAnnouncementDismissed] = useState(false);
 
   const {
     dataLoading,
@@ -152,6 +160,17 @@ export default function App() {
   useEffect(() => {
     void refreshPortalData(user);
   }, [user, refreshPortalData]);
+
+  useEffect(() => {
+    if (!isApiEnabled) return;
+    void jucsoApi
+      .getActiveAnnouncement()
+      .then((item) => {
+        setAnnouncement(item);
+        setAnnouncementDismissed(false);
+      })
+      .catch(() => setAnnouncement(null));
+  }, [user]);
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
@@ -230,6 +249,9 @@ export default function App() {
     >
       <div className="min-h-screen bg-jucso-slate">
         <ApiStatusBanner />
+        {announcement && !announcementDismissed && (
+          <AnnouncementBanner announcement={announcement} onDismiss={() => setAnnouncementDismissed(true)} />
+        )}
         <Navbar />
         <AuthGuard>
           <PageRouter />

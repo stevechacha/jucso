@@ -17,6 +17,8 @@ from core.models import (
     Ministry,
     NewsItem,
     NewsTag,
+    PortalAnnouncement,
+    PortalNotification,
     Suggestion,
     SuggestionStatus,
     UserRole,
@@ -419,6 +421,16 @@ class NewsItemSerializer(serializers.ModelSerializer):
         return obj.published_at.strftime("%b %d, %Y")
 
 
+class NewsDetailSerializer(NewsItemSerializer):
+    body = serializers.SerializerMethodField()
+
+    class Meta(NewsItemSerializer.Meta):
+        fields = NewsItemSerializer.Meta.fields + ("body",)
+
+    def get_body(self, obj: NewsItem) -> str:
+        return obj.content
+
+
 class DocumentSerializer(serializers.ModelSerializer):
     id = serializers.SerializerMethodField()
     type = serializers.CharField(source="file_type")
@@ -461,6 +473,7 @@ class AdminDocumentUpdateSerializer(serializers.Serializer):
 class AdminNewsCreateSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=300, trim_whitespace=True)
     excerpt = serializers.CharField(trim_whitespace=True)
+    body = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
     tag = serializers.ChoiceField(choices=NewsTag.choices)
     published_at = serializers.DateField(required=False)
 
@@ -468,6 +481,7 @@ class AdminNewsCreateSerializer(serializers.Serializer):
 class AdminNewsUpdateSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=300, trim_whitespace=True, required=False)
     excerpt = serializers.CharField(trim_whitespace=True, required=False)
+    body = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True)
     tag = serializers.ChoiceField(choices=NewsTag.choices, required=False)
     is_published = serializers.BooleanField(required=False)
 
@@ -591,3 +605,27 @@ class ResendVerificationSerializer(serializers.Serializer):
         attrs["email"] = email
         attrs["reg_number"] = reg_number
         return attrs
+
+
+class PortalAnnouncementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PortalAnnouncement
+        fields = ("id", "message", "link_label", "link_url", "priority", "is_active", "starts_at", "expires_at")
+
+
+class AdminAnnouncementCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PortalAnnouncement
+        fields = ("message", "link_label", "link_url", "priority", "expires_at")
+
+
+class AdminAnnouncementUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PortalAnnouncement
+        fields = ("message", "link_label", "link_url", "priority", "is_active", "expires_at")
+
+
+class PortalNotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PortalNotification
+        fields = ("id", "title", "message", "category", "link", "is_read", "created_at")
