@@ -32,7 +32,15 @@ export function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (!isApiEnabled) return;
+    if (!isApiEnabled) {
+      setHomeStats([
+        [HOME_STATS[0][0], t("studentsServed")],
+        [HOME_STATS[1][0], t("activeMinistries")],
+        [HOME_STATS[2][0], t("weeksToLaunch")],
+        [HOME_STATS[3][0], t("annualBudget")],
+      ]);
+      return;
+    }
     void jucsoApi
       .getPublicStats()
       .then((stats: PublicStatsResponse) => {
@@ -70,7 +78,7 @@ export function HomePage() {
               {t("staffPortal")}
             </Button>
             <Button variant="ghost" onClick={() => setPage("about")}>
-              Learn More
+              {t("learnMore")}
             </Button>
             <Button variant="ghost" onClick={() => setPage("track")}>
               {t("trackComplaint")}

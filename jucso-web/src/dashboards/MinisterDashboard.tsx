@@ -23,8 +23,6 @@ const DEFAULT_TAB: TranslationKey = "tabMinisterIncoming";
 
 export function MinisterDashboard() {
   const { user, complaints, setComplaints, suggestions, apiEnabled, refreshPortalData } = useApp();
-  if (!user?.ministry) return null;
-
   const { t } = useLanguage();
   const [tab, setTab] = useDashboardTab(MINISTER_TABS, DEFAULT_TAB);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -45,6 +43,8 @@ export function MinisterDashboard() {
     if (!apiEnabled || tab !== "tabMinisterOverview") return;
     void jucsoApi.getMinisterWorkload().then(setWorkload).catch(console.error);
   }, [apiEnabled, tab]);
+
+  if (!user?.ministry) return null;
 
   const myComplaints = complaints.filter((c) => c.ministry === user.ministry);
   const selected = complaints.find((c) => c.id === selectedId);

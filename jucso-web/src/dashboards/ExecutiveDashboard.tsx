@@ -18,8 +18,6 @@ const DEFAULT_TAB: TranslationKey = "tabExecutiveOverview";
 
 export function ExecutiveDashboard() {
   const { user, complaints, suggestions, apiEnabled, refreshPortalData } = useApp();
-  if (!user) return null;
-
   const { t } = useLanguage();
   const [tab, setTab] = useDashboardTab(EXECUTIVE_TABS, DEFAULT_TAB);
   const [filterMin, setFilterMin] = useState("All");
@@ -31,6 +29,8 @@ export function ExecutiveDashboard() {
     if (!apiEnabled) return;
     void jucsoApi.getExecutiveStats().then(setStats).catch(console.error);
   }, [apiEnabled, complaints]);
+
+  if (!user) return null;
 
   const ministries = [...new Set(complaints.map((c) => c.ministry))];
   const filtered = complaints.filter((c) => {

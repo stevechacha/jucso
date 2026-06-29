@@ -27,14 +27,8 @@ export function StudentDashboard() {
   const { user, complaints, setComplaints, suggestions, setSuggestions, clubs, setClubs, events, setEvents, apiEnabled, refreshPortalData, setPage } =
     useApp();
   const categories = useComplaintCategories();
-
-  if (!user) return null;
-
   const { t } = useLanguage();
   const [tab, setTab] = useDashboardTab(STUDENT_TABS, DEFAULT_TAB);
-  const myComplaints = complaints.filter((c) => c.studentReg === user.reg);
-  const mySuggestions = suggestions.filter((s) => s.studentName === user.name);
-
   const [newCat, setNewCat] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newUrgent, setNewUrgent] = useState(false);
@@ -46,6 +40,11 @@ export function StudentDashboard() {
   const [sugDesc, setSugDesc] = useState("");
   const [sugSubmitted, setSugSubmitted] = useState(false);
   const [lastSuggestionId, setLastSuggestionId] = useState<string | null>(null);
+
+  if (!user) return null;
+
+  const myComplaints = complaints.filter((c) => c.studentReg === user.reg);
+  const mySuggestions = suggestions.filter((s) => s.studentName === user.name);
 
   const submitComplaint = async () => {
     if (!newCat || !newDesc.trim()) return;
@@ -112,10 +111,10 @@ export function StudentDashboard() {
   };
 
   const stats = [
-    { icon: "📋", val: myComplaints.length, lab: "Total Complaints", color: "#1B2B6B" },
-    { icon: "⏳", val: myComplaints.filter((c) => c.status === "Pending").length, lab: "Pending", color: "#6B7280" },
-    { icon: "🔄", val: myComplaints.filter((c) => c.status === "In Progress").length, lab: "In Progress", color: "#F59E0B" },
-    { icon: "✅", val: myComplaints.filter((c) => c.status === "Resolved").length, lab: "Resolved", color: "#10B981" },
+    { icon: "📋", val: myComplaints.length, lab: t("totalComplaints"), color: "#1B2B6B" },
+    { icon: "⏳", val: myComplaints.filter((c) => c.status === "Pending").length, lab: t("pending"), color: "#6B7280" },
+    { icon: "🔄", val: myComplaints.filter((c) => c.status === "In Progress").length, lab: t("inProgress"), color: "#F59E0B" },
+    { icon: "✅", val: myComplaints.filter((c) => c.status === "Resolved").length, lab: t("resolved"), color: "#10B981" },
   ];
 
   return (
@@ -149,12 +148,12 @@ export function StudentDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <div className="lg:col-span-2 bg-white rounded-xl shadow-card overflow-hidden">
               <h2 className="px-5 py-4 border-b border-gray-100 font-display font-bold text-jucso-navy">
-                Recent Complaints
+                {t("recentComplaints")}
               </h2>
               <ComplaintTable complaints={myComplaints.slice(0, 3)} />
             </div>
             <div className="bg-white rounded-xl shadow-card p-5">
-              <TrackComplaintPanel regNumber={user.reg} title="Quick track" />
+              <TrackComplaintPanel regNumber={user.reg} title={t("quickTrack")} />
             </div>
           </div>
         </>
