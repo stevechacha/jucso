@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.core.mail import send_mail
 
-from core.models import Complaint, Suggestion
+from core.models import Complaint, Event, Suggestion
 from core.sms import send_sms
 
 
@@ -270,3 +270,103 @@ def send_complaint_submitted_sms(complaint: Complaint) -> None:
 def notify_complaint_submitted(complaint: Complaint) -> None:
     send_complaint_submitted_email(complaint)
     send_complaint_submitted_sms(complaint)
+
+
+def send_event_reminder_email(event: Event, student) -> None:
+    if not student.email:
+        return
+    frontend = settings.FRONTEND_URL.rstrip("/")
+    event_date = event.event_date.strftime("%b %d, %Y")
+    subject = f"Reminder: {event.title} is tomorrow"
+    lines = [
+        f"Hello {student.display_name},",
+        "",
+        f'This is a reminder that you registered for "{event.title}".',
+        f"Date: {event_date}",
+        f"Location: {event.location}",
+        "",
+        f"View your events: {frontend}/dashboard",
+        "",
+        "— JUCSO Digital Portal",
+    ]
+    send_mail(
+        subject,
+        "\n".join(lines),
+        settings.DEFAULT_FROM_EMAIL,
+        [student.email],
+        fail_silently=True,
+    )
+
+
+def send_event_reminder_sms(event: Event, student) -> None:
+    if not student.phone_number:
+        return
+    event_date = event.event_date.strftime("%b %d")
+    send_sms(
+        student.phone_number,
+        f'JUCSO reminder: "{event.title[:40]}" is on {event_date} at {event.location[:40]}.',
+    )
+
+
+def notify_event_reminder(registration) -> None:
+    from core.models import NotificationCategory
+    from core.portal_notifications import notify_user
+
+    event = registration.event
+    student = registration.student
+    send_event_reminder_email(event, student)
+    send_event_reminder_sms(event, student)
+    event_date = event.event_date.strftime("%b %d, %Y")
+    notify_user(
+        student,
+        title="Event tomorrow",
+        message=f'"{event.title}" is on {event_date} at {event.location}.',
+        category=NotificationCategory.EVENT,
+        link="/dashboard",
+    )
+
+
+def notify_complaint_escalated(complaint: Complaint, *, actor_name: str) -> None:
+    from django.contrib.auth import get_user_model
+
+    from core.models import NotificationCategory, UserRole
+    from core.portal_notifications import notify_admins, notify_executives
+
+    User = get_user_model()
+    frontend = settings.FRONTEND_URL.rstrip("/")
+    title = f"Complaint {complaint.tracking_id} escalated"
+    message = (
+        f"{actor_name} escalated complaint {complaint.tracking_id} "
+        f"({complaint.category}) for executive review."
+    )
+    notify_admins(title=title, message=message, category=NotificationCategory.COMPLAINT, link="/dashboard")
+    notify_executives(title=title, message=message, category=NotificationCategory.COMPLAINT, link="/dashboard")
+
+    recipients = set(_admin_notification_emails())
+    for email in User.objects.filter(role=UserRole.EXECUTIVE, is_active=True).exclude(email="").values_list(
+        "email", flat=True
+    ):
+        recipients.add(email)
+    if not recipients:
+        return
+
+    subject = f"Escalated complaint {complaint.tracking_id} — executive review"
+    lines = [
+        f"{actor_name} escalated complaint {complaint.tracking_id} to executive review.",
+        "",
+        f"Category: {complaint.category}",
+        f"Ministry: {complaint.ministry.name}",
+        f"Status: {complaint.status}",
+        f"Student: {complaint.student.display_name} ({complaint.student.reg_number})",
+        "",
+        f"Review in portal: {frontend}/dashboard",
+        "",
+        "— JUCSO Digital Portal",
+    ]
+    send_mail(
+        subject,
+        "\n".join(lines),
+        settings.DEFAULT_FROM_EMAIL,
+        list(recipients),
+        fail_silently=True,
+    )

@@ -24,8 +24,20 @@ function mapActivity(activity: import("./types").ApiComplaintActivity) {
 }
 
 export function mapComplaint(complaint: ApiComplaint): Complaint {
-  const { student_name, student_reg, supporting_document_url, is_confidential, due_at, is_overdue, activity, ...rest } =
-    complaint;
+  const {
+    student_name,
+    student_reg,
+    supporting_document_url,
+    is_confidential,
+    due_at,
+    is_overdue,
+    is_escalated,
+    activity,
+    satisfaction_rating,
+    satisfaction_comment,
+    can_rate,
+    ...rest
+  } = complaint;
   return {
     ...rest,
     studentName: student_name,
@@ -34,7 +46,11 @@ export function mapComplaint(complaint: ApiComplaint): Complaint {
     isConfidential: is_confidential ?? false,
     dueAt: due_at,
     isOverdue: is_overdue ?? false,
+    isEscalated: is_escalated ?? false,
     activity: activity?.map(mapActivity),
+    satisfactionRating: satisfaction_rating ?? undefined,
+    satisfactionComment: satisfaction_comment || undefined,
+    canRate: can_rate ?? false,
   };
 }
 

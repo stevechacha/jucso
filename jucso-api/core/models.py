@@ -89,6 +89,11 @@ class Complaint(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     due_at = models.DateTimeField(null=True, blank=True)
     sla_notified_at = models.DateTimeField(null=True, blank=True)
+    is_escalated = models.BooleanField(default=False)
+    escalated_at = models.DateTimeField(null=True, blank=True)
+    satisfaction_rating = models.PositiveSmallIntegerField(null=True, blank=True)
+    satisfaction_comment = models.TextField(blank=True)
+    rated_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-date_submitted"]
@@ -227,6 +232,7 @@ class EventRegistration(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="registrations")
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="event_registrations")
     registered_at = models.DateTimeField(auto_now_add=True)
+    reminder_sent_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         unique_together = ("event", "student")

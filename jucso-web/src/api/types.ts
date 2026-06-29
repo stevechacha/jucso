@@ -34,7 +34,11 @@ export interface ApiComplaint {
   supporting_document_url?: string;
   due_at?: string;
   is_overdue?: boolean;
+  is_escalated?: boolean;
   activity?: ApiComplaintActivity[];
+  satisfaction_rating?: number | null;
+  satisfaction_comment?: string;
+  can_rate?: boolean;
 }
 
 export interface ApiSuggestion {
@@ -145,6 +149,8 @@ export interface TransparencyStatsResponse {
   implemented_suggestions: number;
   pending_suggestions: number;
   suggestion_review_rate: number;
+  rated_complaints: number;
+  satisfaction_avg: number | null;
 }
 
 export interface PublicStatsResponse {
@@ -164,6 +170,17 @@ export interface MinisterWorkloadResponse {
   urgent_open: number;
   pending: number;
   in_progress: number;
+}
+
+export interface AttendeeListResponse {
+  name: string;
+  count: number;
+  attendees: Array<{
+    reg_number: string;
+    name: string;
+    email: string;
+    date: string;
+  }>;
 }
 
 export interface ComplaintCategoryOption {

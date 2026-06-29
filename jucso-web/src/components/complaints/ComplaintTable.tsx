@@ -2,16 +2,20 @@ import { Fragment, useState } from "react";
 import type { Complaint } from "@/types";
 import { ComplaintActivityTimeline } from "@/components/complaints/ComplaintActivityTimeline";
 import { ComplaintAttachmentLink } from "@/components/complaints/ComplaintAttachmentLink";
+import { ComplaintSatisfactionPanel } from "@/components/complaints/ComplaintSatisfactionPanel";
 import { ConfidentialBadge } from "@/components/complaints/ConfidentialBadge";
+import { EscalatedBadge } from "@/components/complaints/EscalatedBadge";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { useLanguage } from "@/context/LanguageContext";
 
 interface ComplaintTableProps {
   complaints: Complaint[];
   showResponse?: boolean;
+  allowRating?: boolean;
+  onRated?: () => void;
 }
 
-export function ComplaintTable({ complaints, showResponse = false }: ComplaintTableProps) {
+export function ComplaintTable({ complaints, showResponse = false, allowRating = false, onRated }: ComplaintTableProps) {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -51,6 +55,7 @@ export function ComplaintTable({ complaints, showResponse = false }: ComplaintTa
                       </span>
                     )}
                     {c.isConfidential && <ConfidentialBadge />}
+                    {c.isEscalated && <EscalatedBadge />}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-gray-700 max-w-[160px] truncate">{c.category}</td>
@@ -89,6 +94,9 @@ export function ComplaintTable({ complaints, showResponse = false }: ComplaintTa
                     {showResponse && !c.response && (
                       <div className="text-gray-400 text-xs italic">{t("noResponseYet")}</div>
                     )}
+                    {(allowRating || c.satisfactionRating) && c.status === "Resolved" ? (
+                      <ComplaintSatisfactionPanel complaint={c} onRated={onRated ? () => onRated() : undefined} />
+                    ) : null}
                   </td>
                 </tr>
               )}

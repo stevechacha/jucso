@@ -171,3 +171,180 @@ class PortalFeatureTests(APITestCase):
             due_at=timezone.now() - timedelta(days=3),
         )
         self.assertFalse(suggestion.is_overdue)
+
+    def test_student_can_rate_resolved_complaint(self):
+        from core.models import Complaint, ComplaintCategory, Ministry
+
+        ministry = Ministry.objects.get(name="Academics")
+        complaint = Complaint.objects.create(
+            tracking_id="JUC-RATE1",
+            student=self.student,
+            category=ComplaintCategory.ACADEMIC,
+            description="Resolved issue",
+            ministry=ministry,
+            status="Resolved",
+            response="Fixed.",
+        )
+        self.client.force_authenticate(user=self.student)
+        response = self.client.post(
+            f"/api/complaints/{complaint.tracking_id}/rate/",
+            {"rating": 4, "comment": "Quick fix, thanks"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        complaint.refresh_from_db()
+        self.assertEqual(complaint.satisfaction_rating, 4)
+        self.assertEqual(complaint.satisfaction_comment, "Quick fix, thanks")
+        self.assertFalse(response.data["can_rate"])
+
+    def test_cannot_rate_unresolved_complaint(self):
+        from core.models import Complaint, ComplaintCategory, Ministry
+
+        ministry = Ministry.objects.get(name="Academics")
+        complaint = Complaint.objects.create(
+            tracking_id="JUC-RATE2",
+            student=self.student,
+            category=ComplaintCategory.ACADEMIC,
+            description="Still open",
+            ministry=ministry,
+            status="Pending",
+        )
+        self.client.force_authenticate(user=self.student)
+        response = self.client.post(
+            f"/api/complaints/{complaint.tracking_id}/rate/",
+            {"rating": 3},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_transparency_includes_satisfaction_stats(self):
+        from core.models import Complaint, ComplaintCategory, Ministry
+
+        ministry = Ministry.objects.get(name="Academics")
+        Complaint.objects.create(
+            tracking_id="JUC-RATE3",
+            student=self.student,
+            category=ComplaintCategory.ACADEMIC,
+            description="Done",
+            ministry=ministry,
+            status="Resolved",
+            satisfaction_rating=5,
+        )
+        response = self.client.get("/api/stats/transparency/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["rated_complaints"], 1)
+        self.assertEqual(response.data["satisfaction_avg"], 5.0)
+
+    def test_admin_can_list_club_members(self):
+        from core.models import Club, ClubMembership
+
+        club = Club.objects.create(
+            name="Chess Club",
+            description="Strategy games",
+            leader="Mr. Msomi",
+            category="Recreation",
+        )
+        ClubMembership.objects.create(club=club, student=self.student)
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(f"/api/admin/clubs/{club.pk}/members/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["attendees"][0]["reg_number"], self.student.reg_number)
+
+    def test_admin_can_list_event_registrants(self):
+        from core.models import Event, EventRegistration
+
+        event = Event.objects.create(
+            title="Career Fair",
+            description="Meet employers",
+            location="Student Centre",
+            event_date=timezone.localdate() + timedelta(days=7),
+            capacity=100,
+        )
+        EventRegistration.objects.create(event=event, student=self.student)
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(f"/api/admin/events/{event.pk}/registrants/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["attendees"][0]["name"], self.student.display_name)
+
+    def test_student_cannot_list_club_members(self):
+        from core.models import Club
+
+        club = Club.objects.create(
+            name="Private Club",
+            description="Test",
+            leader="Leader",
+            category="Academic",
+        )
+        self.client.force_authenticate(user=self.student)
+        response = self.client.get(f"/api/admin/clubs/{club.pk}/members/")
+        self.assertEqual(response.status_code, 403)
+
+    def test_send_event_reminders_command(self):
+        from unittest.mock import patch
+
+        from core.models import Event, EventRegistration
+
+        event = Event.objects.create(
+            title="Tomorrow Gala",
+            description="Gala night",
+            location="Main Hall",
+            event_date=timezone.localdate() + timedelta(days=1),
+            capacity=100,
+        )
+        EventRegistration.objects.create(event=event, student=self.student)
+        from django.core.management import call_command
+
+        with patch("core.management.commands.send_event_reminders.notify_event_reminder") as mock_notify:
+            call_command("send_event_reminders")
+        self.student.refresh_from_db()
+        registration = EventRegistration.objects.get(event=event, student=self.student)
+        self.assertIsNotNone(registration.reminder_sent_at)
+        mock_notify.assert_called_once()
+
+    def test_minister_can_escalate_complaint(self):
+        from core.models import Complaint, ComplaintCategory, Ministry, PortalNotification
+
+        ministry = Ministry.objects.get(name="Academics")
+        complaint = Complaint.objects.create(
+            tracking_id="JUC-ESC1",
+            student=self.student,
+            category=ComplaintCategory.ACADEMIC,
+            description="Unresolved issue",
+            ministry=ministry,
+            status="Pending",
+        )
+        executive = User.objects.create_user(
+            username="exec-esc",
+            reg_number="EXEC/ESC",
+            email="exec-esc@jucso.ac.tz",
+            password="ExecPass123!",
+            role=UserRole.EXECUTIVE,
+            email_verified=True,
+        )
+        self.client.force_authenticate(user=self.minister)
+        response = self.client.post(f"/api/complaints/{complaint.tracking_id}/escalate/")
+        self.assertEqual(response.status_code, 200)
+        complaint.refresh_from_db()
+        self.assertTrue(complaint.is_escalated)
+        self.assertTrue(response.data["is_escalated"])
+        self.assertTrue(
+            PortalNotification.objects.filter(user=executive, category=NotificationCategory.COMPLAINT).exists()
+        )
+
+    def test_cannot_escalate_resolved_complaint(self):
+        from core.models import Complaint, ComplaintCategory, Ministry
+
+        ministry = Ministry.objects.get(name="Academics")
+        complaint = Complaint.objects.create(
+            tracking_id="JUC-ESC2",
+            student=self.student,
+            category=ComplaintCategory.ACADEMIC,
+            description="Done",
+            ministry=ministry,
+            status="Resolved",
+        )
+        self.client.force_authenticate(user=self.minister)
+        response = self.client.post(f"/api/complaints/{complaint.tracking_id}/escalate/")
+        self.assertEqual(response.status_code, 400)

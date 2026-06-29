@@ -69,7 +69,7 @@ python manage.py export_portal_backup --output /tmp/jucso-backup.json
 python manage.py notify_overdue_complaints
 ```
 
-Also set `COMPLAINT_SLA_DAYS=7`, `SUGGESTION_SLA_DAYS=7`, `ADMIN_NOTIFICATION_EMAIL=admin@jucso.ac.tz`, and optional `SENTRY_DSN` for error monitoring.
+Also set `COMPLAINT_SLA_DAYS=7`, `SUGGESTION_SLA_DAYS=7`, `EVENT_REMINDER_DAYS=1`, `ADMIN_NOTIFICATION_EMAIL=admin@jucso.ac.tz`, and optional `SENTRY_DSN` for error monitoring.
 
 ### Railway cron service
 
@@ -80,7 +80,7 @@ Also set `COMPLAINT_SLA_DAYS=7`, `SUGGESTION_SLA_DAYS=7`, `ADMIN_NOTIFICATION_EM
 3. Share the same env vars as the main API (`DATABASE_URL`, SMTP, etc.).
 4. Set `BACKUP_OUTPUT_PATH=/tmp/jucso-backup.json` (or mount volume if you persist backups).
 
-The daily job runs export, overdue complaint alerts, and overdue suggestion alerts. Results appear in **Admin → System → View Job Logs**.
+The daily job runs export, overdue complaint alerts, overdue suggestion alerts, and event reminders. Results appear in **Admin → System → View Job Logs**.
 
 ---
 
@@ -115,6 +115,8 @@ Redeploy after changing `VITE_API_URL` (it is baked in at build time).
 | Public complaint tracking + activity timeline | ✅ Built |
 | Complaint SLA (7-day) + overdue alerts | ✅ Built — cron: `notify_overdue_complaints` |
 | Suggestion SLA (7-day) + overdue alerts | ✅ Built — cron: `notify_overdue_suggestions` |
+| Event registration reminders | ✅ Built — cron: `send_event_reminders` (default: 1 day before) |
+| Complaint escalation to executive | ✅ Built — minister dashboard + activity log |
 | Student email verification | ✅ Built |
 | College registry verification | ✅ Built — set `STUDENT_REGISTRY_CSV` or `STUDENT_REGISTRY_API_URL` |
 | Transparency reports + suggestion stats | ✅ Built |
@@ -130,7 +132,9 @@ Redeploy after changing `VITE_API_URL` (it is baked in at build time).
 | In-app notification center | ✅ Built — bell icon when signed in |
 | News article detail pages | ✅ Built — `/news/N01` |
 | Events calendar export (.ics) | ✅ Built — Events page download link |
-| Automated tests (API) | ✅ 69 tests in CI |
+| Complaint satisfaction ratings | ✅ Built — students rate resolved complaints; shown on transparency page |
+| Club/event attendee lists | ✅ Built — Admin → Content → Members / Attendees + CSV export |
+| Automated tests (API) | ✅ 80 tests in CI |
 
 ### Production configuration still required
 

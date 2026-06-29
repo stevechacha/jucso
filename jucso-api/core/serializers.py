@@ -241,6 +241,8 @@ class ComplaintSerializer(serializers.ModelSerializer):
     date = serializers.SerializerMethodField()
     due_at = serializers.SerializerMethodField()
     is_overdue = serializers.BooleanField(read_only=True)
+    is_escalated = serializers.BooleanField(read_only=True)
+    can_rate = serializers.SerializerMethodField()
     supporting_document_url = serializers.SerializerMethodField()
     activity = ComplaintActivitySerializer(source="activities", many=True, read_only=True)
 
@@ -260,6 +262,10 @@ class ComplaintSerializer(serializers.ModelSerializer):
             "response",
             "urgent",
             "is_confidential",
+            "is_escalated",
+            "satisfaction_rating",
+            "satisfaction_comment",
+            "can_rate",
             "supporting_document_url",
             "activity",
         )
@@ -282,6 +288,22 @@ class ComplaintSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.supporting_document.url)
             return obj.supporting_document.url
         return None
+
+    def get_can_rate(self, obj: Complaint) -> bool:
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if not user or not user.is_authenticated or user.role != UserRole.STUDENT:
+            return False
+        if obj.student_id != user.pk:
+            return False
+        if obj.status != ComplaintStatus.RESOLVED:
+            return False
+        return obj.satisfaction_rating is None
+
+
+class ComplaintRateSerializer(serializers.Serializer):
+    rating = serializers.IntegerField(min_value=1, max_value=5)
+    comment = serializers.CharField(required=False, allow_blank=True, max_length=500, trim_whitespace=True)
 
 
 class ComplaintCreateSerializer(serializers.Serializer):
@@ -506,6 +528,19 @@ class AdminClubUpdateSerializer(serializers.Serializer):
     description = serializers.CharField(trim_whitespace=True, required=False)
     leader = serializers.CharField(max_length=100, trim_whitespace=True, required=False)
     category = serializers.CharField(max_length=50, trim_whitespace=True, required=False)
+
+
+class AttendeeSerializer(serializers.Serializer):
+    reg_number = serializers.CharField()
+    name = serializers.CharField()
+    email = serializers.EmailField()
+    date = serializers.CharField()
+
+
+class AttendeeListSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    count = serializers.IntegerField()
+    attendees = AttendeeSerializer(many=True)
 
 
 class AdminEventUpdateSerializer(serializers.Serializer):

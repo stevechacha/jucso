@@ -40,3 +40,12 @@ def notify_admins(*, title: str, message: str, category: str = NotificationCateg
         if notify_user(admin, title=title, message=message, category=category, link=link):
             count += 1
     return count
+
+
+def notify_executives(*, title: str, message: str, category: str = NotificationCategory.SYSTEM, link: str = "") -> int:
+    executives = User.objects.filter(role=UserRole.EXECUTIVE, is_active=True)
+    count = 0
+    for executive in executives:
+        if notify_user(executive, title=title, message=message, category=category, link=link):
+            count += 1
+    return count

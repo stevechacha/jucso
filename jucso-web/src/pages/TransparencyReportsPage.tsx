@@ -5,8 +5,10 @@ import type { TransparencyStatsResponse } from "@/api/types";
 import { StatCard } from "@/components/ui/StatCard";
 import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/layout/Hero";
+import { useLanguage } from "@/context/LanguageContext";
 
 export function TransparencyReportsPage() {
+  const { t } = useLanguage();
   const [stats, setStats] = useState<TransparencyStatsResponse | null>(null);
   const [err, setErr] = useState("");
 
@@ -42,6 +44,17 @@ export function TransparencyReportsPage() {
                 <StatCard icon="🔓" value={stats.open_complaints} label="Open" color="#F59E0B" />
                 <StatCard icon="📈" value={`${stats.resolution_rate}%`} label="Overall rate" color="#00B4C6" />
               </div>
+              {stats.rated_complaints > 0 && stats.satisfaction_avg != null && (
+                <div className="grid grid-cols-2 md:grid-cols-2 gap-3 mb-8 max-w-lg">
+                  <StatCard
+                    icon="⭐"
+                    value={`${stats.satisfaction_avg}/5`}
+                    label={t("avgSatisfaction")}
+                    color="#F5A623"
+                  />
+                  <StatCard icon="📝" value={stats.rated_complaints} label={t("ratedComplaints")} color="#1B2B6B" />
+                </div>
+              )}
               <div className="bg-white rounded-xl shadow-card p-6 mb-8">
                 <h2 className="font-display font-bold text-jucso-navy mb-5">Ministry resolution rates</h2>
                 <div className="space-y-4">

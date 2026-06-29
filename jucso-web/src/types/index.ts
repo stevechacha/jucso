@@ -68,7 +68,11 @@ export interface Complaint {
   supportingDocumentUrl?: string;
   dueAt?: string;
   isOverdue?: boolean;
+  isEscalated?: boolean;
   activity?: ComplaintActivity[];
+  satisfactionRating?: number;
+  satisfactionComment?: string;
+  canRate?: boolean;
 }
 
 export interface Suggestion {

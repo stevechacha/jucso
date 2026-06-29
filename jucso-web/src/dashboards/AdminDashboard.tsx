@@ -15,6 +15,7 @@ import { Input, Select, Textarea } from "@/components/ui/FormFields";
 import { StatCard } from "@/components/ui/StatCard";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { SuggestionReviewPanel } from "@/components/suggestions/SuggestionReviewPanel";
+import { AttendeeListPanel } from "@/components/admin/AttendeeListPanel";
 import { ProfilePanel } from "@/components/profile/ProfilePanel";
 import { ComplaintTable } from "@/components/complaints/ComplaintTable";
 import { useLanguage } from "@/context/LanguageContext";
@@ -1139,6 +1140,8 @@ export function AdminDashboard() {
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
   const [editingClubId, setEditingClubId] = useState<string | null>(null);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [viewingClubMembersId, setViewingClubMembersId] = useState<string | null>(null);
+  const [viewingEventRegistrantsId, setViewingEventRegistrantsId] = useState<string | null>(null);
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("all");
 
@@ -1662,11 +1665,24 @@ export function AdminDashboard() {
                         <div className="text-gray-400 text-[10px]">{c.category} · {c.members} members</div>
                       </div>
                       {apiEnabled && (
-                        <div className="flex gap-1 shrink-0">
+                        <div className="flex gap-1 shrink-0 flex-wrap justify-end">
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => setEditingClubId(editingClubId === c.id ? null : c.id)}
+                            onClick={() => {
+                              setViewingClubMembersId(viewingClubMembersId === c.id ? null : c.id);
+                              setEditingClubId(null);
+                            }}
+                          >
+                            {viewingClubMembersId === c.id ? "Hide" : "Members"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setEditingClubId(editingClubId === c.id ? null : c.id);
+                              setViewingClubMembersId(null);
+                            }}
                           >
                             {editingClubId === c.id ? "Close" : "Edit"}
                           </Button>
@@ -1691,6 +1707,9 @@ export function AdminDashboard() {
                         }}
                       />
                     )}
+                    {viewingClubMembersId === c.id && (
+                      <AttendeeListPanel kind="club" itemId={c.id} itemName={c.name} />
+                    )}
                   </li>
                 ))}
               </ul>
@@ -1707,11 +1726,24 @@ export function AdminDashboard() {
                         <div className="text-gray-400 text-[10px]">{e.date} · {e.location}</div>
                       </div>
                       {apiEnabled && (
-                        <div className="flex gap-1 shrink-0">
+                        <div className="flex gap-1 shrink-0 flex-wrap justify-end">
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => setEditingEventId(editingEventId === e.id ? null : e.id)}
+                            onClick={() => {
+                              setViewingEventRegistrantsId(viewingEventRegistrantsId === e.id ? null : e.id);
+                              setEditingEventId(null);
+                            }}
+                          >
+                            {viewingEventRegistrantsId === e.id ? "Hide" : "Attendees"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setEditingEventId(editingEventId === e.id ? null : e.id);
+                              setViewingEventRegistrantsId(null);
+                            }}
                           >
                             {editingEventId === e.id ? "Close" : "Edit"}
                           </Button>
@@ -1735,6 +1767,9 @@ export function AdminDashboard() {
                           void refreshPortalData();
                         }}
                       />
+                    )}
+                    {viewingEventRegistrantsId === e.id && (
+                      <AttendeeListPanel kind="event" itemId={e.id} itemName={e.title} />
                     )}
                   </li>
                 ))}

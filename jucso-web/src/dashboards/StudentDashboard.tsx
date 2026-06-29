@@ -165,7 +165,12 @@ export function StudentDashboard() {
           <h2 className="px-5 py-4 border-b border-gray-100 font-display font-bold text-jucso-navy">
             My Complaints ({myComplaints.length})
           </h2>
-          <ComplaintTable complaints={myComplaints} showResponse />
+          <ComplaintTable
+            complaints={myComplaints}
+            showResponse
+            allowRating
+            onRated={() => void refreshPortalData()}
+          />
         </div>
       )}
 

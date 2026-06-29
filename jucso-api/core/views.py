@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Avg, Count, Q
 from django.utils import timezone
 from rest_framework import generics, status, views
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -35,7 +35,7 @@ from core.models import (
     SuggestionStatus,
     UserRole,
 )
-from core.permissions import AUTHENTICATED, IsAdminRole, IsLeader, IsStudent, PortalAccessPermission
+from core.permissions import AUTHENTICATED, IsAdminRole, IsLeader, IsMinister, IsStudent, PortalAccessPermission
 from core.querysets import complaints_for_user, suggestions_for_user
 from core.ics import ics_response
 from core.portal_notifications import notify_ministry_leaders, notify_user
@@ -56,6 +56,7 @@ from core.serializers import (
     ClubSerializer,
     ChangePasswordSerializer,
     ComplaintCreateSerializer,
+    ComplaintRateSerializer,
     ComplaintSerializer,
     ComplaintTrackRequestSerializer,
     ComplaintTrackSerializer,
@@ -73,6 +74,7 @@ from core.serializers import (
     PortalNotificationSerializer,
     AdminAnnouncementCreateSerializer,
     AdminAnnouncementUpdateSerializer,
+    AttendeeListSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     ProfileUpdateSerializer,
@@ -86,6 +88,7 @@ from core.serializers import (
 )
 from core.services import create_complaint, create_portal_user
 from core.notifications import (
+    notify_complaint_escalated,
     notify_complaint_submitted,
     notify_complaint_update,
     notify_contact_message,
@@ -96,6 +99,36 @@ from core.storage import StorageError, get_storage
 from core.throttling import AuthRateThrottle, ComplaintCreateRateThrottle, ContactRateThrottle, WriteRateThrottle
 
 User = get_user_model()
+
+
+def _club_members_payload(club: Club) -> dict:
+    attendees = []
+    for membership in ClubMembership.objects.filter(club=club).select_related("student").order_by("joined_at"):
+        student = membership.student
+        attendees.append(
+            {
+                "reg_number": student.reg_number,
+                "name": student.display_name,
+                "email": student.email,
+                "date": membership.joined_at.strftime("%b %d, %Y"),
+            }
+        )
+    return {"name": club.name, "count": len(attendees), "attendees": attendees}
+
+
+def _event_registrants_payload(event: Event) -> dict:
+    attendees = []
+    for registration in EventRegistration.objects.filter(event=event).select_related("student").order_by("registered_at"):
+        student = registration.student
+        attendees.append(
+            {
+                "reg_number": student.reg_number,
+                "name": student.display_name,
+                "email": student.email,
+                "date": registration.registered_at.strftime("%b %d, %Y"),
+            }
+        )
+    return {"name": event.title, "count": len(attendees), "attendees": attendees}
 
 
 def _initials_for_name(name: str) -> str:
@@ -506,6 +539,80 @@ class ComplaintDetailView(generics.RetrieveUpdateAPIView):
             )
 
         return Response(ComplaintSerializer(instance, context={"request": request}).data)
+
+
+class ComplaintRateView(views.APIView):
+    permission_classes = [*AUTHENTICATED, IsStudent]
+
+    def post(self, request, tracking_id: str):
+        try:
+            complaint = Complaint.objects.select_related("student", "ministry").get(
+                tracking_id=tracking_id.strip().upper(),
+                student=request.user,
+            )
+        except Complaint.DoesNotExist:
+            return Response({"detail": "Complaint not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if complaint.status != ComplaintStatus.RESOLVED:
+            return Response(
+                {"detail": "You can only rate complaints that have been resolved."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if complaint.satisfaction_rating is not None:
+            return Response({"detail": "You have already rated this complaint."}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = ComplaintRateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        complaint.satisfaction_rating = data["rating"]
+        complaint.satisfaction_comment = data.get("comment", "")
+        complaint.rated_at = timezone.now()
+        complaint.save(update_fields=["satisfaction_rating", "satisfaction_comment", "rated_at"])
+
+        log_complaint_activity(
+            complaint=complaint,
+            action="Rated",
+            detail=f"{data['rating']}/5 stars",
+            actor=request.user,
+        )
+
+        return Response(ComplaintSerializer(complaint, context={"request": request}).data)
+
+
+class ComplaintEscalateView(views.APIView):
+    permission_classes = [*AUTHENTICATED, IsLeader]
+
+    def post(self, request, tracking_id: str):
+        try:
+            complaint = Complaint.objects.select_related("student", "ministry").get(
+                tracking_id=tracking_id.strip().upper()
+            )
+        except Complaint.DoesNotExist:
+            return Response({"detail": "Complaint not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if complaint.status == ComplaintStatus.RESOLVED:
+            return Response({"detail": "Resolved complaints cannot be escalated."}, status=status.HTTP_400_BAD_REQUEST)
+        if complaint.is_escalated:
+            return Response({"detail": "This complaint has already been escalated."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+        if user.role == UserRole.MINISTER and complaint.ministry.name != user.ministry:
+            return Response({"detail": "You can only escalate complaints in your ministry."}, status=status.HTTP_403_FORBIDDEN)
+
+        complaint.is_escalated = True
+        complaint.escalated_at = timezone.now()
+        complaint.save(update_fields=["is_escalated", "escalated_at"])
+
+        log_complaint_activity(
+            complaint=complaint,
+            action="Escalated",
+            detail="Forwarded to Executive for review",
+            actor=user,
+        )
+        notify_complaint_escalated(complaint, actor_name=user.display_name)
+
+        return Response(ComplaintSerializer(complaint, context={"request": request}).data)
 
 
 class ComplaintTrackView(views.APIView):
@@ -980,6 +1087,9 @@ class TransparencyStatsView(views.APIView):
         open_suggestions = all_suggestions.exclude(
             status__in=[SuggestionStatus.IMPLEMENTED, SuggestionStatus.DECLINED]
         )
+        rated_complaints = complaints.filter(satisfaction_rating__isnull=False)
+        rated_count = rated_complaints.count()
+        satisfaction_avg = rated_complaints.aggregate(avg=Avg("satisfaction_rating"))["avg"]
         return Response(
             {
                 "total_complaints": total,
@@ -994,6 +1104,8 @@ class TransparencyStatsView(views.APIView):
                 "suggestion_review_rate": round((implemented_suggestions / total_suggestions) * 100)
                 if total_suggestions
                 else 0,
+                "rated_complaints": rated_count,
+                "satisfaction_avg": round(float(satisfaction_avg), 1) if satisfaction_avg is not None else None,
             }
         )
 
@@ -1215,6 +1327,17 @@ class AdminClubDetailView(views.APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class AdminClubMembersView(views.APIView):
+    permission_classes = [*AUTHENTICATED, IsLeader]
+
+    def get(self, request, pk: int):
+        try:
+            club = Club.objects.get(pk=pk)
+        except Club.DoesNotExist:
+            return Response({"detail": "Club not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(AttendeeListSerializer(_club_members_payload(club)).data)
+
+
 class AdminEventCreateView(views.APIView):
     permission_classes = [*AUTHENTICATED, IsAdminRole]
 
@@ -1257,6 +1380,17 @@ class AdminEventDetailView(views.APIView):
         event.is_active = False
         event.save(update_fields=["is_active"])
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AdminEventRegistrantsView(views.APIView):
+    permission_classes = [*AUTHENTICATED, IsLeader]
+
+    def get(self, request, pk: int):
+        try:
+            event = Event.objects.get(pk=pk)
+        except Event.DoesNotExist:
+            return Response({"detail": "Event not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(AttendeeListSerializer(_event_registrants_payload(event)).data)
 
 
 class AdminBackupView(views.APIView):

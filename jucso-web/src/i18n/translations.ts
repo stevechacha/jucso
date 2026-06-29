@@ -74,6 +74,15 @@ const en = {
   registryStatus: "Student registry: {status}",
   registryOn: "enabled",
   registryOff: "not configured",
+  rateResolution: "How was the resolution?",
+  yourRating: "Your rating",
+  ratingCommentOptional: "Optional comment",
+  submitRating: "Submit rating",
+  submittingRating: "Submitting…",
+  ratingThanks: "Thank you for your feedback!",
+  ratingFailed: "Could not submit rating.",
+  avgSatisfaction: "Avg. satisfaction",
+  ratedComplaints: "Rated complaints",
 } as const;
 
 const sw: Record<keyof typeof en, string> = {
@@ -150,6 +159,15 @@ const sw: Record<keyof typeof en, string> = {
   registryStatus: "Daftari la wanafunzi: {status}",
   registryOn: "imewashwa",
   registryOff: "haijasanidiwa",
+  rateResolution: "Uamuzi ulikuwaje?",
+  yourRating: "Ukadiriaji wako",
+  ratingCommentOptional: "Maoni (si lazima)",
+  submitRating: "Wasilisha ukadiriaji",
+  submittingRating: "Inawasilisha…",
+  ratingThanks: "Asante kwa maoni yako!",
+  ratingFailed: "Imeshindwa kuwasilisha ukadiriaji.",
+  avgSatisfaction: "Ukadiriaji wa wastani",
+  ratedComplaints: "Malalamiko yaliyokadiriwa",
 };
 
 export const translations = { en, sw } as const;

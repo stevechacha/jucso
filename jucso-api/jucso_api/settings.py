@@ -184,6 +184,7 @@ SUPABASE_SIGNED_URL_TTL = int(os.environ.get("SUPABASE_SIGNED_URL_TTL", "3600"))
 
 COMPLAINT_SLA_DAYS = int(os.environ.get("COMPLAINT_SLA_DAYS", "7"))
 SUGGESTION_SLA_DAYS = int(os.environ.get("SUGGESTION_SLA_DAYS", "7"))
+EVENT_REMINDER_DAYS = int(os.environ.get("EVENT_REMINDER_DAYS", "1"))
 ADMIN_NOTIFICATION_EMAIL = os.environ.get("ADMIN_NOTIFICATION_EMAIL", "")
 _allowed_domains = os.environ.get("ALLOWED_EMAIL_DOMAINS", "")
 ALLOWED_EMAIL_DOMAINS = [d.strip() for d in _allowed_domains.split(",") if d.strip()]

@@ -184,6 +184,21 @@ export const jucsoApi = {
     return mapComplaint(complaint);
   },
 
+  async rateComplaint(id: string, data: { rating: number; comment?: string }) {
+    const complaint = await apiRequest<ApiComplaint>(`/api/complaints/${encodeURIComponent(id)}/rate/`, {
+      method: "POST",
+      body: data,
+    });
+    return mapComplaint(complaint);
+  },
+
+  async escalateComplaint(id: string) {
+    const complaint = await apiRequest<ApiComplaint>(`/api/complaints/${encodeURIComponent(id)}/escalate/`, {
+      method: "POST",
+    });
+    return mapComplaint(complaint);
+  },
+
   async updateSuggestion(pk: number, data: { status: string; response?: string }) {
     const suggestion = await apiRequest<ApiSuggestion>(`/api/suggestions/${pk}/`, {
       method: "PATCH",
@@ -539,5 +554,15 @@ export const jucsoApi = {
 
   getSystemStatus() {
     return apiRequest<import("@/api/types").AdminSystemStatusResponse>("/api/admin/system-status/");
+  },
+
+  getClubMembers(clubId: string) {
+    const pk = parseInt(clubId.replace(/^CLB-/i, ""), 10);
+    return apiRequest<import("@/api/types").AttendeeListResponse>(`/api/admin/clubs/${pk}/members/`);
+  },
+
+  getEventRegistrants(eventId: string) {
+    const pk = parseInt(eventId.replace(/^EVT-/i, ""), 10);
+    return apiRequest<import("@/api/types").AttendeeListResponse>(`/api/admin/events/${pk}/registrants/`);
   },
 };
