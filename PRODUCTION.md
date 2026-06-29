@@ -138,7 +138,7 @@ Redeploy after changing `VITE_API_URL` (it is baked in at build time).
 | Contact inbox reply | ✅ Built — Admin → Overview → reply by email |
 | Contact inbox delete + CSV export | ✅ Built — Admin → Overview → Contact Inbox |
 | Backup restore (content merge) | ✅ Built — Admin → System → upload JSON backup |
-| Automated tests (API) | ✅ 84 tests in CI |
+| Automated tests (API) | ✅ 86 tests in CI |
 
 ### Production configuration still required
 

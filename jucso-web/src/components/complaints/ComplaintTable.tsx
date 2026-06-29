@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type { Complaint } from "@/types";
 import { ComplaintActivityTimeline } from "@/components/complaints/ComplaintActivityTimeline";
 import { ComplaintAttachmentLink } from "@/components/complaints/ComplaintAttachmentLink";
@@ -13,11 +13,22 @@ interface ComplaintTableProps {
   showResponse?: boolean;
   allowRating?: boolean;
   onRated?: () => void;
+  highlightId?: string | null;
 }
 
-export function ComplaintTable({ complaints, showResponse = false, allowRating = false, onRated }: ComplaintTableProps) {
+export function ComplaintTable({
+  complaints,
+  showResponse = false,
+  allowRating = false,
+  onRated,
+  highlightId = null,
+}: ComplaintTableProps) {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (highlightId) setExpanded(highlightId);
+  }, [highlightId]);
 
   if (complaints.length === 0) {
     return <div className="p-8 text-center text-gray-400 text-sm">No complaints found.</div>;

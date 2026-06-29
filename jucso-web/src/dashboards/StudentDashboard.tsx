@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useDashboardTab } from "@/hooks/useDashboardTab";
+import { useComplaintHighlight } from "@/hooks/useComplaintHighlight";
 import { useComplaintCategories } from "@/hooks/useComplaintCategories";
 import { jucsoApi } from "@/api/jucsoApi";
 import { useApp } from "@/context/AppContext";
@@ -40,6 +41,17 @@ export function StudentDashboard() {
   const [sugDesc, setSugDesc] = useState("");
   const [sugSubmitted, setSugSubmitted] = useState(false);
   const [lastSuggestionId, setLastSuggestionId] = useState<string | null>(null);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+
+  const onHighlight = useCallback(
+    (complaintId: string, tabKey?: string) => {
+      setTab(tabKey ? (tabKey as TranslationKey) : "tabStudentMyComplaints");
+      setHighlightId(complaintId);
+    },
+    [setTab],
+  );
+
+  useComplaintHighlight(onHighlight);
 
   if (!user) return null;
 
@@ -168,6 +180,7 @@ export function StudentDashboard() {
             complaints={myComplaints}
             showResponse
             allowRating
+            highlightId={highlightId}
             onRated={() => void refreshPortalData()}
           />
         </div>

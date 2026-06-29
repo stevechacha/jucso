@@ -421,3 +421,63 @@ class PortalFeatureTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertGreaterEqual(response.data["escalated"], 1)
         self.assertGreaterEqual(len(response.data["escalated_issues"]), 1)
+
+    def test_escalation_notification_includes_deep_link(self):
+        from core.models import Complaint, ComplaintCategory, PortalNotification
+
+        ministry = Ministry.objects.get(name="Academics")
+        complaint = Complaint.objects.create(
+            tracking_id="JUC-DEEP",
+            student=self.student,
+            category=ComplaintCategory.ACADEMIC,
+            description="Needs executive review",
+            ministry=ministry,
+            status="Pending",
+        )
+        executive = User.objects.create_user(
+            username="exec-deep",
+            reg_number="EXEC/DEEP",
+            email="exec-deep@jucso.ac.tz",
+            password="ExecPass123!",
+            role=UserRole.EXECUTIVE,
+            email_verified=True,
+        )
+        self.client.force_authenticate(user=self.minister)
+        response = self.client.post(f"/api/complaints/{complaint.tracking_id}/escalate/")
+        self.assertEqual(response.status_code, 200)
+        notification = PortalNotification.objects.get(user=executive, category=NotificationCategory.COMPLAINT)
+        self.assertIn("c=JUC-DEEP", notification.link)
+        self.assertIn("tab=tabExecutiveEscalated", notification.link)
+
+    def test_executive_can_update_escalated_complaint(self):
+        from core.models import Complaint, ComplaintCategory
+
+        ministry = Ministry.objects.get(name="Academics")
+        complaint = Complaint.objects.create(
+            tracking_id="JUC-EXUP",
+            student=self.student,
+            category=ComplaintCategory.ACADEMIC,
+            description="Escalated for executive",
+            ministry=ministry,
+            status="Pending",
+            is_escalated=True,
+            escalated_at=timezone.now(),
+        )
+        executive = User.objects.create_user(
+            username="exec-update",
+            reg_number="EXEC/UPD",
+            email="exec-update@jucso.ac.tz",
+            password="ExecPass123!",
+            role=UserRole.EXECUTIVE,
+            email_verified=True,
+        )
+        self.client.force_authenticate(user=executive)
+        response = self.client.patch(
+            f"/api/complaints/{complaint.tracking_id}/",
+            {"status": "In Progress", "response": "Executive is reviewing this case."},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        complaint.refresh_from_db()
+        self.assertEqual(complaint.status, "In Progress")
+        self.assertEqual(complaint.response, "Executive is reviewing this case.")

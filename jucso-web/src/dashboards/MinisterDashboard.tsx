@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { useDashboardTab } from "@/hooks/useDashboardTab";
+import { useComplaintHighlight } from "@/hooks/useComplaintHighlight";
 import { exportComplaintsCsv } from "@/lib/exportComplaintsCsv";
 import { jucsoApi } from "@/api/jucsoApi";
 import { useApp } from "@/context/AppContext";
@@ -33,6 +34,16 @@ export function MinisterDashboard() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [workload, setWorkload] = useState<MinisterWorkloadResponse | null>(null);
   const [escalating, setEscalating] = useState(false);
+
+  const onHighlight = useCallback(
+    (complaintId: string, tabKey?: string) => {
+      setSelectedId(complaintId);
+      setTab(tabKey ? (tabKey as TranslationKey) : "tabMinisterIncoming");
+    },
+    [setTab],
+  );
+
+  useComplaintHighlight(onHighlight);
 
   useEffect(() => {
     if (!apiEnabled) return;

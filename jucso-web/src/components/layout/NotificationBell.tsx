@@ -3,6 +3,7 @@ import { jucsoApi } from "@/api/jucsoApi";
 import { isApiEnabled } from "@/api/client";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { applyNotificationLink } from "@/lib/notificationNavigation";
 import type { PortalNotification } from "@/types";
 
 export function NotificationBell() {
@@ -53,7 +54,11 @@ export function NotificationBell() {
       setItems((prev) => prev.map((n) => (n.id === item.id ? { ...n, is_read: true } : n)));
     }
     setOpen(false);
-    if (item.link === "/dashboard") setPage("dashboard");
+    if (item.link?.startsWith("/dashboard")) {
+      applyNotificationLink(item.link, setPage);
+    } else if (item.link?.startsWith("/")) {
+      window.location.href = item.link;
+    }
   };
 
   return (

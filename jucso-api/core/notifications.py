@@ -338,7 +338,7 @@ def send_event_reminder_sms(event: Event, student) -> None:
 
 def notify_event_reminder(registration) -> None:
     from core.models import NotificationCategory
-    from core.portal_notifications import notify_user
+    from core.portal_notifications import notify_user, dashboard_complaint_link
 
     event = registration.event
     student = registration.student
@@ -350,7 +350,7 @@ def notify_event_reminder(registration) -> None:
         title="Event tomorrow",
         message=f'"{event.title}" is on {event_date} at {event.location}.',
         category=NotificationCategory.EVENT,
-        link="/dashboard",
+        link=dashboard_complaint_link(tab="tabStudentEvents"),
     )
 
 
@@ -358,7 +358,7 @@ def notify_complaint_escalated(complaint: Complaint, *, actor_name: str) -> None
     from django.contrib.auth import get_user_model
 
     from core.models import NotificationCategory, UserRole
-    from core.portal_notifications import notify_admins, notify_executives
+    from core.portal_notifications import notify_admins, notify_executives, dashboard_complaint_link
 
     User = get_user_model()
     frontend = settings.FRONTEND_URL.rstrip("/")
@@ -367,8 +367,18 @@ def notify_complaint_escalated(complaint: Complaint, *, actor_name: str) -> None
         f"{actor_name} escalated complaint {complaint.tracking_id} "
         f"({complaint.category}) for executive review."
     )
-    notify_admins(title=title, message=message, category=NotificationCategory.COMPLAINT, link="/dashboard")
-    notify_executives(title=title, message=message, category=NotificationCategory.COMPLAINT, link="/dashboard")
+    notify_admins(
+        title=title,
+        message=message,
+        category=NotificationCategory.COMPLAINT,
+        link=dashboard_complaint_link(complaint.tracking_id, tab="tabExecutiveEscalated"),
+    )
+    notify_executives(
+        title=title,
+        message=message,
+        category=NotificationCategory.COMPLAINT,
+        link=dashboard_complaint_link(complaint.tracking_id, tab="tabExecutiveEscalated"),
+    )
 
     recipients = set(_admin_notification_emails())
     for email in User.objects.filter(role=UserRole.EXECUTIVE, is_active=True).exclude(email="").values_list(

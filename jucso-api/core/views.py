@@ -38,7 +38,7 @@ from core.models import (
 from core.permissions import AUTHENTICATED, IsAdminRole, IsLeader, IsMinister, IsStudent, PortalAccessPermission
 from core.querysets import complaints_for_user, suggestions_for_user
 from core.ics import ics_response
-from core.portal_notifications import notify_ministry_leaders, notify_user
+from core.portal_notifications import notify_ministry_leaders, notify_user, dashboard_complaint_link
 from core.registry import registry_enabled
 from core.serializers import (
     AdminClubCreateSerializer,
@@ -433,14 +433,14 @@ class ComplaintListCreateView(generics.ListCreateAPIView):
             title="Complaint received",
             message=f"Your complaint {complaint.tracking_id} was submitted and routed to {complaint.ministry.name}.",
             category=NotificationCategory.COMPLAINT,
-            link="/dashboard",
+            link=dashboard_complaint_link(complaint.tracking_id, tab="tabStudentMyComplaints"),
         )
         notify_ministry_leaders(
             ministry_name=complaint.ministry.name,
             title="New complaint assigned",
             message=f"{complaint.tracking_id}: {complaint.category}",
             category=NotificationCategory.COMPLAINT,
-            link="/dashboard",
+            link=dashboard_complaint_link(complaint.tracking_id, tab="tabMinisterIncoming"),
         )
         return Response(
             ComplaintSerializer(complaint, context={"request": request}).data,
@@ -537,7 +537,7 @@ class ComplaintDetailView(generics.RetrieveUpdateAPIView):
                 title="Complaint updated",
                 message=f"Your complaint {instance.tracking_id} is now {instance.status}.",
                 category=NotificationCategory.COMPLAINT,
-                link="/dashboard",
+                link=dashboard_complaint_link(instance.tracking_id, tab="tabStudentMyComplaints"),
             )
 
         return Response(ComplaintSerializer(instance, context={"request": request}).data)
@@ -710,7 +710,7 @@ class SuggestionDetailView(generics.RetrieveUpdateAPIView):
                 title="Suggestion updated",
                 message=f'Your suggestion "{instance.title}" is now {instance.status}.',
                 category=NotificationCategory.SUGGESTION,
-                link="/dashboard",
+                link=dashboard_complaint_link(tab="tabStudentSuggestions"),
             )
         return Response(SuggestionSerializer(instance).data)
 

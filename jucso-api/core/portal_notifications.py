@@ -5,6 +5,17 @@ from core.models import NotificationCategory, PortalNotification, UserRole
 User = get_user_model()
 
 
+def dashboard_complaint_link(tracking_id: str = "", *, tab: str = "") -> str:
+    params: list[str] = []
+    if tracking_id:
+        params.append(f"c={tracking_id}")
+    if tab:
+        params.append(f"tab={tab}")
+    if not params:
+        return "/dashboard"
+    return f"/dashboard?{'&'.join(params)}"
+
+
 def notify_user(
     user,
     *,
