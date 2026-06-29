@@ -783,7 +783,9 @@ class ElectionSerializer(serializers.ModelSerializer):
         return f"CAND-{vote.candidate_id:03d}"
 
     def get_candidates(self, obj: Election):
-        show_results = not obj.is_open
+        show_results = self.context.get("show_results")
+        if show_results is None:
+            show_results = not obj.is_open
         return ElectionCandidateSerializer(
             obj.candidates.all(),
             many=True,
@@ -820,3 +822,13 @@ class AdminElectionCreateSerializer(serializers.Serializer):
         if attrs["ends_at"] <= attrs["starts_at"]:
             raise serializers.ValidationError("End time must be after start time.")
         return attrs
+
+
+class PushSubscribeSerializer(serializers.Serializer):
+    endpoint = serializers.URLField()
+    keys = serializers.DictField()
+
+    def validate_keys(self, value: dict) -> dict:
+        if "p256dh" not in value or "auth" not in value:
+            raise serializers.ValidationError("keys must include p256dh and auth.")
+        return value

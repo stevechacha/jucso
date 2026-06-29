@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 
 from core.models import NotificationCategory, PortalNotification, UserRole
+from core.push import send_push_to_user
 
 User = get_user_model()
 
@@ -26,13 +27,15 @@ def notify_user(
 ) -> PortalNotification | None:
     if not user or not user.is_active:
         return None
-    return PortalNotification.objects.create(
+    note = PortalNotification.objects.create(
         user=user,
         title=title,
         message=message,
         category=category,
         link=link,
     )
+    send_push_to_user(user, title=title, body=message, link=link)
+    return note
 
 
 def notify_ministry_leaders(*, ministry_name: str, title: str, message: str, category: str, link: str = "") -> int:

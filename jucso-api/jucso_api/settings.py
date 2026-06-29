@@ -193,6 +193,10 @@ STUDENT_REGISTRY_API_KEY = os.environ.get("STUDENT_REGISTRY_API_KEY", "").strip(
 STUDENT_REGISTRY_CSV = os.environ.get("STUDENT_REGISTRY_CSV", "").strip()
 BACKUP_OUTPUT_PATH = os.environ.get("BACKUP_OUTPUT_PATH", "/tmp/jucso-backup.json")
 
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
+VAPID_CLAIM_EMAIL = os.environ.get("VAPID_CLAIM_EMAIL", DEFAULT_FROM_EMAIL)
+
 SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
 if SENTRY_DSN:
     try:

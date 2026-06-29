@@ -660,10 +660,50 @@ export const jucsoApi = {
     return mapElection(election);
   },
 
-  async getAuditLogs() {
+  async getAuditLogs(action?: string) {
+    const query = action ? `?action=${encodeURIComponent(action)}` : "";
     const res = await apiRequest<import("@/api/types").PaginatedResponse<import("@/api/types").ApiAuditLog>>(
-      "/api/admin/audit-log/",
+      `/api/admin/audit-log/${query}`,
     );
     return res.results ?? [];
+  },
+
+  getPushPublicKey() {
+    return apiRequest<{ public_key: string }>("/api/push/vapid-public-key/");
+  },
+
+  subscribePush(subscription: PushSubscriptionJSON) {
+    return apiRequest<{ subscribed: boolean }>("/api/push/subscribe/", {
+      method: "POST",
+      body: subscription,
+    });
+  },
+
+  unsubscribePush(endpoint?: string) {
+    return apiRequest<{ unsubscribed: boolean }>("/api/push/subscribe/", {
+      method: "DELETE",
+      body: endpoint ? { endpoint } : {},
+    });
+  },
+
+  async getAdminElections() {
+    const res = await apiRequest<import("@/api/types").PaginatedResponse<import("@/api/types").ApiElection>>(
+      "/api/admin/elections/",
+    );
+    return (res.results ?? []).map(mapElection);
+  },
+
+  async createElection(payload: {
+    title: string;
+    description?: string;
+    starts_at: string;
+    ends_at: string;
+    candidates: Array<{ name: string; position?: string; manifesto?: string }>;
+  }) {
+    const election = await apiRequest<import("@/api/types").ApiElection>("/api/admin/elections/", {
+      method: "POST",
+      body: payload,
+    });
+    return mapElection(election);
   },
 };

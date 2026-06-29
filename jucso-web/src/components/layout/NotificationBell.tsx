@@ -10,6 +10,7 @@ import {
   requestNotificationPermission,
   showBrowserNotification,
 } from "@/lib/browserNotifications";
+import { canUseWebPush, subscribeToWebPush } from "@/lib/webPush";
 import type { PortalNotification } from "@/types";
 
 export function NotificationBell() {
@@ -80,6 +81,13 @@ export function NotificationBell() {
     }
   };
 
+  const enableAlerts = async () => {
+    await requestNotificationPermission();
+    if (canUseWebPush()) {
+      await subscribeToWebPush();
+    }
+  };
+
   return (
     <div className="relative" ref={panelRef}>
       <button
@@ -104,10 +112,10 @@ export function NotificationBell() {
               {canUseBrowserNotifications() && notificationPermission() === "default" && (
                 <button
                   type="button"
-                  onClick={() => void requestNotificationPermission()}
+                  onClick={() => void enableAlerts()}
                   className="text-[10px] text-jucso-teal font-semibold cursor-pointer hover:underline"
                 >
-                  {t("notifEnableBrowser")}
+                  {canUseWebPush() ? t("notifEnablePush") : t("notifEnableBrowser")}
                 </button>
               )}
               {unread > 0 && (

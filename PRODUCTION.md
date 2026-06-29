@@ -142,13 +142,15 @@ Redeploy after changing `VITE_API_URL` (it is baked in at build time).
 | Admin contact bulk actions | ✅ Built — mark all read + bulk delete selected |
 | Home page i18n | ✅ Built — hero, services, ministers, events, news, CTA |
 | Public pages i18n (About, Services, Events, Clubs, Documents) | ✅ Built — full EN/SW |
-| Student elections voting | ✅ Built — Elections tab + admin create API |
-| Admin audit log | ✅ Built — System → Job Logs |
+| Student elections voting | ✅ Built — Elections tab + admin create UI |
+| Admin audit log | ✅ Built — System → Job Logs with action filter |
 | Browser notification alerts | ✅ Built — permission + background alerts when tab hidden |
+| Web Push (VAPID) | ✅ Built — subscribe via service worker; server push on notify |
+| News & transparency page i18n | ✅ Built — News, News detail, Transparency Reports EN/SW |
 | Contact inbox reply | ✅ Built — Admin → Overview → reply by email |
 | Contact inbox delete + CSV export | ✅ Built — Admin → Overview → Contact Inbox |
 | Backup restore (content merge) | ✅ Built — Admin → System → upload JSON backup |
-| Automated tests (API) | ✅ 94 tests in CI |
+| Automated tests (API) | ✅ 97 tests in CI |
 
 ### Production configuration still required
 
@@ -159,6 +161,7 @@ Redeploy after changing `VITE_API_URL` (it is baked in at build time).
 | SMS | Optional Africa's Talking |
 | Railway cron | Nightly `run_daily_jobs.sh` |
 | Registry CSV/API | Optional — verify real student reg numbers |
+| VAPID keys | Web Push — run `npx web-push generate-vapid-keys` and set `VAPID_*` on API |
 | UptimeRobot | Monitor `/api/health/` |
 | Remove demo accounts | Before campus go-live |
 

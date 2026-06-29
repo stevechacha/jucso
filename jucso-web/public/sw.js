@@ -32,13 +32,34 @@ self.addEventListener("fetch", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  const link = event.notification.data?.link || "/";
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
       if (clients.length > 0) {
         clients[0].focus();
+        clients[0].navigate(link);
         return;
       }
-      return self.clients.openWindow("/");
+      return self.clients.openWindow(link);
+    }),
+  );
+});
+
+self.addEventListener("push", (event) => {
+  let payload = { title: "JUCSO", body: "", link: "/" };
+  try {
+    if (event.data) {
+      payload = { ...payload, ...event.data.json() };
+    }
+  } catch {
+    /* ignore malformed payload */
+  }
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: "/favicon.svg",
+      tag: "jucso-portal",
+      data: { link: payload.link },
     }),
   );
 });

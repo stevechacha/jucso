@@ -14,23 +14,23 @@ export function TransparencyReportsPage() {
 
   useEffect(() => {
     if (!isApiEnabled) {
-      setErr("Live transparency data requires the API.");
+      setErr(t("transparencyApiRequired"));
       return;
     }
     void jucsoApi
       .getTransparencyStats()
       .then(setStats)
-      .catch(() => setErr("Could not load transparency report."));
-  }, []);
+      .catch(() => setErr(t("transparencyLoadError")));
+  }, [t]);
 
   const rateColor = (rate: number) => (rate > 70 ? "#10B981" : rate > 40 ? "#F59E0B" : "#EF4444");
 
   return (
     <div>
       <Hero
-        badge="Transparency"
-        title="JUCSO performance reports"
-        subtitle="Quarterly-style visibility into how ministries handle student complaints — no personal data, just outcomes."
+        badge={t("transparencyPageBadge")}
+        title={t("transparencyPageTitle")}
+        subtitle={t("transparencyPageSubtitle")}
       />
 
       <section className="page-section bg-jucso-slate">
@@ -39,10 +39,10 @@ export function TransparencyReportsPage() {
           {stats && (
             <>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-                <StatCard icon="📊" value={stats.total_complaints} label="Total complaints" color="#1B2B6B" />
-                <StatCard icon="✅" value={stats.resolved_complaints} label="Resolved" color="#10B981" />
-                <StatCard icon="🔓" value={stats.open_complaints} label="Open" color="#F59E0B" />
-                <StatCard icon="📈" value={`${stats.resolution_rate}%`} label="Overall rate" color="#00B4C6" />
+                <StatCard icon="📊" value={stats.total_complaints} label={t("transparencyTotalComplaints")} color="#1B2B6B" />
+                <StatCard icon="✅" value={stats.resolved_complaints} label={t("transparencyResolved")} color="#10B981" />
+                <StatCard icon="🔓" value={stats.open_complaints} label={t("transparencyOpen")} color="#F59E0B" />
+                <StatCard icon="📈" value={`${stats.resolution_rate}%`} label={t("transparencyOverallRate")} color="#00B4C6" />
               </div>
               {stats.rated_complaints > 0 && stats.satisfaction_avg != null && (
                 <div className="grid grid-cols-2 md:grid-cols-2 gap-3 mb-8 max-w-lg">
@@ -56,14 +56,18 @@ export function TransparencyReportsPage() {
                 </div>
               )}
               <div className="bg-white rounded-xl shadow-card p-6 mb-8">
-                <h2 className="font-display font-bold text-jucso-navy mb-5">Ministry resolution rates</h2>
+                <h2 className="font-display font-bold text-jucso-navy mb-5">{t("transparencyMinistryRates")}</h2>
                 <div className="space-y-4">
                   {stats.ministry_stats.map((m) => (
                     <div key={m.name}>
                       <div className="flex justify-between text-xs mb-1">
                         <span className="font-semibold text-gray-700">{m.name}</span>
                         <span className="text-gray-400">
-                          {m.resolved}/{m.total} resolved ({m.rate}%)
+                          {t("transparencyResolvedOf", {
+                            resolved: String(m.resolved),
+                            total: String(m.total),
+                            rate: String(m.rate),
+                          })}
                         </span>
                       </div>
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -77,13 +81,13 @@ export function TransparencyReportsPage() {
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                <StatCard icon="💡" value={stats.total_suggestions} label="Suggestions received" color="#F5A623" />
-                <StatCard icon="✅" value={stats.implemented_suggestions} label="Implemented" color="#10B981" />
-                <StatCard icon="⏳" value={stats.pending_suggestions} label="Pending review" color="#6B7280" />
+                <StatCard icon="💡" value={stats.total_suggestions} label={t("transparencySuggestionsReceived")} color="#F5A623" />
+                <StatCard icon="✅" value={stats.implemented_suggestions} label={t("transparencyImplemented")} color="#10B981" />
+                <StatCard icon="⏳" value={stats.pending_suggestions} label={t("transparencyPendingReview")} color="#6B7280" />
                 <StatCard
                   icon="📈"
                   value={`${stats.suggestion_review_rate}%`}
-                  label="Implementation rate"
+                  label={t("transparencyImplementationRate")}
                   color="#00B4C6"
                 />
               </div>

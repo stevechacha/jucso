@@ -351,3 +351,42 @@ class RemainingFeaturesTests(TestCase):
         self.assertTrue(PortalAuditLog.objects.filter(action="User updated").exists())
         audit_response = self.client.get("/api/admin/audit-log/")
         self.assertEqual(audit_response.status_code, status.HTTP_200_OK)
+
+    def test_admin_can_list_and_create_elections(self):
+        from core.models import Election
+
+        self.client.force_authenticate(user=self.admin)
+        list_response = self.client.get("/api/admin/elections/")
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+
+        create_response = self.client.post(
+            "/api/admin/elections/",
+            {
+                "title": "Guild VP 2026",
+                "description": "Vote for vice president",
+                "starts_at": (timezone.now() + timedelta(hours=1)).isoformat(),
+                "ends_at": (timezone.now() + timedelta(days=2)).isoformat(),
+                "candidates": [
+                    {"name": "Carol", "position": "VP"},
+                    {"name": "Dan", "position": "VP"},
+                ],
+            },
+            format="json",
+        )
+        self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Election.objects.count(), 1)
+
+    def test_push_subscribe_stores_subscription(self):
+        from core.models import PushSubscription
+
+        self.client.force_authenticate(user=self.student)
+        response = self.client.post(
+            "/api/push/subscribe/",
+            {
+                "endpoint": "https://push.example.com/subscriber/abc",
+                "keys": {"p256dh": "test-p256dh", "auth": "test-auth"},
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(PushSubscription.objects.filter(user=self.student).exists())

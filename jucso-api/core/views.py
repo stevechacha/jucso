@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Avg, Count, Q
@@ -37,6 +38,7 @@ from core.models import (
     PortalAnnouncement,
     PortalAuditLog,
     PortalNotification,
+    PushSubscription,
     Suggestion,
     SuggestionStatus,
     UserRole,
@@ -84,6 +86,7 @@ from core.serializers import (
     PortalAnnouncementSerializer,
     PortalAuditLogSerializer,
     PortalNotificationSerializer,
+    PushSubscribeSerializer,
     AdminAnnouncementCreateSerializer,
     AdminAnnouncementUpdateSerializer,
     AttendeeListSerializer,
@@ -378,6 +381,13 @@ class AdminStaffCreateView(views.APIView):
             ministry=data.get("ministry", ""),
             phone_number=data.get("phone_number", ""),
             must_change_password=True,
+        )
+        log_audit(
+            actor=request.user,
+            action="Staff user created",
+            target_type="user",
+            target_id=user.reg_number,
+            detail=f"role={user.role}",
         )
 
         return Response(AdminUserSerializer(user).data, status=status.HTTP_201_CREATED)
@@ -784,6 +794,13 @@ class SuggestionDetailView(generics.RetrieveUpdateAPIView):
                 message=f'Your suggestion "{instance.title}" is now {instance.status}.',
                 category=NotificationCategory.SUGGESTION,
                 link=dashboard_complaint_link(tab="tabStudentSuggestions"),
+            )
+            log_audit(
+                actor=request.user,
+                action="Suggestion updated",
+                target_type="suggestion",
+                target_id=str(instance.pk),
+                detail=f"status={instance.status}",
             )
         return Response(SuggestionSerializer(instance).data)
 
@@ -1318,6 +1335,13 @@ class AdminNewsCreateView(views.APIView):
             published_at=data.get("published_at") or timezone.localdate(),
             is_published=True,
         )
+        log_audit(
+            actor=request.user,
+            action="News created",
+            target_type="news",
+            target_id=f"NEWS-{item.pk:03d}",
+            detail=item.title,
+        )
         return Response(
             NewsItemSerializer(item).data,
             status=status.HTTP_201_CREATED,
@@ -1338,6 +1362,13 @@ class AdminNewsDetailView(views.APIView):
         for field, value in serializer.validated_data.items():
             setattr(item, field, value)
         item.save()
+        log_audit(
+            actor=request.user,
+            action="News updated",
+            target_type="news",
+            target_id=f"NEWS-{item.pk:03d}",
+            detail=item.title,
+        )
         return Response(NewsItemSerializer(item).data)
 
     def delete(self, request, pk: int):
@@ -1345,6 +1376,13 @@ class AdminNewsDetailView(views.APIView):
             item = NewsItem.objects.get(pk=pk)
         except NewsItem.DoesNotExist:
             return Response({"detail": "News item not found."}, status=status.HTTP_404_NOT_FOUND)
+        log_audit(
+            actor=request.user,
+            action="News removed",
+            target_type="news",
+            target_id=f"NEWS-{item.pk:03d}",
+            detail=item.title,
+        )
         item.is_published = False
         item.save(update_fields=["is_published"])
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -1431,6 +1469,13 @@ class AdminContactMessageReplyView(views.APIView):
         message.replied_by = request.user
         message.is_read = True
         message.save(update_fields=["admin_reply", "replied_at", "replied_by", "is_read"])
+        log_audit(
+            actor=request.user,
+            action="Contact message replied",
+            target_type="contact",
+            target_id=str(pk),
+            detail=message.subject,
+        )
         return Response(AdminContactMessageSerializer(message).data)
 
 
@@ -1472,6 +1517,13 @@ class AdminClubCreateView(views.APIView):
             leader=data["leader"],
             category=data["category"],
             is_active=True,
+        )
+        log_audit(
+            actor=request.user,
+            action="Club created",
+            target_type="club",
+            target_id=f"CLUB-{club.pk:03d}",
+            detail=club.name,
         )
         return Response(ClubSerializer(club, context={"request": request}).data, status=status.HTTP_201_CREATED)
 
@@ -1528,6 +1580,13 @@ class AdminEventCreateView(views.APIView):
             capacity=data["capacity"],
             is_active=True,
         )
+        log_audit(
+            actor=request.user,
+            action="Event created",
+            target_type="event",
+            target_id=f"EVT-{event.pk:03d}",
+            detail=event.title,
+        )
         return Response(EventSerializer(event, context={"request": request}).data, status=status.HTTP_201_CREATED)
 
 
@@ -1572,6 +1631,7 @@ class AdminBackupView(views.APIView):
     permission_classes = [*AUTHENTICATED, IsAdminRole]
 
     def post(self, request):
+        log_audit(actor=request.user, action="Backup downloaded", target_type="system")
         return Response(build_portal_backup())
 
 
@@ -1714,6 +1774,18 @@ class ElectionVoteView(views.APIView):
 class AdminElectionCreateView(views.APIView):
     permission_classes = [*AUTHENTICATED, IsAdminRole]
 
+    def get(self, request):
+        qs = Election.objects.prefetch_related("candidates").order_by("-starts_at")[:50]
+        return Response(
+            {
+                "results": ElectionSerializer(
+                    qs,
+                    many=True,
+                    context={"request": request, "show_results": True},
+                ).data,
+            },
+        )
+
     def post(self, request):
         serializer = AdminElectionCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -1749,4 +1821,45 @@ class AdminAuditLogListView(generics.ListAPIView):
     permission_classes = [*AUTHENTICATED, IsAdminRole]
 
     def get_queryset(self):
-        return PortalAuditLog.objects.all()[:200]
+        qs = PortalAuditLog.objects.all()
+        action = self.request.query_params.get("action", "").strip()
+        if action:
+            qs = qs.filter(action__icontains=action)
+        return qs[:200]
+
+
+class PushVapidPublicKeyView(views.APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        public_key = getattr(settings, "VAPID_PUBLIC_KEY", "")
+        if not public_key:
+            return Response({"detail": "Web push is not configured."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        return Response({"public_key": public_key})
+
+
+class PushSubscribeView(views.APIView):
+    permission_classes = [*AUTHENTICATED]
+
+    def post(self, request):
+        serializer = PushSubscribeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        keys = data["keys"]
+        PushSubscription.objects.update_or_create(
+            endpoint=data["endpoint"],
+            defaults={
+                "user": request.user,
+                "p256dh": keys["p256dh"],
+                "auth": keys["auth"],
+            },
+        )
+        return Response({"subscribed": True})
+
+    def delete(self, request):
+        endpoint = request.data.get("endpoint", "")
+        if endpoint:
+            PushSubscription.objects.filter(user=request.user, endpoint=endpoint).delete()
+        else:
+            PushSubscription.objects.filter(user=request.user).delete()
+        return Response({"unsubscribed": True})

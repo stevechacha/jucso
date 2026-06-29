@@ -16,6 +16,7 @@ import { Input, Select, Textarea } from "@/components/ui/FormFields";
 import { StatCard } from "@/components/ui/StatCard";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { SuggestionReviewPanel } from "@/components/suggestions/SuggestionReviewPanel";
+import { AdminElectionsPanel } from "@/components/elections/AdminElectionsPanel";
 import { AttendeeListPanel } from "@/components/admin/AttendeeListPanel";
 import { ProfilePanel } from "@/components/profile/ProfilePanel";
 import { ComplaintTable } from "@/components/complaints/ComplaintTable";
@@ -559,6 +560,7 @@ function SystemToolsPanel({ apiEnabled }: { apiEnabled: boolean }) {
   const [auditLogs, setAuditLogs] = useState<
     Array<{ id: number; actor_name: string; action: string; target_type: string; target_id: string; detail: string; timestamp: string }>
   >([]);
+  const [auditFilter, setAuditFilter] = useState("");
 
   useEffect(() => {
     if (!apiEnabled) return;
@@ -567,8 +569,8 @@ function SystemToolsPanel({ apiEnabled }: { apiEnabled: boolean }) {
 
   useEffect(() => {
     if (!apiEnabled || activeTool !== "logs") return;
-    void jucsoApi.getAuditLogs().then(setAuditLogs).catch(console.error);
-  }, [apiEnabled, activeTool]);
+    void jucsoApi.getAuditLogs(auditFilter || undefined).then(setAuditLogs).catch(console.error);
+  }, [apiEnabled, activeTool, auditFilter]);
 
   const runBackup = async () => {
     if (!apiEnabled) return;
@@ -716,6 +718,13 @@ function SystemToolsPanel({ apiEnabled }: { apiEnabled: boolean }) {
           </div>
           <div className="bg-white rounded-xl p-5 shadow-card text-xs">
             <h3 className="font-display font-bold text-jucso-navy mb-3">{t("auditLogTitle")}</h3>
+            <input
+              type="search"
+              value={auditFilter}
+              onChange={(e) => setAuditFilter(e.target.value)}
+              placeholder={t("auditLogFilter")}
+              className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-xs"
+            />
             {auditLogs.length ? (
               <ul className="space-y-2 max-h-64 overflow-y-auto">
                 {auditLogs.map((entry) => (
@@ -1778,6 +1787,7 @@ export function AdminDashboard() {
 
       {tab === "tabAdminContent" && (
         <div className="space-y-5">
+          <AdminElectionsPanel apiEnabled={apiEnabled} />
           <div className="bg-white rounded-xl shadow-card p-5">
             <h2 className="font-display font-bold text-jucso-navy mb-4">Review Suggestions</h2>
             <SuggestionReviewPanel
