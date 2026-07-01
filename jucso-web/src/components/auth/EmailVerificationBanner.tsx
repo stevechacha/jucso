@@ -6,7 +6,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/Button";
 
 export function EmailVerificationBanner() {
-  const { user, apiEnabled, refreshPortalData } = useApp();
+  const { user, apiEnabled, refreshPortalData, setUser } = useApp();
   const { t } = useLanguage();
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,6 +29,12 @@ export function EmailVerificationBanner() {
 
   const refresh = async () => {
     if (!apiEnabled) return;
+    try {
+      const sessionUser = await jucsoApi.me();
+      setUser(sessionUser);
+    } catch {
+      /* keep current session */
+    }
     await refreshPortalData();
   };
 

@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { ApiError } from "@/api/client";
 import { useDashboardTab } from "@/hooks/useDashboardTab";
 import { useComplaintHighlight } from "@/hooks/useComplaintHighlight";
 import { useComplaintDraft } from "@/hooks/useComplaintDraft";
@@ -45,9 +46,13 @@ export function StudentDashboard() {
   const [supportingFile, setSupportingFile] = useState<File | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [lastTrackingId, setLastTrackingId] = useState<string | null>(null);
+  const [complaintError, setComplaintError] = useState<string | null>(null);
+  const [complaintSubmitting, setComplaintSubmitting] = useState(false);
 
   const [sugSubmitted, setSugSubmitted] = useState(false);
   const [lastSuggestionId, setLastSuggestionId] = useState<string | null>(null);
+  const [suggestionError, setSuggestionError] = useState<string | null>(null);
+  const [suggestionSubmitting, setSuggestionSubmitting] = useState(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
 
   const onHighlight = useCallback(
@@ -67,66 +72,88 @@ export function StudentDashboard() {
 
   const submitComplaint = async () => {
     if (!draft.category || !draft.description.trim()) return;
-    if (apiEnabled) {
-      const complaint = await jucsoApi.createComplaint({
-        category: draft.category,
-        description: draft.description,
-        urgent: draft.urgent,
-        supportingDocument: supportingFile ?? undefined,
-      });
-      setLastTrackingId(complaint.id);
-      await refreshPortalData();
-    } else {
-      const c: Complaint = {
-        id: `JUC-${String(complaints.length + 1).padStart(3, "0")}`,
-        category: draft.category,
-        description: draft.description,
-        ministry: categories[draft.category] ?? "Academics",
-        status: "Pending",
-        date: formatDate(),
-        studentName: user!.name,
-        studentReg: user!.reg,
-        urgent: draft.urgent,
-      };
-      setComplaints((prev) => [c, ...prev]);
-      setLastTrackingId(c.id);
+    if (apiEnabled && user.emailVerified === false) {
+      setComplaintError(t("verifyEmailTitle"));
+      return;
     }
-    clearDraft();
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setLastTrackingId(null);
-      setSupportingFile(null);
-    }, 3000);
+
+    setComplaintError(null);
+    setComplaintSubmitting(true);
+    try {
+      if (apiEnabled) {
+        const complaint = await jucsoApi.createComplaint({
+          category: draft.category,
+          description: draft.description,
+          urgent: draft.urgent,
+          supportingDocument: supportingFile ?? undefined,
+        });
+        setLastTrackingId(complaint.id);
+        await refreshPortalData();
+      } else {
+        const c: Complaint = {
+          id: `JUC-${String(complaints.length + 1).padStart(3, "0")}`,
+          category: draft.category,
+          description: draft.description,
+          ministry: categories[draft.category] ?? "Academics",
+          status: "Pending",
+          date: formatDate(),
+          studentName: user!.name,
+          studentReg: user!.reg,
+          urgent: draft.urgent,
+        };
+        setComplaints((prev) => [c, ...prev]);
+        setLastTrackingId(c.id);
+      }
+      clearDraft();
+      setSubmitted(true);
+      setTimeout(() => {
+        setSubmitted(false);
+        setLastTrackingId(null);
+        setSupportingFile(null);
+      }, 3000);
+    } catch (error) {
+      setComplaintError(error instanceof ApiError ? error.message : t("complaintSubmitFailed"));
+    } finally {
+      setComplaintSubmitting(false);
+    }
   };
 
   const submitSuggestion = async () => {
     if (!sugDraft.title.trim() || !sugDraft.description.trim()) return;
-    if (apiEnabled) {
-      const suggestion = await jucsoApi.createSuggestion({
-        title: sugDraft.title,
-        description: sugDraft.description,
-      });
-      setLastSuggestionId(suggestion.id);
-      await refreshPortalData();
-    } else {
-      const s: Suggestion = {
-        id: `SUG-${String(suggestions.length + 1).padStart(3, "0")}`,
-        title: sugDraft.title,
-        description: sugDraft.description,
-        studentName: user!.name,
-        date: formatDate(),
-        status: "Received",
-      };
-      setSuggestions((prev) => [s, ...prev]);
-      setLastSuggestionId(s.id);
+
+    setSuggestionError(null);
+    setSuggestionSubmitting(true);
+    try {
+      if (apiEnabled) {
+        const suggestion = await jucsoApi.createSuggestion({
+          title: sugDraft.title,
+          description: sugDraft.description,
+        });
+        setLastSuggestionId(suggestion.id);
+        await refreshPortalData();
+      } else {
+        const s: Suggestion = {
+          id: `SUG-${String(suggestions.length + 1).padStart(3, "0")}`,
+          title: sugDraft.title,
+          description: sugDraft.description,
+          studentName: user!.name,
+          date: formatDate(),
+          status: "Received",
+        };
+        setSuggestions((prev) => [s, ...prev]);
+        setLastSuggestionId(s.id);
+      }
+      clearSugDraft();
+      setSugSubmitted(true);
+      setTimeout(() => {
+        setSugSubmitted(false);
+        setLastSuggestionId(null);
+      }, 4000);
+    } catch (error) {
+      setSuggestionError(error instanceof ApiError ? error.message : t("suggestionSubmitFailed"));
+    } finally {
+      setSuggestionSubmitting(false);
     }
-    clearSugDraft();
-    setSugSubmitted(true);
-    setTimeout(() => {
-      setSugSubmitted(false);
-      setLastSuggestionId(null);
-    }, 4000);
   };
 
   const stats = [
@@ -276,9 +303,19 @@ export function StudentDashboard() {
                   />
                   <span className="text-[10px] text-gray-400 mt-1 block">PDF, Word, or images — max 5 MB</span>
                 </label>
-                <Button full variant="navy" onClick={submitComplaint} disabled={!draft.category || !draft.description.trim()}>
-                  Submit Complaint
+                <Button
+                  full
+                  variant="navy"
+                  onClick={() => void submitComplaint()}
+                  disabled={!draft.category || !draft.description.trim() || complaintSubmitting}
+                >
+                  {complaintSubmitting ? t("complaintSubmitting") : "Submit Complaint"}
                 </Button>
+                {complaintError ? (
+                  <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800" role="alert">
+                    {complaintError}
+                  </p>
+                ) : null}
               </>
             )}
           </div>
@@ -331,11 +368,16 @@ export function StudentDashboard() {
                 <Button
                   full
                   variant="teal"
-                  onClick={submitSuggestion}
-                  disabled={!sugDraft.title.trim() || !sugDraft.description.trim()}
+                  onClick={() => void submitSuggestion()}
+                  disabled={!sugDraft.title.trim() || !sugDraft.description.trim() || suggestionSubmitting}
                 >
-                  Submit Suggestion
+                  {suggestionSubmitting ? t("suggestionSubmitting") : "Submit Suggestion"}
                 </Button>
+                {suggestionError ? (
+                  <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800" role="alert">
+                    {suggestionError}
+                  </p>
+                ) : null}
               </>
             )}
           </div>

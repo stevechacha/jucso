@@ -10,7 +10,7 @@ export function mapUser(user: ApiUser): User {
     email: user.email,
     phone: user.phone_number,
     mustChangePassword: user.must_change_password ?? false,
-    emailVerified: user.email_verified ?? true,
+    emailVerified: user.email_verified ?? user.role !== "student",
   };
 }
 
